@@ -181,6 +181,8 @@ Validation errors use the failure role and a field-level message. Warnings use o
 
 A layout owns visual composition, not fetching or domain decisions. Feature query modules and generated contracts retain their existing responsibilities.
 
+The approved P03 Runs workflow is implemented at `/runs`. New simulation run opens an inset modal Drawer from the right over the list. Its height and side insets live in `layoutPx.runPanel`, its desktop width reuses `formMaxWidth`, and its table width uses `runTableMinWidth`. Apply this geometry to that panel only; the shared navigation drawer keeps its own dimensions. The panel has a persistent title/close area and footer, with internal content scrolling. Preserve focus containment, idle Escape/backdrop dismissal, pending-close protection, normal opener restoration and the fallback when the empty-state opener disappears after acknowledgment. Run details remain unavailable in this mock workflow.
+
 The approved P02 reference is implemented at `src/web/app/FoundationReference.tsx`. Run `pnpm dev` from the root and open <http://127.0.0.1:4200/>. The user approved the rendered foundation in phase chat `01a18386-034b-7453-8834-10d3a5e9f8c0` ("yes apply that for implement"); the exact source and manual evidence are recorded in `docs/phases/handoffs/P02.md`. No token changes were needed. Feature workflows and live identity/project data remain assigned to their later phases.
 
 ## Component reuse

@@ -4,12 +4,21 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 CONTRACT_VERSION = "0.1.0"
 PROTOCOL_VERSION = "1"
 MAX_PAGE_SIZE = 100
+MAX_REPETITIONS = 10
+
+
+def _reject_boolean_constant(value: object) -> object:
+    # Pydantic's numeric Literal matching otherwise treats True as 1.
+    if isinstance(value, bool):
+        raise ValueError("Boolean values are not numeric constants")
+    return value
+
 
 Identifier = Annotated[
     str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
@@ -188,9 +197,86 @@ class CursorMeta(WireModel):
     next_cursor: Cursor | None
 
 
+class RunListEntry(RunSummary):
+    build_label: Annotated[str, Field(min_length=1, max_length=128)]
+    suite_title: Annotated[str, Field(min_length=1, max_length=128)]
+    suite_revision: Annotated[int, Field(ge=1, le=1_000_000)]
+    runner_display_name: Annotated[str, Field(min_length=1, max_length=128)]
+
+
 class RunListEnvelope(WireModel):
-    data: Annotated[list[RunSummary], Field(max_length=MAX_PAGE_SIZE)]
+    data: Annotated[list[RunListEntry], Field(max_length=MAX_PAGE_SIZE)]
     meta: CursorMeta
+
+
+DisplayName = Annotated[str, Field(min_length=1, max_length=128)]
+
+
+class RunRunnerOption(WireModel):
+    id: Identifier
+    display_name: DisplayName
+    host_platform: DisplayName
+    connection_state: RunnerConnectionState
+    capacity_state: RunnerCapacityState
+    last_seen_at: UtcTimestamp | None
+
+
+class RunBuildOption(WireModel):
+    id: Identifier
+    label: DisplayName
+    source_revision: DisplayName
+    artifact_sha256: Digest
+
+
+class RunLocalProfileOption(WireModel):
+    id: Identifier
+    display_name: DisplayName
+    digest: Digest
+    integration_profile_id: Identifier
+
+
+class RunSuiteOption(WireModel):
+    id: Identifier
+    suite_id: Identifier
+    title: DisplayName
+    revision: Annotated[int, Field(ge=1, le=1_000_000)]
+    status: Literal["PUBLISHED"]
+    digest: Digest
+    scenario_count: Annotated[int, Field(ge=1, le=100)]
+    eligible: bool
+    reason: Annotated[str, Field(min_length=1, max_length=512)] | None
+
+
+class RunOptions(WireModel):
+    runners: Annotated[list[RunRunnerOption], Field(max_length=MAX_PAGE_SIZE)]
+    builds: Annotated[list[RunBuildOption], Field(max_length=MAX_PAGE_SIZE)]
+    local_profiles: Annotated[
+        list[RunLocalProfileOption], Field(max_length=MAX_PAGE_SIZE)
+    ]
+    suites: Annotated[list[RunSuiteOption], Field(max_length=MAX_PAGE_SIZE)]
+    minimum_repetitions: Annotated[
+        Literal[1], BeforeValidator(_reject_boolean_constant)
+    ]
+    maximum_repetitions: Annotated[
+        Literal[10], BeforeValidator(_reject_boolean_constant)
+    ]
+
+
+class RunOptionsEnvelope(SuccessEnvelope[RunOptions]):
+    pass
+
+
+class CreateRunRequest(WireModel):
+    schema_version: Annotated[Literal[1], BeforeValidator(_reject_boolean_constant)]
+    runner_id: Identifier
+    build_id: Identifier
+    suite_revision_id: Identifier
+    local_execution_profile_digest: Digest
+    repetitions: Annotated[int, Field(ge=1, le=MAX_REPETITIONS)]
+
+
+class RunEnvelope(SuccessEnvelope[RunSummary]):
+    pass
 
 
 # Export vocabulary used by later shared status presentation without inventing DTOs.

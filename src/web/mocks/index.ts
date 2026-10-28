@@ -82,7 +82,8 @@ export function createFixtureHandlers({
         );
       const path = zListRunsPath.safeParse(params);
       const url = new URL(request.url);
-      const query = zListRunsQuery.safeParse({
+      const query = zListRunsQuery.strict().safeParse({
+        ...Object.fromEntries(url.searchParams),
         ...(url.searchParams.has("limit")
           ? { limit: Number(url.searchParams.get("limit")) }
           : {}),
@@ -109,7 +110,19 @@ export function createFixtureHandlers({
       return HttpResponse.json(
         zRunListEnvelope.parse({
           ...runsFixture,
-          data: runsFixture.data.slice(0, query.data.limit),
+          data: runsFixture.data
+            .filter(
+              (row) =>
+                (!query.data.search ||
+                  `${row.id} ${row.buildLabel} ${row.suiteTitle} ${row.runnerDisplayName}`
+                    .toLowerCase()
+                    .includes(query.data.search.toLowerCase())) &&
+                (!query.data.executionState ||
+                  row.executionState === query.data.executionState) &&
+                (!query.data.evaluationOutcome ||
+                  row.evaluationOutcome === query.data.evaluationOutcome),
+            )
+            .slice(0, query.data.limit),
         }),
       );
     }),

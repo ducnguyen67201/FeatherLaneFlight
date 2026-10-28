@@ -61,6 +61,15 @@ Use pnpm for frontend tooling and uv for Python packages. PX4 runs as a separate
 - Use comments to explain a non-obvious reason or constraint, rather than restating the code. Remove dead code and obsolete comments.
 - Handle errors where they can be recovered from or reported meaningfully. Do not hide failures with blanket exception handling, silent fallbacks, or invented success values.
 
+## React components and hooks
+
+- Keep page and modal components focused on composing the UI. Split substantial sections, tables, filters, form steps, and feedback regions into cohesive components instead of keeping an entire workflow in one large JSX file.
+- Extract related form state, dependent-selection resets, query composition, mutation/preflight sequencing, and effects into focused custom hooks when they obscure the rendering component. Give hooks meaningful actions and a small, explicit return surface; avoid merely moving a large component's code into one equally unfocused hook.
+- Group related draft fields and use a reducer when coupled transitions and resets become clearer that way. Keep independent UI state local. Derive selected records and other computed values from existing state/query data rather than maintaining duplicate state; use memoization only when it has a concrete benefit.
+- Pass child components the typed data and callbacks they need through clear props. Use canonical generated types for domain data; do not invent parallel DTOs or pass an entire query client, query result, or hook state bag when a few values and actions suffice.
+- Keep server state in TanStack Query and local form concerns in the form hook. Preserve generated client validation, cache identity, eligibility checks, idempotency, pending guards, and focus behavior when extracting logic.
+- Before handoff, split files that mix substantial query/mutation logic, workflow transitions, effects, and many large rendering branches. Split by responsibility and readability, not an arbitrary line count. Small components and simple logic may stay together; avoid one-line wrappers, unnecessary prop drilling, and a universal component framework.
+
 ## Contracts and correctness
 
 - Keep generated schema/client directories out of Git as build artifacts; workspace setup, typecheck, and build regenerate them. Track canonical definitions, HTTP metadata, generators, handwritten client policy, fixtures, and dependency lockfiles.
