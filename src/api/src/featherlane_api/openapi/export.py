@@ -1,14 +1,13 @@
 """Deterministic offline snapshot and provenance export."""
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 
 from featherlane_contracts import CONTRACT_VERSION, PROTOCOL_VERSION
 from openapi_spec_validator import validate
 
-from featherlane_api.schema import create_schema_app
+from featherlane_api.openapi.schema import create_schema_app, schema_digest, schema_json
 
 
 def main() -> None:
@@ -17,13 +16,13 @@ def main() -> None:
     args = parser.parse_args()
     schema = create_schema_app().openapi()
     validate(schema)
-    content = json.dumps(schema, indent=2, sort_keys=True) + "\n"
+    content = schema_json(schema)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "openapi.json").write_text(content)
     manifest = {
         "contractVersion": CONTRACT_VERSION,
         "protocolVersion": PROTOCOL_VERSION,
-        "schemaDigest": hashlib.sha256(content.encode()).hexdigest(),
+        "schemaDigest": schema_digest(schema),
     }
     (args.output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
 

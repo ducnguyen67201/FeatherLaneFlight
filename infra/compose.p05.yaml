@@ -1,0 +1,17 @@
+name: featherlane-p05
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_USER: flf
+      POSTGRES_DB: featherlane_p05
+      POSTGRES_PASSWORD: ${FLF_P05_DB_PASSWORD:?Set a private local database password}
+    ports:
+      - "127.0.0.1:55405:5432"
+    volumes:
+      - ../.local/p05/postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flf -d featherlane_p05"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
