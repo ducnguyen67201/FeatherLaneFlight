@@ -157,6 +157,8 @@
     "sectionGap": 24,
     "formMaxWidth": 720,
     "checkPaneWidth": 280,
+    "manifestLabelWidth": 220,
+    "eventLogMaxHeightVh": 60,
     "runPanel": {
       "heightDvh": 95,
       "sideInset": {

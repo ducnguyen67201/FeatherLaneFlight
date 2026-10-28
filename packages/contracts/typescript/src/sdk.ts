@@ -1,5 +1,9 @@
 import type {
   CreateRunData,
+  GetRunDetailData,
+  GetRunEventsData,
+  GetRunArtifactsData,
+  CancelRunData,
   GetRunOptionsData,
   GetContractMetaData,
   ListRunsData,
@@ -9,6 +13,10 @@ import {
   listRuns as generatedRuns,
   getRunOptions as generatedRunOptions,
   createRun as generatedCreateRun,
+  getRunDetail as generatedDetail,
+  getRunEvents as generatedEvents,
+  getRunArtifacts as generatedArtifacts,
+  cancelRun as generatedCancel,
   type Options,
 } from "./generated/sdk.gen";
 import type { TDataShape } from "./generated/client";
@@ -19,6 +27,10 @@ import {
   zListRunsResponse,
   zGetRunOptionsResponse,
   zCreateRunResponse,
+  zGetRunDetailResponse,
+  zGetRunEventsResponse,
+  zGetRunArtifactsResponse,
+  zCancelRunResponse,
 } from "./generated/zod.gen";
 import { ContractValidationError } from "./transport";
 
@@ -102,4 +114,58 @@ export async function createRun(options: ReadOptions<CreateRunData>) {
     parseAs: "json",
   });
   return validateResult(zCreateRunResponse, response.data, response.response);
+}
+
+export async function getRunDetail(options: ReadOptions<GetRunDetailData>) {
+  const response = await generatedDetail({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunDetailResponse,
+    response.data,
+    response.response,
+  );
+}
+
+export async function getRunEvents(options: ReadOptions<GetRunEventsData>) {
+  const response = await generatedEvents({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunEventsResponse,
+    response.data,
+    response.response,
+  );
+}
+
+export async function getRunArtifacts(
+  options: ReadOptions<GetRunArtifactsData>,
+) {
+  const response = await generatedArtifacts({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunArtifactsResponse,
+    response.data,
+    response.response,
+  );
+}
+
+export async function cancelRun(options: ReadOptions<CancelRunData>) {
+  const response = await generatedCancel({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(zCancelRunResponse, response.data, response.response);
 }
