@@ -6,8 +6,12 @@ P06A adds the authentication endpoints described below alongside `GET /api/v1/me
 Runs and other business declarations in
 `featherlane_api.openapi.schema.create_schema_app()` are for offline client generation;
 they are never mounted in the runtime application. Memberships, business operations, the worker, artifact uploads and storage
-adapters belong to their later phases. Real Google login remains unverified until
-the human configures the provider; an unconfigured provider returns a safe 503.
+adapters belong to their later phases. A real Google callback and reauthentication
+were verified against the direct local API at `http://127.0.0.1:8008`, including
+actual session read, handle rotation, CSRF rejection and API logout/revocation.
+P06.5 browser controls/proxy wiring, HTTPS deployment and deliberate invalid-token
+negative cases remain outside that qualification. An unconfigured provider returns
+a safe 503.
 
 ## Backend architecture
 

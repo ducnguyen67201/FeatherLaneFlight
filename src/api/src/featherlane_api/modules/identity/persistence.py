@@ -86,6 +86,24 @@ class IdentityStore:
         if not self.session.in_transaction():
             raise RuntimeError("Live authentication requires an explicit transaction")
 
+    async def lookup_user(
+        self, issuer: str, subject: str, *, lock: bool = False
+    ) -> User | None:
+        query = (
+            select(UserRecord)
+            .join(ExternalIdentityRecord)
+            .where(
+                ExternalIdentityRecord.issuer == issuer,
+                ExternalIdentityRecord.subject == subject,
+                UserRecord.active.is_(True),
+            )
+            .execution_options(populate_existing=True)
+        )
+        if lock:
+            query = query.with_for_update(of=UserRecord)
+        user = await self.session.scalar(query)
+        return User(user.id, user.display_name, user.email) if user else None
+
     async def authenticate(
         self, digest: str, now: datetime, *, lock: bool = False
     ) -> tuple[Principal, str] | None:
