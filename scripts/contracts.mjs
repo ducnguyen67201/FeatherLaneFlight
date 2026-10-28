@@ -55,7 +55,7 @@ try {
     "featherlane-control-plane",
     "python",
     "-m",
-    "featherlane_api.export",
+    "featherlane_api.openapi.export",
     "--output",
     snapshot,
   ]);

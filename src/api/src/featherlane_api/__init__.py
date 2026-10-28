@@ -1,1 +1,1 @@
-"""Offline API metadata. P05 owns the runnable business application."""
+"""Control-plane runtime and resource-free contract metadata."""

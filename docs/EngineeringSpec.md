@@ -125,14 +125,15 @@ FeatherLaneFlight/
 |   |   |-- alembic.ini               planned migration configuration
 |   |   |-- migrations/              planned reviewed migrations
 |   |   `-- src/featherlane_api/
-|   |       |-- schema.py             offline route metadata
-|   |       |-- export.py             deterministic OpenAPI export
-|   |       |-- http/                 planned routes and request context
-|   |       |-- application/          planned authorization and orchestration
-|   |       |-- domain/               planned framework-free rules
-|   |       |-- adapters/             planned persistence/storage/identity
-|   |       |-- config/               planned validated configuration
-|   |       `-- worker/               planned background work
+|   |       |-- app.py                composition root / runtime lifespan
+|   |       |-- cli.py                flf-api process entry point
+|   |       |-- config.py             validated process configuration
+|   |       |-- http/                 errors, middleware, dependencies, meta router
+|   |       |-- openapi/              resource-free schema.py / export.py
+|   |       |-- infrastructure/       shared database.py Base/engine/session factory
+|   |       |-- modules/
+|   |       |   `-- evidence/ports.py  private-storage boundary; adapter deferred
+|   |       `-- worker/               later background work
 |   |-- web/
 |   |   |-- package.json
 |   |   |-- mocks/                    validated JSON fixtures and MSW handlers
@@ -175,6 +176,8 @@ FeatherLaneFlight/
 |-- pnpm-workspace.yaml              web and TypeScript contracts
 `-- pnpm-lock.yaml                   pinned JavaScript dependency resolution
 ```
+
+The backend follows a modular monolith: HTTP adapters and resource-free OpenAPI metadata stay separate from shared infrastructure and focused feature modules. P06A adds `modules/identity/`; P07 adds `modules/access/` only when implemented. Keep domain rules independent of FastAPI, use application services for explicit transaction ownership, and add ports/adapters only where needed. Do not scaffold empty future modules or a generic repository framework. P05's API README records actual import paths and process configuration. Secrets are injected by Doppler into the process; retain no local secret/environment files.
 
 The Python packages retain their internal `src/<import_package>/` layout for isolated packaging. The web package uses `src/web/` as its application root. Mock payloads live with the web application and are validated by the shared generated contracts; they do not define another schema.
 
