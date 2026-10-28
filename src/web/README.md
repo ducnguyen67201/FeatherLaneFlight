@@ -26,6 +26,14 @@ Open <http://127.0.0.1:4200/runs>. Dev binds only to loopback. The current entry
 
 The context is an explicitly fixed demo organization/project, not sign-in or authorization. Real sessions, identity-change cache cleanup, API integration and live updates remain their assigned later phases. See [mock transport notes](mocks/README.md).
 
+## Organization and projects UI
+
+Open `/settings` for the approved P07 organization/project UI. Organization selection is inside Settings; the project selector is above the left navigation and inside the mobile drawer. The page supports project selection and a creation dialog with generated name validation, pending protection, recoverable errors and focus restoration. Roles, detailed permissions and membership editing are deferred.
+
+The clearly labeled `ProjectsDemo` adapter supplies local samples, loading/empty/error/access-loss states and accepted/rejected creation. It makes no API calls and changes reset on reload. Display data is parsed through canonical generated OrganizationView/ProjectView validators. The reusable feature components and creation hook are under `features/projects/`; sample behavior is confined to `mocks/ProjectsDemo.tsx` and `mocks/projects.json`. `/settings` does not start the Runs mock worker. The existing `/runs` demo remains independently scoped.
+
+Backend wiring waits for the actual P05 foundation and P06A authenticated identity/session endpoints. The accepted backend uses both organization_memberships and project_memberships; organization membership alone grants no project visibility. UI sample data is not an authorization boundary. See `docs/phases/handoffs/P07.md` for actual manual/tooling checks and pending work.
+
 ## Foundation reference and verification
 
 `app/FoundationReference.tsx` remains the approved P02 component/reference view on the other shell locations. It does not implement Compare, Suites, Runners or Settings. Ordinary shell links and Vite SPA fallback still support navigation/reload. The shared shell’s original reference footer remains as shown in the approved preview.

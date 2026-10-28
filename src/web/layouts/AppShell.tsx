@@ -19,7 +19,6 @@ import PlayArrowOutlined from "@mui/icons-material/PlayArrowOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
 import StorageOutlined from "@mui/icons-material/StorageOutlined";
 import ViewListOutlined from "@mui/icons-material/ViewListOutlined";
-import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import { tokens } from "../design/theme";
 
 export const navigation = [
@@ -85,14 +84,8 @@ export function AppShell({
           </IconButton>
         )}
       </Stack>
-      <Box component="nav" aria-label="Primary navigation" sx={{ p: 3 }}>
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: "block", px: 3, py: 3 }}
-        >
-          PROJECT
-        </Typography>
+      <Box sx={{ px: 4, pt: 6, pb: 4, minWidth: 0 }}>{projectSelector}</Box>
+      <Box component="nav" aria-label="Primary navigation" sx={{ px: 3 }}>
         <List disablePadding>
           {navigation.map(({ label, path, icon: Icon }) => (
             <ListItemButton
@@ -131,15 +124,6 @@ export function AppShell({
             </ListItemButton>
           ))}
         </List>
-      </Box>
-      <Box sx={{ mt: "auto", p: 5, borderTop: 1, borderColor: "divider" }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: "center", mb: 2 }}>
-          <WidgetsOutlined fontSize="small" sx={{ color: "primary.main" }} />
-          <Typography variant="body2">Foundation reference</Typography>
-        </Stack>
-        <Typography variant="caption" color="text.secondary">
-          Phase 02 · Isolated sample data
-        </Typography>
       </Box>
     </Box>
   );
@@ -203,13 +187,10 @@ export function AppShell({
               <MenuIcon />
             </IconButton>
           )}
-          {projectSelector}
-          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "block" } }} />
-          {!narrow && (
-            <Typography variant="caption" color="text.secondary">
-              Local reference
-            </Typography>
-          )}
+          <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+            {navigation.find((item) => item.path === activePath)?.label ??
+              "Workspace"}
+          </Typography>
           {userMenu}
         </Box>
         <Box

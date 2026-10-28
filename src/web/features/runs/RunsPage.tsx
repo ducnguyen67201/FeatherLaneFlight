@@ -168,7 +168,12 @@ export function RunsPage() {
     <AppShell
       activePath="/runs"
       projectSelector={
-        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: "center", flexWrap: "wrap" }}
+        >
           <Typography variant="body2" color="text.secondary">
             FeatherLane /
           </Typography>

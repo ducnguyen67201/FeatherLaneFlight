@@ -19,6 +19,7 @@ from featherlane_contracts import (
     RunListEnvelope,
     RunOptionsEnvelope,
 )
+from featherlane_contracts.projects import OrganizationView, ProjectView
 from pydantic import TypeAdapter
 
 
@@ -109,7 +110,7 @@ def create_schema_app() -> FastAPI:
         raise RuntimeError("Metadata-only declaration; no live run admission exists")
 
     schema = app.openapi()
-    for model in STATUS_MODELS:
+    for model in (*STATUS_MODELS, OrganizationView, ProjectView):
         schema["components"]["schemas"][model.__name__] = TypeAdapter(
             model
         ).json_schema()
