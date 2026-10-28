@@ -1,0 +1,13 @@
+{
+  "name": "@featherlane/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./mocks": "./mocks/index.ts"
+  },
+  "dependencies": {
+    "@featherlane/contracts": "workspace:*",
+    "msw": "3.0.3"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+.venv/
+__pycache__/
+*.egg-info/
+.ruff_cache/
+dist/
+/packages/contracts/schemas/
+/packages/contracts/typescript/src/generated/

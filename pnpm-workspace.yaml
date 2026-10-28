@@ -1,0 +1,7 @@
+packages:
+  - packages/contracts/typescript
+  - src/web
+allowBuilds:
+  esbuild: true
+overrides:
+  "js-yaml@>=4.0.0 <4.3.2": 4.3.2

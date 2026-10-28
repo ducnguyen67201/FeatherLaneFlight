@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": "run_queued",
+      "projectId": "project_demo",
+      "buildId": "build_demo",
+      "suiteRevisionId": "suite_revision_demo",
+      "runnerId": "runner_demo",
+      "executionState": "QUEUED",
+      "evaluationOutcome": "NOT_EVALUATED",
+      "cancellationRequestedAt": null,
+      "cancellationDeadlineAt": null,
+      "createdAt": "2026-10-28T16:00:00Z",
+      "startedAt": null,
+      "finishedAt": null
+    }
+  ],
+  "meta": { "nextCursor": null }
+}
