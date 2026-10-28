@@ -4,13 +4,23 @@ import {
   listRunsQueryKey,
   getRunOptionsQueryKey,
   createRunMutation as generatedCreateRunMutation,
+  getSessionQueryKey,
+  logoutMutation as generatedLogoutMutation,
 } from "./generated/@tanstack/react-query.gen";
 import type {
   GetContractMetaResponse,
   ListRunsResponse,
   GetRunOptionsResponse,
+  GetSessionResponse,
 } from "./generated/types.gen";
-import { getContractMeta, listRuns, getRunOptions, createRun } from "./sdk";
+import {
+  getContractMeta,
+  listRuns,
+  getRunOptions,
+  createRun,
+  getSession,
+  logout,
+} from "./sdk";
 
 // Later feature modules add authenticated scope and freshness policy.
 // Validation and typed errors resolve before Query can cache a resource.
@@ -74,4 +84,33 @@ export function getRunOptionsOptions(
     queryFn: ({ signal }) => getRunOptions({ ...options, signal }),
     retry: false,
   });
+}
+
+export function getSessionOptions(
+  options: Parameters<typeof getSession>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getSessionQueryKey(options)];
+  return queryOptions<
+    GetSessionResponse,
+    Error,
+    GetSessionResponse,
+    typeof queryKey
+  >({
+    queryKey,
+    queryFn: ({ signal }) => getSession({ ...options, signal }),
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function logoutMutation() {
+  const generated = generatedLogoutMutation();
+  const options = {
+    mutationFn: logout,
+    retry: false as const,
+  };
+  return generated.mutationKey
+    ? mutationOptions({ ...options, mutationKey: generated.mutationKey })
+    : mutationOptions(options);
 }
