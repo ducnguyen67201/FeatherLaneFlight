@@ -12,8 +12,9 @@
     "format": "prettier --write package.json .prettierrc.json openapi-ts.config.ts pnpm-workspace.yaml tsconfig.json packages src/web scripts && uv run ruff format packages/contracts/python src/api",
     "format:check": "prettier --check package.json .prettierrc.json openapi-ts.config.ts pnpm-workspace.yaml tsconfig.json packages src/web scripts && uv run ruff format --check packages/contracts/python src/api",
     "lint": "uv run ruff check packages/contracts/python src/api",
-    "typecheck": "pnpm contracts:generate && tsc --noEmit",
-    "build": "pnpm contracts:generate && tsc --outDir dist --noEmit false"
+    "typecheck": "pnpm contracts:generate && tsc --noEmit && pnpm --filter @featherlane/web typecheck",
+    "build": "pnpm contracts:generate && tsc --outDir dist --noEmit false && pnpm --filter @featherlane/web build",
+    "dev": "pnpm contracts:generate && pnpm --filter @featherlane/web dev"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",

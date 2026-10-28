@@ -8,11 +8,13 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "jsx": "react-jsx"
   },
   "include": [
     "packages/contracts/typescript/**/*.ts",
     "src/web/**/*.ts",
-    "openapi-ts.config.ts"
+    "openapi-ts.config.ts",
+    "src/web/**/*.tsx"
   ]
 }

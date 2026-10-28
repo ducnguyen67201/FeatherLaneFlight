@@ -1,8 +1,8 @@
 # FeatherLaneFlight design system
 
-Status: design baseline v1; application implementation has not started. Updated October 28, 2026.
+Status: design baseline v1; P02 foundation preview approved and implemented locally for review. Updated October 28, 2026.
 
-This guide defines the UI foundation before feature screens. [design-tokens.json](design-tokens.json) owns exact visual values; this guide owns their use. The [engineering specification](docs/EngineeringSpec.md) owns workflows, API contracts, and status semantics. [AGENTS.md](AGENTS.md) owns coding and test-writing rules. The project-local UI UX Pro Max skill is installed; application components, theme adapter, and preview remain unimplemented.
+This guide defines the UI foundation before feature screens. [design-tokens.json](design-tokens.json) owns exact visual values; this guide owns their use. The [engineering specification](docs/EngineeringSpec.md) owns workflows, API contracts, and status semantics. [AGENTS.md](AGENTS.md) owns coding and test-writing rules. The project-local UI UX Pro Max skill is installed; the approved theme, shared shell/page layout, status presentation, and reference view now live under `src/web/`. The original approval preview remains isolated under `previews/P02/`.
 
 ## UI library decision
 
@@ -25,7 +25,7 @@ MUI X Community Data Grid is an optional later addition if virtualization or gri
 
 Use a near-black canvas, subtly separated panels, fine borders, small corner radii, bright yellow accents, clear typography, and compact data displays. Preserve shared navigation and mission-testing workflows. Define the visual treatment through central MUI theme values and component defaults.
 
-Start with a dark color scheme. Use Hanken Grotesk for sans-serif body text with the token-defined system fallback. Use monospace for hashes, logs, compact metadata, and numeric identifiers. Font files will be supplied during authorized frontend setup. Keep application page titles compact and reserve large display headings for introductory content.
+Start with a dark color scheme. Use Hanken Grotesk for sans-serif body text with the token-defined system fallback. Use monospace for hashes, logs, compact metadata, and numeric identifiers. Pinned `@fontsource/hanken-grotesk` supplies local font files for the web entry; the app makes no font-service request. Keep application page titles compact and reserve large display headings for introductory content.
 
 Use the semantic groups in [design-tokens.json](design-tokens.json):
 
@@ -116,7 +116,7 @@ Example prompt:
 
 [design-tokens.json](design-tokens.json) is the canonical, machine-readable value source. It is a small project-specific JSON document with `version: 1`; it requires no token compiler, extra runtime library, or parallel CSS token file. Values ending in Px or Ms explicitly declare their units.
 
-The planned `src/web/design/theme.ts` imports that JSON and maps it into MUI configuration, component defaults, and variants. It owns mapping logic rather than a second set of raw values. Apply the resulting theme through one root ThemeProvider and CssBaseline. MUI generates CSS variables for custom evidence visualizations and other CSS consumers.
+The implemented `src/web/design/theme.ts` imports that JSON and maps it into MUI configuration, component defaults, and variants. It owns mapping logic rather than a second set of raw values. Apply the resulting theme through one root ThemeProvider and CssBaseline. MUI generates CSS variables for custom evidence visualizations and other CSS consumers.
 
 | MUI destination                                           | Token source / rule                                                                                                                                                                                      |
 | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -131,7 +131,7 @@ The planned `src/web/design/theme.ts` imports that JSON and maps it into MUI con
 
 Use pixel values as the reference scale; render type with rem sizes and proportional line heights so browser text settings work. Components grow with content/zoom. Use tabular numerals for metric columns, and right-align comparable numbers. Keep page text and status labels selectable.
 
-The planned `statusPresentation.ts` maps generated contract enums to labels, icons, and semantic theme roles. Contract types own the status vocabulary. Feature pages consume theme values; they do not redefine color ramps or component appearance. Simple local layout composition with MUI Stack, Box, or Grid is appropriate.
+The implemented `src/web/design/statusPresentation.ts` maps generated contract enums to labels, icons, and semantic theme roles. Contract types own the status vocabulary. Feature pages consume theme values; they do not redefine color ramps or component appearance. Simple local layout composition with MUI Stack, Box, or Grid is appropriate.
 
 Token groups to review in the reference view:
 
@@ -170,7 +170,7 @@ Validation errors use the failure role and a field-level message. Warnings use o
  +------------------+------------------------------------------------+
 ```
 
-AppShell owns navigation and identity/project context. PageLayout owns the repeated title/action/filter/content alignment. Build them from MUI Drawer, AppBar/Toolbar, Box, Stack, and related primitives. Share navigation configuration so route labels and active states remain consistent.
+`src/web/layouts/AppShell.tsx` owns navigation and the layout of supplied identity/project context. `src/web/layouts/PageLayout.tsx` owns the repeated title/action/filter/content alignment. Build them from MUI Drawer, AppBar/Toolbar, Box, Stack, and related primitives. Share navigation configuration so route labels and active states remain consistent.
 
 | Page pattern  | Composition                                                                                                       |
 | ------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -180,6 +180,8 @@ AppShell owns navigation and identity/project context. PageLayout owns the repea
 | Form/settings | Focused form width, visible labels/help/errors, grouped sections, consistent submission/cancellation actions.     |
 
 A layout owns visual composition, not fetching or domain decisions. Feature query modules and generated contracts retain their existing responsibilities.
+
+The approved P02 reference is implemented at `src/web/app/FoundationReference.tsx`. Run `pnpm dev` from the root and open <http://127.0.0.1:4200/>. The user approved the rendered foundation in phase chat `01a18386-034b-7453-8834-10d3a5e9f8c0` ("yes apply that for implement"); the exact source and manual evidence are recorded in `docs/phases/handoffs/P02.md`. No token changes were needed. Feature workflows and live identity/project data remain assigned to their later phases.
 
 ## Component reuse
 
