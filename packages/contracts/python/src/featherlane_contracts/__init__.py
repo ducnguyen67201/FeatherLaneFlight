@@ -20,6 +20,13 @@ def _reject_boolean_constant(value: object) -> object:
     return value
 
 
+def _require_true_constant(value: object) -> object:
+    # Literal[True] otherwise also accepts Python/JSON numeric 1.
+    if value is not True:
+        raise ValueError("Expected the boolean constant true")
+    return value
+
+
 Identifier = Annotated[
     str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_-]+$")
 ]
@@ -136,6 +143,11 @@ class ErrorCode(StrEnum):
     IDEMPOTENCY_CONFLICT = "IDEMPOTENCY_CONFLICT"
     ARTIFACT_INVALID = "ARTIFACT_INVALID"
     CANCELLATION_UNCONFIRMED = "CANCELLATION_UNCONFIRMED"
+    SESSION_EXPIRED = "SESSION_EXPIRED"
+    CSRF_INVALID = "CSRF_INVALID"
+    LOGIN_INVALID = "LOGIN_INVALID"
+    IDENTITY_UNVERIFIED = "IDENTITY_UNVERIFIED"
+    AUTH_UNAVAILABLE = "AUTH_UNAVAILABLE"
     UNAUTHENTICATED = "UNAUTHENTICATED"
     FORBIDDEN = "FORBIDDEN"
     NOT_FOUND = "NOT_FOUND"
@@ -293,3 +305,26 @@ STATUS_MODELS = (
     CapabilitySupport,
     SuiteStatus,
 )
+
+
+class SessionUser(WireModel):
+    id: Identifier
+    display_name: Annotated[str, Field(min_length=1, max_length=200)]
+    email: Annotated[str, Field(min_length=3, max_length=320)]
+
+
+class SessionView(WireModel):
+    user: SessionUser
+    csrf_token: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+class SessionEnvelope(SuccessEnvelope[SessionView]):
+    pass
+
+
+class LogoutResult(WireModel):
+    signed_out: Annotated[Literal[True], BeforeValidator(_require_true_constant)]
+
+
+class LogoutEnvelope(SuccessEnvelope[LogoutResult]):
+    pass

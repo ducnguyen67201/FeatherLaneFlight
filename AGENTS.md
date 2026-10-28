@@ -20,7 +20,7 @@ Use pnpm for frontend tooling and uv for Python packages. PX4 runs as a separate
 
 ## Phase-chat coordination
 
-- All phase chats share one local checkout. Only the dispatched phase may write implementation; staged chats return a short readiness brief and wait.
+- P06 is UI only; P06A owns authentication backend; P06.5 wires them after verified P05 and P06 merges and working auth endpoints. P07 uses explicit organization/project membership without roles. The master registry assigns each phase its workspace. One implementation writer is allowed per checkout. The user-authorized P04–P07 parallel wave uses separate worktrees; staged chats remain read-only. Follow `docs/phases/P04-P07-parallel.md` for dependency checkpoints and integration gates.
 - The master owns `docs/phases/registry.json`, reviews handoffs, requests completed-phase submission approval, manages approved PRs, and dispatches successors after the merge gate. Workers write only their own phase handoff in `docs/phases/handoffs/` and report READY_FOR_REVIEW, AWAITING_UI_APPROVAL, or BLOCKED accurately.
 - The user requested phase completion reports to the master and master dispatch of subsequent phases. Follow `docs/phases/README.md` for that bounded messaging workflow and its original human authorization source. Do not send unrelated messages or dispatch successors from a phase chat.
 - A master dispatch authorizes the assigned implementation work; it does not approve unseen UI, new automated tests, or external deployment/publishing.
