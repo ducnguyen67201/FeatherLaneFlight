@@ -15,6 +15,7 @@ from featherlane_api.modules.identity.domain import (
     Principal,
     SessionExpired,
     SessionSecrets,
+    User,
     VerifiedIdentity,
 )
 from featherlane_api.modules.identity.persistence import IdentityStore
@@ -44,6 +45,20 @@ class IdentityService:
         self.secrets = secrets
         self.session_ttl = session_ttl
         self.login_ttl = login_ttl
+
+    async def lookup_user(
+        self, issuer: str, subject: str, *, lock: bool = False
+    ) -> User | None:
+        """Resolve an active identity without creating or linking an account.
+
+        Locking lookup belongs to the operator's already-open transaction; the
+        caller retains commit/rollback ownership and the user lock until then.
+        """
+        if lock:
+            self.store.require_transaction()
+            return await self.store.lookup_user(issuer, subject, lock=True)
+        async with self.store.transaction():
+            return await self.store.lookup_user(issuer, subject)
 
     async def start_login(
         self,
