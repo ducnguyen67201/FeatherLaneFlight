@@ -2,11 +2,12 @@
 
 P05 provides the runnable FastAPI service, validated process configuration,
 PostgreSQL sessions/migrations, safe HTTP errors and a private storage port.
-Only `GET /api/v1/meta` is implemented. Runs and other business declarations in
+P06A adds the authentication endpoints described below alongside `GET /api/v1/meta`.
+Runs and other business declarations in
 `featherlane_api.openapi.schema.create_schema_app()` are for offline client generation;
-they are never mounted in the runtime application. Authentication, business
-operations, the worker, artifact uploads and storage adapters belong to later
-phases.
+they are never mounted in the runtime application. Memberships, business operations, the worker, artifact uploads and storage
+adapters belong to their later phases. Real Google login remains unverified until
+the human configures the provider; an unconfigured provider returns a safe 503.
 
 ## Backend architecture
 
@@ -34,8 +35,8 @@ featherlane_api/
         └── ports.py           existing private artifact-storage boundary
 ```
 
-P06A, the separately coordinated authentication-backend task, introduces
-`modules/identity/`; P06 is UI-only under the latest master scope. P07 introduces
+P06A implements `modules/identity/` with application use cases, internal ORM
+mappings, Authlib adapter, HTTP routes and shared auth dependencies. P06 is UI-only. P07 introduces
 `modules/access/` once its actual authentication dependency is ready. Later phases
 introduce runners, catalog, execution and evaluation modules as their real work
 arrives. Do not create empty feature modules or placeholder business routes.
@@ -207,3 +208,108 @@ deterministic digest for the exported snapshot and live compatibility metadata.
 The snapshot includes planned business routes; runtime OpenAPI/Swagger endpoints
 are disabled. Generated outputs remain ignored. Contract source/error additions
 and `uv.lock` are the only shared dependency changes in P05.
+
+## P06A authentication API
+
+This backend has no login bypass, membership admission, UI routing or provider-token
+storage. Migrate through `0002_identity` before starting it. The API factory and
+existing database/configuration loaders keep their P05 import paths. Identity
+mappings use the shared `Base`; startup verifies their tables and columns before
+serving requests. P07 references `featherlane.users.id` and follows
+`0002_identity` with its access migration.
+
+| Route                       | Behavior                                                                                                                                                                      |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /auth/google/login`    | Top-level browser navigation to Google; no query parameters accepted.                                                                                                         |
+| `GET /auth/google/callback` | Browser-bound one-use state/nonce/PKCE completion; redirects to the canonical origin's `/`.                                                                                   |
+| `GET /api/v1/session`       | Canonical `SessionEnvelope`: `data.user` (`id`, `displayName`, `email`) and `data.csrfToken`. No memberships.                                                                 |
+| `POST /api/v1/logout`       | Requires the contract header, exact `Origin` and `X-CSRF-Token`; revokes the session before returning `LogoutEnvelope` with `data.signedOut: true` and clearing both cookies. |
+
+The logout result accepts only the actual boolean `true` for `signedOut`, matching
+the generated literal validator; numeric `1` is invalid.
+
+The two JSON operations require `X-FLF-Contract-Version`. Navigation routes use
+Authlib's browser protocol instead; never fetch them as JSON. Offline metadata
+marks them `x-flf-transport: navigation`. The generator derives
+`browserNavigationPolicies` in ignored `policy.gen.ts`, separate from JSON
+`operationPolicies`; P06.5 can consume those paths. Generated JSON SDK, Zod and
+TanStack operations include `getSession` and `logout`; this phase does not wire UI
+or change the handwritten client/cache policy.
+
+Authlib's Starlette integration receives a request-local `request.session` dictionary.
+The adapter persists its authorization state/nonce/PKCE verifier in a short-lived
+PostgreSQL transaction row, then restores it only after atomic browser-cookie/state
+matching and consumption. It never uses Starlette's readable signed-cookie session
+middleware. The opaque OIDC browser cookie and application session cookie contain
+no profile, CSRF value or provider token. The database stores keyed application
+handle and CSRF digests. User mapping uses exact Google issuer and subject;
+verified email is display/contact data and never links accounts or grants access.
+
+Successful reauthentication issues a fresh opaque handle and CSRF value, and
+revokes the prior session atomically. Expiry during the provider round trip permits
+reauthentication; revocation after initiation prevents the old live session from
+being rotated. If the initiating cookie changes during the round trip, the callback
+fails. Failed provider calls consume the transaction, so retry starts a fresh login.
+The default application lifetime is 12 hours; OIDC transactions last 10 minutes.
+
+Supply these additional process variables through Doppler; never save a dotenv or
+Doppler fallback file. No aliases are loaded from other applications' settings.
+
+| Variable                                                    | Meaning                                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `FLF_API_SESSION_HASH_KEY`                                  | Required stable secret of at least 32 bytes, shared by API processes. Changing it invalidates outstanding sessions and login transactions. |
+| `FLF_API_GOOGLE_CLIENT_ID` / `FLF_API_GOOGLE_CLIENT_SECRET` | Configure both or neither. When absent, Google routes fail closed with `AUTH_UNAVAILABLE`; no fake provider is installed.                  |
+| `FLF_API_SESSION_TTL_SECONDS`                               | Default `43200`, allowed `300`–`604800`.                                                                                                   |
+| `FLF_API_OIDC_TTL_SECONDS`                                  | Default `600`, allowed `60`–`600`.                                                                                                         |
+| `FLF_API_ALLOW_LOOPBACK_AUTH`                               | Defaults to false. Set explicitly for the existing loopback HTTP development origin. All other origins require HTTPS and Secure cookies.   |
+
+Register exactly `<FLF_API_CANONICAL_ORIGIN>/auth/google/callback` with Google.
+The configured origin is normalized with the existing Pydantic URL parser to
+browser form: lowercase hostname, omitted default ports and compressed/bracketed
+IPv6; nondefault ports remain explicit. The callback and final return URL are
+derived from that validated origin, never from an incoming Host, forwarded header
+or return query. Auth routes reject a
+request whose origin differs from the configured canonical origin. TLS/proxy
+termination must preserve that origin through a separately reviewed deployment;
+the P05 CLI still disables forwarded proxy headers. Production cookies use the
+`__Host-` prefix, Secure, HttpOnly, SameSite=Lax and `/` with no Domain. Explicit
+loopback development uses names including the canonical port to isolate phases.
+
+`infra/compose.p06a.yaml` runs only P06A's PostgreSQL on `127.0.0.1:55408`, database
+`featherlane_p06a`, with ignored runtime data under `.local/p06a/postgres`.
+`FLF_P06A_DB_PASSWORD` supplies its password; point `FLF_API_DATABASE_URL` at that
+database and set `FLF_API_PORT=8008` for this phase. Do not reuse P05's database.
+After selecting the appropriate existing Doppler project/config per process:
+
+```sh
+doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.p06a.yaml up -d --wait
+doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane alembic -c src/api/alembic.ini upgrade head
+doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane flf-api
+```
+
+### Downstream authentication seam
+
+`modules.identity.domain.Principal` is frozen and contains `user: User`,
+`session_id: str`, `expires_at: datetime` (UTC aware), with `user_id: str` as a
+property. Frozen `User` contains `id`, `display_name` and `email`, all strings.
+It conveys identity only and grants no organization/project access.
+
+Use FastAPI `Depends(modules.identity.dependencies.get_principal)` for reads,
+`Depends(require_csrf)` for mutations, and `Depends(get_identity_service)` for the
+shared request service. They reuse P05's `get_session`, finish short read
+transactions before returning, and never leave a SELECT's autobegin transaction
+open. `session_handle(request)` is the sole cookie parsing seam;
+`require_csrf` owns same-origin and single CSRF-header validation. Consumer HTTP
+adapters may pass `session_handle(request)` to their service; never expose it in
+a DTO or log it.
+
+A consumer mutation begins its explicit `async with session.begin():` on that
+same request session, then calls `await identity_service.require_live(principal,
+handle)` before its own current membership checks/writes. This re-reads the
+session/user with `populate_existing` and `FOR UPDATE`, validates identity,
+expiry, activation and revocation, and holds row locks until the consumer commits.
+It does not start or end the consumer transaction. Optional `csrf` revalidates
+CSRF in that transaction when needed; the HTTP `require_csrf` dependency remains
+mandatory. Commit before returning a successful response. P07 owns both explicit
+membership checks within that same transaction and must not import identity ORM
+rows or infer membership from this principal.

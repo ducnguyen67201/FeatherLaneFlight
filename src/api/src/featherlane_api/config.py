@@ -4,7 +4,14 @@ from ipaddress import ip_address
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from pydantic import Field, SecretStr, ValidationError, field_validator
+from pydantic import (
+    AnyHttpUrl,
+    Field,
+    SecretStr,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict, SettingsError
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
@@ -40,12 +47,47 @@ class DatabaseSettings(BaseSettings):
 
 
 class ApiSettings(DatabaseSettings):
+    session_hash_key: SecretStr
+    google_client_id: str | None = Field(default=None, min_length=1, max_length=256)
+    google_client_secret: SecretStr | None = None
+    session_ttl_seconds: int = Field(default=43200, ge=300, le=604800)
+    oidc_ttl_seconds: int = Field(default=600, ge=60, le=600)
+    allow_loopback_auth: bool = False
     canonical_origin: str
     artifact_root: Path
     host: str = "127.0.0.1"
     port: int = Field(default=8005, ge=1024, le=65535)
     max_json_bytes: int = Field(default=1_048_576, ge=1024, le=1_048_576)
     max_json_depth: int = Field(default=32, ge=1, le=64)
+
+    @model_validator(mode="after")
+    def validate_auth(self) -> "ApiSettings":
+        if len(self.session_hash_key.get_secret_value().encode()) < 32:
+            raise ValueError("A session hash key of at least 32 bytes is required")
+        if bool(self.google_client_id) != bool(self.google_client_secret):
+            raise ValueError("Configure both Google client credentials or neither")
+        if (
+            self.google_client_secret
+            and not self.google_client_secret.get_secret_value()
+        ):
+            raise ValueError("The Google client secret must not be empty")
+        if self.canonical_origin.startswith("http:") and not self.allow_loopback_auth:
+            raise ValueError(
+                "HTTP authentication requires explicit loopback development"
+            )
+        return self
+
+    @property
+    def google_callback_url(self) -> str:
+        return self.canonical_origin + "/auth/google/callback"
+
+    @property
+    def login_return_url(self) -> str:
+        return self.canonical_origin + "/"
+
+    @property
+    def secure_cookies(self) -> bool:
+        return not self.canonical_origin.startswith("http:")
 
     @field_validator("canonical_origin")
     @classmethod
@@ -66,9 +108,16 @@ class ApiSettings(DatabaseSettings):
             or (parsed.scheme != "https" and not (parsed.scheme == "http" and loopback))
         ):
             raise ValueError("Expected an HTTPS origin or loopback HTTP origin")
-        # Accessing port also validates malformed/out-of-range port values.
-        parsed.port
-        return value.rstrip("/")
+        # The browser lowercases hosts, compresses IPv6 and omits default ports.
+        # Normalize with the existing URL parser before exact origin comparisons.
+        origin = AnyHttpUrl(value)
+        if (
+            origin.path not in ("", "/")
+            or origin.query is not None
+            or origin.fragment is not None
+        ):
+            raise ValueError("Expected an origin without a path, query or fragment")
+        return str(origin).removesuffix("/")
 
     @field_validator("artifact_root")
     @classmethod

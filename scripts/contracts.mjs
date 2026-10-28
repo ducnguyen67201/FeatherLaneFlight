@@ -71,10 +71,17 @@ try {
   );
   // Status schemas and route paths are derived, never maintained beside the DTOs.
   const operations = [];
+  const navigations = [];
   for (const [path, item] of Object.entries(schema.paths)) {
     for (const [method, operation] of Object.entries(item)) {
       if (!operation.operationId)
         throw new Error(`Operation ID missing: ${method} ${path}`);
+      if (operation["x-flf-transport"] === "navigation") {
+        navigations.push(
+          `${JSON.stringify(operation.operationId)}: { method: ${JSON.stringify(method.toUpperCase())}, path: ${JSON.stringify(path)} }`,
+        );
+        continue;
+      }
       const responses = Object.entries(operation.responses).map(
         ([status, response]) => {
           const ref = response.content?.["application/json"]?.schema?.$ref;
@@ -97,7 +104,7 @@ try {
   }
   await writeFile(
     join(generated, "policy.gen.ts"),
-    `// Generated from OpenAPI by scripts/contracts.mjs. Do not edit.\nimport * as validators from './zod.gen';\nexport const contractManifest = ${JSON.stringify(manifest)} as const;\nexport const operationPolicies = { ${operations.join(",\n")} } as const;\n`,
+    `// Generated from OpenAPI by scripts/contracts.mjs. Do not edit.\nimport * as validators from './zod.gen';\nexport const contractManifest = ${JSON.stringify(manifest)} as const;\nexport const browserNavigationPolicies = { ${navigations.join(",")} } as const;\nexport const operationPolicies = { ${operations.join(",\n")} } as const;\n`,
   );
   const generatedFiles = await files(generated);
   run("pnpm", [
