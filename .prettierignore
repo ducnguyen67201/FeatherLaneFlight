@@ -2,4 +2,5 @@ node_modules
 .venv
 dist
 pnpm-lock.yaml
-packages/contracts/schemas/openapi.json
+packages/contracts/schemas/
+packages/contracts/typescript/src/generated/

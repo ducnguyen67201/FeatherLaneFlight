@@ -62,6 +62,7 @@ Use pnpm for frontend tooling and uv for Python packages. PX4 runs as a separate
 
 ## Contracts and correctness
 
+- Keep generated schema/client directories out of Git as build artifacts; workspace setup, typecheck, and build regenerate them. Track canonical definitions, HTTP metadata, generators, handwritten client policy, fixtures, and dependency lockfiles.
 - Use the canonical contracts and generated client/types/validators. Do not hand-maintain duplicate DTOs, enums, schemas, or API paths.
 - Preserve necessary boundary validation, authorization, version checks, lease rules, evidence checks, and process cleanup. Simplicity must not remove required correctness.
 - Keep types explicit at integration boundaries. Avoid unchecked casts and `any` that bypass the contract.

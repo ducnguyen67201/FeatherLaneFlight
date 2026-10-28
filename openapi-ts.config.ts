@@ -1,7 +1,8 @@
 import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
-  input: process.env.FLF_SCHEMA_INPUT ?? "./contracts/openapi.json",
+  input:
+    process.env.FLF_SCHEMA_INPUT ?? "./packages/contracts/schemas/openapi.json",
   output:
     process.env.FLF_CLIENT_OUTPUT ??
     "packages/contracts/typescript/src/generated",

@@ -15,9 +15,9 @@
       "handoff": "docs/phases/handoffs/P01.md",
       "dependsOn": [],
       "threadId": "01a18387-f5aa-7c62-b537-b5b1ff4fd51f",
-      "status": "APPROVED_FOR_PR",
+      "status": "PR_OPEN",
       "hostId": "local",
-      "lastCursor": "77d6322d-9384-4b5f-9c1c-b9dca5947d19:7",
+      "lastCursor": "77d6322d-9384-4b5f-9c1c-b9dca5947d19:20",
       "branch": "codex/phase-01",
       "submissionApproval": {
         "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
@@ -28,25 +28,42 @@
         "reviewedManifestSha256": "bb7a974fd0f3e9a72af68683601ef6e23ef8a23a041e5b8bc77c2daa5c771a81",
         "includesEmptyMainBootstrap": false
       },
-      "pullRequestUrl": null,
-      "headSha": null,
-      "mergeStatus": "NOT_OPENED",
+      "pullRequestUrl": "https://github.com/ducnguyen67201/FeatherLaneFlight/pull/1",
+      "headSha": "c910e1d802a7b91fabd60b45292e423c067004d9",
+      "mergeStatus": "OPEN_UNMERGED",
       "reviewStatus": "PASSED",
       "reviewNotes": [
         "Revised Python/schema and TypeScript/client reviews passed; final-result validation and body-stream error fixes were reproduced independently.",
         "Frozen installs, generation drift, format/lint/type/library-build checks and dependency audits passed on the consolidated layout.",
-        "First PR review scope is 160 files: 51 implementation/build/handoff files, 34 existing planning/design files, and 75 unchanged installed skill assets. Including the baseline closes document references against the empty repository.",
+        "Current first PR diff contains 139 files: generated schema/client outputs are excluded, with canonical sources, handwritten client policy, tooling, 34 planning/design files, 75 vendor assets and two dependency lockfiles retained.",
         "No runnable business API, application UI, authentication, database, runner or PX4 integration is claimed. No application automated tests were authored.",
-        "Human instructed creation of the PR after the separate empty-main prerequisite was presented. Only the verified zero-file main initialization and reviewed codex/phase-01 branch/PR are being published; merging remains user-controlled."
+        "User-directed generated-artifact revision passed source/docs review and isolated clean-workspace setup/typecheck/build checks. No UI, new application tests, deployment or merge was performed. Publishing this scoped revision to existing PR #1; P02 stays staged."
       ],
-      "reviewedFileCount": 160,
+      "reviewedFileCount": 139,
       "layoutRevisionSource": {
         "threadId": "01a18387-f5aa-7c62-b537-b5b1ff4fd51f",
         "turnId": "01a18398-8081-74e0-80bd-0b07320e9943",
         "messageId": "01a18398-80e6-7710-b70d-09b9b96e5d34",
         "scope": "Human requested consolidated src/api, src/web, packages/contracts layout and corresponding imports/configuration/documentation/check updates; this is not submission approval."
       },
-      "submissionBlocker": null
+      "submissionBlocker": null,
+      "pullRequestNumber": 1,
+      "pullRequestBaseSha": "4f0fe02eb4b810db5dac0e3007cb8d289d07aef8",
+      "revisionRequest": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a183ac-7c73-7c31-931f-0c7d18d4d43a",
+        "messageId": "01a183ac-7c9e-7cf2-a467-a7fe58f95464",
+        "humanText": "i dont think we should push the generated file ... it will be generated when deploy ....",
+        "scope": "Remove generated OpenAPI/manifest and TypeScript contract outputs from the current PR diff; regenerate during workspace setup/typecheck/build, preserve source definitions, pinned lockfiles and clean-source verification.",
+        "status": "VERIFIED_READY_TO_PUBLISH",
+        "generatedFilesRemoved": 21,
+        "verification": [
+          "Frozen source-only setup with generated folders and environments absent passed.",
+          "typecheck and build explicitly regenerate missing outputs before compilation; missing/stale local checks are actionable.",
+          "Format/lint/type/build, SDK/Query manual checks and dependency audits passed; source/docs reviews found no actionable defects.",
+          "Master checked out the exact 139 staged source files with no generated folders or environments; frozen pnpm install plus pnpm build generated and compiled successfully."
+        ]
+      }
     },
     {
       "id": "P02",
@@ -405,7 +422,7 @@
     "url": "https://github.com/ducnguyen67201/FeatherLaneFlight",
     "fullName": "ducnguyen67201/FeatherLaneFlight",
     "baseBranch": "main",
-    "initializationStatus": "LOCAL_BASE_PREPARED_REMOTE_EMPTY",
+    "initializationStatus": "INITIALIZED_EMPTY_MAIN_PHASE_PR_OPEN",
     "bootstrapApproval": {
       "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
       "turnId": "01a183a8-e704-7851-982f-90051a553c02",

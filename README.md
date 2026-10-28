@@ -18,9 +18,9 @@ After explicit approval of each completed phase for submission, the master pushe
 
 ## Repository layout
 
-Application code lives in `src/api/`, `src/web/`, and the planned `src/runner/`. Shared contracts are grouped in [packages/contracts](packages/contracts/README.md): Python is the canonical source, `schemas/` holds generated OpenAPI/version metadata, and `typescript/` holds the generated browser client and runtime validators. Web fixtures and MSW handlers live in `src/web/mocks/`.
+Application code lives in `src/api/`, `src/web/`, and the planned `src/runner/`. Shared contracts are grouped in [packages/contracts](packages/contracts/README.md): Python is the canonical source, `schemas/` holds generated OpenAPI/version metadata, and `typescript/` holds the browser client and runtime validators. The generated schema and client directories are ignored build artifacts; canonical sources, generator configuration, handwritten client policy, fixtures, and lockfiles are tracked. Web fixtures and MSW handlers live in `src/web/mocks/`.
 
-From the workspace root, run `pnpm install --frozen-lockfile` and `uv sync --all-packages --frozen`, then `pnpm contracts:check`, `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`. See the [client guide](packages/contracts/typescript/README.md) for generation and usage. Application UI has not been scaffolded.
+From the workspace root, run `pnpm install --frozen-lockfile`, then `pnpm setup:workspace` to install frozen Python dependencies and generate contracts. Run `pnpm contracts:check`, `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm build` afterward. Typecheck and build explicitly regenerate contracts before consuming them, so they work when generated directories are absent. `contracts:check` requires local output from setup/generation and compares it with a fresh temporary generation without rewriting it. Builds and future deployment builds generate from the pinned local sources; no running API is required. Future development commands must generate before loading contract imports. See the [client guide](packages/contracts/typescript/README.md) for generation and usage. Application UI has not been scaffolded.
 
 ## The problem
 
