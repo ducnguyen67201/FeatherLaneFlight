@@ -1,5 +1,7 @@
 """Route declarations for generation only; no services or startup side effects."""
 
+import hashlib
+import json
 from typing import Annotated
 
 from fastapi import FastAPI, Header, Path, Query
@@ -27,21 +29,22 @@ from featherlane_contracts.run_detail import (
 )
 from pydantic import TypeAdapter
 
+from featherlane_api.http.errors import ERROR_RESPONSES
+
+
+def schema_json(schema: dict) -> str:
+    return json.dumps(schema, indent=2, sort_keys=True) + "\n"
+
+
+def schema_digest(schema: dict) -> str:
+    return hashlib.sha256(schema_json(schema).encode()).hexdigest()
+
 
 def create_schema_app() -> FastAPI:
     app = FastAPI(title="FeatherLaneFlight contract metadata", version=CONTRACT_VERSION)
     errors = {
-        code: {"model": ErrorEnvelope, "description": description}
-        for code, description in {
-            400: "Invalid JSON or unsupported contract version",
-            401: "Authentication required",
-            403: "Access forbidden",
-            404: "Resource not found",
-            409: "Inputs changed or idempotency key conflicts",
-            422: "Request validation failed",
-            500: "Internal error",
-            501: "Metadata-only declaration; business API not implemented",
-        }.items()
+        **ERROR_RESPONSES,
+        501: {"model": ErrorEnvelope, "description": "Metadata-only declaration"},
     }
 
     @app.get(

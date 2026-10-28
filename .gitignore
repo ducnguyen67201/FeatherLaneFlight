@@ -9,3 +9,7 @@ dist/
 /packages/contracts/typescript/src/generated/
 
 /src/web/public/mockServiceWorker.js
+
+/.local/
+.env
+.env.local
