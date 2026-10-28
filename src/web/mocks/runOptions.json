@@ -1,0 +1,78 @@
+{
+  "data": {
+    "runners": [
+      {
+        "id": "runner_demo",
+        "displayName": "Demo runner",
+        "hostPlatform": "Linux x86_64",
+        "connectionState": "CONNECTED",
+        "capacityState": "AVAILABLE",
+        "lastSeenAt": "2026-10-28T18:00:00Z"
+      },
+      {
+        "id": "runner_busy",
+        "displayName": "Lab runner",
+        "hostPlatform": "Linux x86_64",
+        "connectionState": "CONNECTED",
+        "capacityState": "BUSY",
+        "lastSeenAt": "2026-10-28T18:00:00Z"
+      },
+      {
+        "id": "runner_offline",
+        "displayName": "Backup runner",
+        "hostPlatform": "Linux x86_64",
+        "connectionState": "OFFLINE",
+        "capacityState": "AVAILABLE",
+        "lastSeenAt": "2026-10-27T18:00:00Z"
+      }
+    ],
+    "builds": [
+      {
+        "id": "build_demo",
+        "label": "PX4 candidate",
+        "sourceRevision": "8f31c2a",
+        "artifactSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "id": "build_baseline",
+        "label": "PX4 baseline",
+        "sourceRevision": "91ab4b6",
+        "artifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    ],
+    "localProfiles": [
+      {
+        "id": "profile_fake",
+        "displayName": "Fake integration \u00b7 Linux x86_64",
+        "digest": "4b62f33c1049a96c5f76e253bdca72e03665e903fe2e4f186694ddff1e6b413a",
+        "integrationProfileId": "fake_v1"
+      }
+    ],
+    "suites": [
+      {
+        "id": "suite_revision_demo",
+        "suiteId": "suite_nominal",
+        "title": "Nominal flight",
+        "revision": 3,
+        "status": "PUBLISHED",
+        "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "scenarioCount": 1,
+        "eligible": true,
+        "reason": null
+      },
+      {
+        "id": "suite_gnss_r1",
+        "suiteId": "suite_gnss",
+        "title": "Airborne GNSS response",
+        "revision": 1,
+        "status": "PUBLISHED",
+        "digest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "scenarioCount": 1,
+        "eligible": false,
+        "reason": "The selected profile has no verified airborne GNSS capability. Registration alone does not qualify it."
+      }
+    ],
+    "minimumRepetitions": 1,
+    "maximumRepetitions": 10
+  }
+}

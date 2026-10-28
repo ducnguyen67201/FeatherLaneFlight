@@ -8,9 +8,15 @@ export {
   operationPolicies,
 } from "./transport";
 export * from "./generated/types.gen";
-export { getContractMeta, listRuns } from "./sdk";
+export { getContractMeta, listRuns, getRunOptions, createRun } from "./sdk";
 export {
   getContractMetaQueryKey,
   listRunsQueryKey,
+  getRunOptionsQueryKey,
 } from "./generated/@tanstack/react-query.gen";
-export { getContractMetaOptions, listRunsOptions } from "./queries";
+export {
+  getContractMetaOptions,
+  listRunsOptions,
+  getRunOptionsOptions,
+  createRunMutation,
+} from "./queries";

@@ -1,7 +1,14 @@
-import type { GetContractMetaData, ListRunsData } from "./generated/types.gen";
+import type {
+  CreateRunData,
+  GetRunOptionsData,
+  GetContractMetaData,
+  ListRunsData,
+} from "./generated/types.gen";
 import {
   getContractMeta as generatedMeta,
   listRuns as generatedRuns,
+  getRunOptions as generatedRunOptions,
+  createRun as generatedCreateRun,
   type Options,
 } from "./generated/sdk.gen";
 import type { TDataShape } from "./generated/client";
@@ -10,6 +17,8 @@ import {
   zErrorBody,
   zGetContractMetaResponse,
   zListRunsResponse,
+  zGetRunOptionsResponse,
+  zCreateRunResponse,
 } from "./generated/zod.gen";
 import { ContractValidationError } from "./transport";
 
@@ -69,4 +78,28 @@ export async function listRuns(options: ReadOptions<ListRunsData>) {
     parseAs: "json",
   });
   return validateResult(zListRunsResponse, response.data, response.response);
+}
+
+export async function getRunOptions(options: ReadOptions<GetRunOptionsData>) {
+  const response = await generatedRunOptions({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunOptionsResponse,
+    response.data,
+    response.response,
+  );
+}
+
+export async function createRun(options: ReadOptions<CreateRunData>) {
+  const response = await generatedCreateRun({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(zCreateRunResponse, response.data, response.response);
 }

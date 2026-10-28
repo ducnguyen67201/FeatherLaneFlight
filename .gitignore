@@ -7,3 +7,5 @@ dist/
 /previews/*/artifacts/
 /packages/contracts/schemas/
 /packages/contracts/typescript/src/generated/
+
+/src/web/public/mockServiceWorker.js

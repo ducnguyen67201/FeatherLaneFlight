@@ -1,8 +1,6 @@
-# Web foundation
+# Web workspace
 
-The approved P02 foundation is implemented with React, strict TypeScript, Vite, MUI Core/Material Icons, Emotion, and local Hanken Grotesk fonts. There is one root ThemeProvider and CssBaseline. `design/theme.ts` imports the root `design-tokens.json`, maps the central defaults, and enables MUI CSS variables. `design/statusPresentation.ts` exhaustively maps the generated contract states; `components/StatusBadge.tsx` consumes semantic CSS variables, labels, and icons.
-
-`layouts/AppShell.tsx` supplies the product navigation, active-link state, responsive drawer, context header, and main region. Context controls are supplied as ordinary React children; the layout performs no fetching or identity decisions. `layouts/PageLayout.tsx` supplies breadcrumb/title/description/actions and optional filter alignment. Use MUI controls directly inside these layouts.
+The approved P02 theme/shell and P03 mock Runs workflow use React, strict TypeScript, MUI Core/Material Icons, local Hanken Grotesk and TanStack Query. `design/theme.ts` imports the canonical root tokens and supplies one ThemeProvider/CssBaseline and MUI CSS variables. The exhaustive contract-driven status map keeps execution separate from evaluation.
 
 ## Run locally
 
@@ -14,16 +12,22 @@ pnpm setup:workspace
 pnpm dev
 ```
 
-Open <http://127.0.0.1:4200/>. The development server binds only to loopback. For a local build, run `pnpm build`, then `pnpm --filter @featherlane/web preview` after stopping the development server. The web output is `src/web/dist/`; generated outputs and dependency folders remain ignored. Root typecheck/build generate contracts before consuming them. The narrower web scripts assume workspace setup has already generated contracts.
+Open <http://127.0.0.1:4200/runs>. Dev binds only to loopback. The current entry starts the local MSW demo before rendering; failed mock startup produces an error instead of falling through to a live API. New submissions create in-memory queued samples only. Reload resets the demo. After regenerating contracts while the dev server/browser are open, reload the page before further evaluation.
 
-## Reference scope
+`pnpm build` regenerates contracts and the ignored browser MSW asset and emits `src/web/dist/`. Stop the dev server before `pnpm --filter @featherlane/web preview` on the same port. The narrower web typecheck assumes generated contracts exist; root typecheck/build generate them explicitly. This is a local mock artifact, not a deployment candidate.
 
-`app/FoundationReference.tsx` is the approved reference view for the shared theme and layouts. It exposes direct MUI controls, an illustrative table, seven status groups, and loading/empty/error/disabled/no-project samples. User-menu controls include 200% text preview. State selection and recovery actions change local reference state explicitly. No backend request, query, runner control, or authoritative outcome timer is connected.
+## Runs workflow
 
-Navigation uses ordinary links to `/runs`, `/compare`, `/suites`, `/runners`, and `/settings`. The foundation reference currently renders in each shell location; it is not an implementation of those workflows. Native navigation updates the selected item/breadcrumb and supports reload/back/deep links through Vite's SPA fallback. Later phases supply the actual feature content and live context. A hosted static server will need an equivalent SPA fallback; deployment is outside P02.
+`features/runs/RunsPage.tsx` composes AppShell/PageLayout, server-filtered MUI Table, cursor controls and explicit loading/empty/error states. Demo controls select read/submission scenarios, including malformed responses. The list’s disabled Open action has a nearby explanation; run detail/evidence and cancellation UI remain P04 scope.
 
-## Review
+`NewRunPanel.tsx` composes `RunSetupSteps.tsx` and `RunReviewStep.tsx`, with form state, dependent resets and submission/recovery in `useNewRunWorkflow.ts`. Step components receive explicit canonical data and callbacks. The panel implements the approved right-side inset modal: runner → available build/profile → eligible published suite → repetitions → review. Geometry comes from canonical tokens and is scoped to this panel. Header/footer remain reachable during internal scrolling. MUI contains/restores focus; when successful submission removes the empty-state opener, the persistent New simulation run button receives focus. Closing/editing is blocked during preflight and pending acknowledgment. Rejection keeps the draft and shows feedback in the footer. An uncertain acknowledgment is labeled unconfirmed; retry replays the frozen original body/key without reading fresh eligibility. Editing is locked until a definitive outcome; close/reopen preserves the original review and recovery even when current options are empty or failing. The mock’s exact validated BUILD_UNAVAILABLE/CAPABILITY_UNSUPPORTED admission responses clear uncertainty because they follow receipt lookup; other errors, including auth/version and idempotency conflicts, keep recovery available. Recovery is in memory within the mounted Runs page; navigating away or reloading discards it.
 
-The original approved desktop/narrow/state preview source is in `previews/P02/`. Temporary review images were deleted after evaluation at the user's request. The human approval source, verification outcomes, and limitations are recorded as text in `docs/phases/handoffs/P02.md`.
+`queries.ts` composes generated operation keys/validated SDK options with the demo epoch, organization/project and response-changing parameters. Runtime validation completes before Query resolves. Reads and mutations do not automatically retry; there is no persisted cache or offline mutation queue. New submissions refetch eligibility and retain their idempotency key when retrying an unchanged payload after a known rejection. Changed inputs receive a new key. Unconfirmed recovery uses its original request independently of current eligibility. The MSW handler also rechecks admission; components cannot manufacture execution or outcomes.
 
-Run existing checks with `pnpm format:check`, `pnpm lint`, `pnpm contracts:check`, `pnpm typecheck`, and `pnpm build`. No new automated tests were written; application test ownership remains with the user. The browser build currently reports MUI module-directive and chunk-size advisories, documented in the phase handoff.
+The context is an explicitly fixed demo organization/project, not sign-in or authorization. Real sessions, identity-change cache cleanup, API integration and live updates remain their assigned later phases. See [mock transport notes](mocks/README.md).
+
+## Foundation reference and verification
+
+`app/FoundationReference.tsx` remains the approved P02 component/reference view on the other shell locations. It does not implement Compare, Suites, Runners or Settings. Ordinary shell links and Vite SPA fallback still support navigation/reload. The shared shell’s original reference footer remains as shown in the approved preview.
+
+Run existing `pnpm format:check`, `pnpm lint`, `pnpm contracts:check`, `pnpm typecheck` and `pnpm build`. Actual manual checks, approval source and limitations are recorded in `docs/phases/handoffs/P03.md`. New automated application tests remain user-owned. Current build advisories concern MUI module directives and the mock/demo bundle size.

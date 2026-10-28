@@ -5,7 +5,7 @@
   "hostId": "local",
   "model": "gpt-6.1-sol",
   "reasoningEffort": "high",
-  "activePhase": "P02",
+  "activePhase": "P03",
   "heartbeatAutomationId": "coordinate-featherlaneflight-phases",
   "phases": [
     {
@@ -82,7 +82,7 @@
       "handoff": "docs/phases/handoffs/P02.md",
       "dependsOn": ["P01"],
       "threadId": "01a18386-034b-7453-8834-10d3a5e9f8c0",
-      "status": "APPROVED_FOR_PR",
+      "status": "COMPLETE",
       "hostId": "local",
       "lastCursor": "887777b3-3ed6-4a9b-bef4-c907158b4c1e:9",
       "branch": "codex/phase-02",
@@ -94,9 +94,9 @@
         "verifiedVia": "Master read_thread confirmed this direct human message in the active turn.",
         "scope": "Publish the reviewed P02 foundation on codex/phase-02 as a PR against main, after deleting 24 temporary review images, removing image links, and recording future cleanup/ignore rules. Excludes generated outputs and unrelated research."
       },
-      "pullRequestUrl": null,
-      "headSha": null,
-      "mergeStatus": "NOT_OPENED",
+      "pullRequestUrl": "https://github.com/ducnguyen67201/FeatherLaneFlight/pull/2",
+      "headSha": "42d5e242269eac00b5e680c80c5d3c852bacc12d",
+      "mergeStatus": "MERGED",
       "baseSha": "9bdd939e8994bc50ce702b99c2b1bfa899424cc3",
       "dispatchAuthorization": {
         "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
@@ -138,7 +138,7 @@
         "humanText": "for phase 2 , we should have like layout etc as dashboard like side dashboard etc as initial setup as welll ....",
         "scope": "Dashboard-style shared application shell: sidebar navigation, header/project/user context, consistent page title/actions/content layouts, and responsive drawer. Included in the rendered foundation preview and later approved implementation; does not approve unseen UI."
       },
-      "reviewStatus": "PASSED_APPROVED_FOR_SUBMISSION",
+      "reviewStatus": "ACCEPTED_AFTER_VERIFIED_MERGE",
       "preview": {
         "url": "http://127.0.0.1:4202/",
         "packet": "previews/P02/README.md",
@@ -221,7 +221,10 @@
         "deletedImageCount": 24,
         "deletedDirectory": "previews/P02/artifacts/",
         "futurePolicy": "Temporary review captures are ignored and deleted after relevant evaluation/approval; preserve approval sources/check results as text, plus product and user assets."
-      }
+      },
+      "mergeCommitSha": "1ccfa864cd19349c229bf57001ccba516464e185",
+      "mergedAt": "2026-10-28T20:21:33Z",
+      "mergeVerification": "GitHub get_pr_info confirms merged=true, the expected phase head, and squash commit 1ccfa864cd19349c229bf57001ccba516464e185. Pre-merge GitHub state was CLEAN/MERGEABLE with no configured check runs."
     },
     {
       "id": "P03",
@@ -230,13 +233,211 @@
       "handoff": "docs/phases/handoffs/P03.md",
       "dependsOn": ["P02"],
       "threadId": "01a18386-bd5b-7cf3-b9e9-09abf0d4d174",
-      "status": "STAGED",
+      "status": "APPROVED_FOR_PR",
       "hostId": "local",
       "branch": "codex/phase-03",
-      "submissionApproval": null,
+      "submissionApproval": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a1847c-e34d-7ca3-ac7d-c4268578dcb3",
+        "messageId": "01a1847c-e407-73b0-a2e0-8510725d4a70",
+        "humanText": "theyre good create pr and merge to main",
+        "verifiedVia": "Master read_thread confirmed the direct human response to the completed 35-file P03 scope and submission approval request.",
+        "scope": "Commit and push the reviewed 35-file Phase03 scope on codex/phase-03, open its PR against main, and merge that reviewed PR to main. Excludes generated outputs, images and unrelated research.",
+        "scopeManifestSha256": "e4a9b10037971c5c2e10e57804817940d8d1060a9e17c2e136361dd3396eb39d"
+      },
       "pullRequestUrl": null,
       "headSha": null,
-      "mergeStatus": "NOT_OPENED"
+      "mergeStatus": "NOT_OPENED",
+      "baseSha": "1ccfa864cd19349c229bf57001ccba516464e185",
+      "lastCursor": "4f49e8f5-a05f-471a-95df-ea653e680c65:54",
+      "reviewStatus": "PASSED_APPROVED_FOR_SUBMISSION",
+      "dispatchStatus": "DISPATCHED",
+      "dispatchAuthorization": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a1837f-c5a1-7011-93ee-28ad80d89a75",
+        "messageId": "01a1837f-c5c9-7680-aeb5-342d635af9fd",
+        "scope": "Standing human authorization for master-controlled successor dispatch after predecessor merge. P02 submission/merge was separately authorized and verified in master turn 01a18429-4e2c-7073-a54a-604314c6eb5c."
+      },
+      "dispatchScope": "Prepare and show a rendered isolated P03 Runs list, filters, New Run flow and state preview using the approved shared theme/shell. Stop at AWAITING_UI_APPROVAL before application UI implementation. Model gpt-6.1-sol / high.",
+      "preview": {
+        "url": "http://127.0.0.1:4203/",
+        "packet": "previews/P03/README.md",
+        "scope": "Runs list/filter states and five-step New Run flow in a right-side modal panel approximately 95% viewport height; internal scrolling, visible close/cancel, keyboard focus and responsive layout. Detail actions explicitly communicate preview availability.",
+        "review": "Master inspected the revised desktop/narrow modal, verified role/title, 95% viewport height (684/720), and 359px panel within375px viewport with no page overflow. Normal Escape restored focus. Independent source review confirmed pending guards and the disappearing-empty-opener fallback; no material issue remains. Master preview typecheck/format/whitespace checks passed; worker build and focused workflow/focus/scroll/rejection/narrow checks passed. Application changes remain gated on explicit human UI approval.",
+        "approvalSource": {
+          "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+          "turnId": "01a18443-d783-70b1-be98-d48fb54746ca",
+          "messageId": "01a18443-d7a6-78d0-b5b2-45b1ecdd9be9"
+        },
+        "imagePolicy": "Captures remain ignored and temporary while awaiting approval; delete after evaluation/approval and preserve textual evidence.",
+        "reviewedAt": "2026-10-28T20:45:50.309206+00:00",
+        "captureCorrection": "All 11 superseded full-page-form captures were deleted after evaluation. Current six revised JPG viewport captures are ignored/temporary and must be removed after the relevant evaluation/approval.",
+        "limitations": [
+          "Isolated visual proposal; application transport, validation and Query-cache rejection are not implemented yet.",
+          "Repetition range is illustrative; canonical run options must supply the actual bound during approved implementation.",
+          "MUI directive/bundle-size preview-build advisories remain."
+        ],
+        "previousReview": {
+          "scope": "Runs list, search/execution/outcome filters, runner -> build/profile -> eligible suite -> repetitions -> review; loading/empty/error/validation/rejected/queued sample states and responsive layout.",
+          "reviewedAt": "2026-10-28T20:35:01.905757+00:00",
+          "artifactSha256": {
+            "previews/P03/artifacts/new-run-narrow.jpg": "5707d9f19c891076e27e67be113bbfe14b7c40c3eba42a3f8c4cfb8427bd5843",
+            "previews/P03/artifacts/new-run-rejected.png": "9d1b05cce0576f838bb48a584bedfa1a602fde86ccf75e31b510c8c9f5b0f2ae",
+            "previews/P03/artifacts/new-run-review.png": "0515d53ea19a665684e4685cfc3e30daa0a045b9a3706d97599dade800744e62",
+            "previews/P03/artifacts/new-run-runner.png": "53f85d35298af7e76dfe7b6304d669cea7f1348f59355f3179ab1f88204f4398",
+            "previews/P03/artifacts/new-run-suite.png": "8106d70d46c388a5cec919f261db193a7f91218522330731d7bd565573e8d07c",
+            "previews/P03/artifacts/new-run-validation.png": "4ade78cf8eb388d1fa63f86212728d7621778cef232436cf975ae057e4a0c7a8",
+            "previews/P03/artifacts/runs-empty.png": "51433d70e97003625bc30fa0421c8375e2a85efcf8d42e3da4414e841675b734",
+            "previews/P03/artifacts/runs-list.png": "e83f45a0b16d62e04592ef5ce8887bd05af294d29e310ffe58cc39dee8694d6a",
+            "previews/P03/artifacts/runs-loading.png": "f3b90484026418f4d2f3a49f238fc261057074e7d11a72964d123c37d76f3325",
+            "previews/P03/artifacts/runs-narrow.jpg": "00573bc8e5e5e747115e859115690f9d504421da5472e4be9a80b323f50be1ea",
+            "previews/P03/artifacts/runs-submitted.png": "26a0b69756e5c8fd99a73e4fa738243ab09d570e6afbbde4f9ddf1708f2d7a6d"
+          },
+          "state": "Superseded by the human-requested right-side modal revision; old temporary captures may be removed."
+        },
+        "handoffSha256": "45d955466c8df76c1251100be500ce4c596fe8e6050018297332c353a5ee2368",
+        "artifactState": "Temporary captures deleted after approval; runnable preview source and textual verification retained."
+      },
+      "uiApproval": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a18443-d783-70b1-be98-d48fb54746ca",
+        "messageId": "01a18443-d7a6-78d0-b5b2-45b1ecdd9be9",
+        "humanText": "yea looks good, go ahead and implement phase 3",
+        "verifiedVia": "Master read_thread confirmed the direct human response to the revised rendered preview and approval request.",
+        "scope": "Implement the approved P03 Runs list/search/execution/outcome filters and five-step New Run workflow in a right-side modal about 95% viewport height, with responsive internal scrolling, fixed actions, keyboard/close/focus behavior, loading/empty/error/validation/rejected/queued sample states and clearly unavailable run details. Use canonical models/generated SDK/validators/Query options and validated MSW transport within the dispatched P03 plan.",
+        "previewPacket": "previews/P03/README.md",
+        "artifactSha256": {
+          "previews/P03/artifacts/revised-panel-desktop.jpg": "c5023555091515abff5ebe98aeca75b53cbcf4878b2003d7b10680e87613f55d",
+          "previews/P03/artifacts/revised-panel-narrow.jpg": "82a432d804a1ca158b4e7169cbe07ac077c9cf2e77087b0b56d95645bac4a7d7",
+          "previews/P03/artifacts/revised-panel-rejected.jpg": "123772133d1b1f50055ebbde63881bdac6bf8d9f7f0e15bb90d8211a661c5b23",
+          "previews/P03/artifacts/revised-panel-review.jpg": "4df1c5f09fa430877da090fa113cd2afeb49559fecabf0ed8a6944bdf9a384bd",
+          "previews/P03/artifacts/revised-queued-acknowledgment.jpg": "f98243af398137da358de403956958e08b7b4b2bf3317530f75750785a9685e5",
+          "previews/P03/artifacts/revised-runs-list.jpg": "1cf772684344cc74142389dcaad22ca090995a2fbf70c759be0a82ab00668e6a"
+        },
+        "artifactState": "Historical approval provenance; six temporary captures deleted immediately after evaluation and explicit approval.",
+        "publicationApproved": false
+      },
+      "scopeClarification": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a1843a-508f-7f11-b9e0-baa86edfb4ff",
+        "messageId": "01a1843a-50b8-7c63-8a47-700c13ce0171",
+        "humanText": "why i cannot click open ? also the simulation run i wanted it to be a panel opnenning fom the right side, panel modal, span 95% hieht i guess ..",
+        "scope": "Revise the New simulation run flow into a modal panel opening from the right, approximately 95% viewport height, with the Runs list underneath. Make unavailable run-detail actions clear in the preview; P04 evidence detail remains deferred. This is a preview revision request, not UI approval."
+      },
+      "implementationDispatchStatus": "DISPATCHED",
+      "imageCleanup": {
+        "deletedImageCount": 6,
+        "deletedDirectory": "previews/P03/artifacts/",
+        "reason": "Approved revised preview evaluated; standing human instruction requires temporary review-image cleanup. Earlier 11 superseded captures were already deleted.",
+        "approvalMessageId": "01a18443-d7a6-78d0-b5b2-45b1ecdd9be9"
+      },
+      "implementationReview": {
+        "reviewedAt": "2026-10-28T21:47:46.620954+00:00",
+        "state": "PASSED",
+        "checks": "Master final frozen install, format/docs/lint/contracts/type/build/preview-type/audit/whitespace checks pass. Original three findings independently re-reviewed as resolved; final rejection-classification edge sent for bounded correction.",
+        "findings": [
+          {
+            "id": "P03-R1",
+            "path": "src/web/mocks/runsDemo.ts",
+            "issue": "Delayed options resolve to valid available choices, but admission rejects optionsMode=loading. Loading must remain transport delay consistently.",
+            "status": "RESOLVED_AND_INDEPENDENTLY_REVIEWED"
+          },
+          {
+            "id": "P03-R2",
+            "path": "src/web/features/runs/NewRunPanel.tsx",
+            "issue": "Uncertain committed submission retry re-preflights/rebuilds the request and may never replay the original receipt lookup after eligibility changes; it can also incorrectly clear uncertainty. Preserve and replay immutable original body/key and permit recovery independently of current eligibility reads.",
+            "status": "RESOLVED_AND_INDEPENDENTLY_REVIEWED"
+          },
+          {
+            "id": "P03-R3",
+            "path": "packages/contracts/python/src/featherlane_contracts/__init__.py",
+            "issue": "Numeric Literal[1] accepts/coerces JSON true despite strict=True, while generated Zod rejects it. Reject boolean numeric constants before coercion and preserve exported constant schema semantics.",
+            "status": "RESOLVED_AND_INDEPENDENTLY_REVIEWED"
+          },
+          {
+            "id": "P03-R4",
+            "path": "src/web/features/runs/useNewRunWorkflow.ts",
+            "status": "RESOLVED_AND_INDEPENDENTLY_REVIEWED",
+            "issue": "Uncertain replay remains locked even after the mock returns a definitive no-admission result after receipt lookup. Clear uncertainty for confirmed no-admission outcomes while preserving ambiguous failures."
+          }
+        ],
+        "visualReview": "Master inspected implementation desktop and narrow captures against the approved design; no material layout change found. Captures deleted after evaluation as requested.",
+        "evaluatedImageSha256": {
+          "previews/P03/artifacts/implementation-desktop.jpg": "dfa428e9ec72046328c697b9971cbc723f4b30b1dc139a94c3da2c914344481e",
+          "previews/P03/artifacts/implementation-narrow.jpg": "b6f2059062adfdf329a94f10ef6c58f9d831740ead16e65f933404ff2759472e"
+        },
+        "checkLogs": "/tmp/featherlane-p03-master-final-checks",
+        "verification": [
+          "Master final frozen workspace install, format/docs/lint/contracts/type/build/preview-type/audit/whitespace checks passed. Final small hook correction additionally passed scoped formatting/type/whitespace; worker final web build passed.",
+          "Independent contract review confirmed boolean rejection parity while preserving exported constants. Independent mock review confirmed delayed admission and receipt ordering. Independent frontend review closed both original and final retry findings.",
+          "Master independently walked the implemented runner/build/profile/suite/repetitions/review flow, pending acknowledgment and accepted run in the actual browser. It returned Queued / Not evaluated, restored focus, and produced no captured warn/error logs.",
+          "Worker handoff records actual cache rejection, concurrent idempotency, ambiguous/definitive retry, dependency-reset, validation/error, responsive and focus exercises.",
+          "No temporary review images remain; generated contract outputs/MSW worker and unrelated research are excluded."
+        ],
+        "candidateFileCount": 35,
+        "candidateFiles": [
+          ".gitignore",
+          "AGENTS.md",
+          "DESIGN.md",
+          "README.md",
+          "design-tokens.json",
+          "docs/phases/P03.md",
+          "docs/phases/handoffs/P03.md",
+          "docs/phases/registry.json",
+          "packages/contracts/python/src/featherlane_contracts/__init__.py",
+          "packages/contracts/typescript/README.md",
+          "packages/contracts/typescript/src/index.ts",
+          "packages/contracts/typescript/src/queries.ts",
+          "packages/contracts/typescript/src/sdk.ts",
+          "pnpm-lock.yaml",
+          "previews/P03/.gitignore",
+          "previews/P03/README.md",
+          "previews/P03/index.html",
+          "previews/P03/main.tsx",
+          "previews/P03/tsconfig.json",
+          "src/api/src/featherlane_api/schema.py",
+          "src/web/README.md",
+          "src/web/features/runs/NewRunPanel.tsx",
+          "src/web/features/runs/RunReviewStep.tsx",
+          "src/web/features/runs/RunSetupSteps.tsx",
+          "src/web/features/runs/RunsPage.tsx",
+          "src/web/features/runs/queries.ts",
+          "src/web/features/runs/useNewRunWorkflow.ts",
+          "src/web/main.tsx",
+          "src/web/mocks/README.md",
+          "src/web/mocks/browser.ts",
+          "src/web/mocks/index.ts",
+          "src/web/mocks/runOptions.json",
+          "src/web/mocks/runs.json",
+          "src/web/mocks/runsDemo.ts",
+          "src/web/package.json"
+        ],
+        "packet": "/Users/ducng/.codex/visualizations/2026/10/28/01a17ecb-bb2e-7623-9b6b-1b83c79e4495/phase-03-review/review.md",
+        "scopeManifest": "/Users/ducng/.codex/visualizations/2026/10/28/01a17ecb-bb2e-7623-9b6b-1b83c79e4495/phase-03-review/scope-manifest.json",
+        "scopeManifestSha256": "e4a9b10037971c5c2e10e57804817940d8d1060a9e17c2e136361dd3396eb39d",
+        "publicationApproved": true,
+        "limitations": [
+          "Mock-only browser workspace; no live API, runner/PX4 execution, authentication or durable queue.",
+          "Idempotency and unresolved recovery are in-memory within the mounted Runs page; navigation/reload resets them.",
+          "MUI directive and large mock bundle advisories remain (about1.17MB uncompressed/388kB gzip).",
+          "Python audit skipped two private editable workspace packages; JS audit reports zero vulnerabilities."
+        ]
+      },
+      "codeOrganizationGuidance": {
+        "threadId": "01a18386-bd5b-7cf3-b9e9-09abf0d4d174",
+        "turnId": "01a18465-708f-7943-bea9-e59e47bec562",
+        "messageId": "01a18465-70e3-7f70-a186-02882a936838",
+        "scope": "Verified human instruction in phase chat to update AGENTS.md: use focused hooks and split large UI files into meaningful components with clear prop data; avoid excessive code."
+      },
+      "mergeAuthorization": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a1847c-e34d-7ca3-ac7d-c4268578dcb3",
+        "messageId": "01a1847c-e407-73b0-a2e0-8510725d4a70",
+        "humanText": "theyre good create pr and merge to main",
+        "verifiedVia": "Master read_thread confirmed the direct human response to the completed 35-file P03 scope and submission approval request.",
+        "scope": "Explicit one-time merge authorization for the reviewed P03 PR after verified head and checks; no authorization for future phase merges.",
+        "scopeManifestSha256": "e4a9b10037971c5c2e10e57804817940d8d1060a9e17c2e136361dd3396eb39d"
+      }
     },
     {
       "id": "P04",
@@ -564,7 +765,7 @@
     "url": "https://github.com/ducnguyen67201/FeatherLaneFlight",
     "fullName": "ducnguyen67201/FeatherLaneFlight",
     "baseBranch": "main",
-    "initializationStatus": "INITIALIZED_PHASE_01_MERGED",
+    "initializationStatus": "INITIALIZED_PHASE_02_MERGED",
     "bootstrapApproval": {
       "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
       "turnId": "01a183a8-e704-7851-982f-90051a553c02",
@@ -583,6 +784,6 @@
       "scope": "Conditional per-phase branch push and pull-request creation to ducnguyen67201/FeatherLaneFlight after explicit phase submission approval; merge decision stays with the user."
     },
     "bootstrapCommitSha": "4f0fe02eb4b810db5dac0e3007cb8d289d07aef8",
-    "localBaseSha": "9bdd939e8994bc50ce702b99c2b1bfa899424cc3"
+    "localBaseSha": "1ccfa864cd19349c229bf57001ccba516464e185"
   }
 }

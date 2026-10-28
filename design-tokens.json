@@ -156,7 +156,15 @@
     },
     "sectionGap": 24,
     "formMaxWidth": 720,
-    "checkPaneWidth": 280
+    "checkPaneWidth": 280,
+    "runPanel": {
+      "heightDvh": 95,
+      "sideInset": {
+        "desktop": 16,
+        "narrow": 8
+      }
+    },
+    "runTableMinWidth": 850
   },
   "component": {
     "controlHeightPx": {

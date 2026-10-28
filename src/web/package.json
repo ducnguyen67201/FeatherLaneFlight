@@ -7,21 +7,23 @@
     "./mocks": "./mocks/index.ts"
   },
   "dependencies": {
-    "@featherlane/contracts": "workspace:*",
-    "msw": "3.0.3",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
+    "@featherlane/contracts": "workspace:*",
     "@fontsource/hanken-grotesk": "5.3.0",
     "@mui/icons-material": "9.5.0",
     "@mui/material": "9.5.0",
+    "@tanstack/react-query": "5.105.0",
+    "msw": "3.0.3",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 4200 --strictPort",
+    "dev": "pnpm prepare:mocks && vite --host 127.0.0.1 --port 4200 --strictPort",
     "typecheck": "tsc --noEmit",
-    "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 4200 --strictPort"
+    "build": "pnpm prepare:mocks && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4200 --strictPort",
+    "prepare:mocks": "msw init public --no-save"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
