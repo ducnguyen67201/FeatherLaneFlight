@@ -1,0 +1,15 @@
+{
+  "name": "@featherlane/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./validators": "./src/generated/zod.gen.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.105.0",
+    "react": "19.3.1",
+    "zod": "4.6.7"
+  }
+}

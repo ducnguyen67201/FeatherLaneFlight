@@ -1,0 +1,25 @@
+{
+  "name": "featherlane-flight",
+  "private": true,
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=24.14.1 <25"
+  },
+  "scripts": {
+    "contracts:generate": "node scripts/contracts.mjs",
+    "contracts:check": "node scripts/contracts.mjs --check",
+    "format": "prettier --write package.json .prettierrc.json openapi-ts.config.ts pnpm-workspace.yaml tsconfig.json packages src/web scripts && uv run ruff format packages/contracts/python src/api",
+    "format:check": "prettier --check package.json .prettierrc.json openapi-ts.config.ts pnpm-workspace.yaml tsconfig.json packages src/web scripts && uv run ruff format --check packages/contracts/python src/api",
+    "lint": "uv run ruff check packages/contracts/python src/api",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --outDir dist --noEmit false"
+  },
+  "devDependencies": {
+    "@hey-api/openapi-ts": "0.99.0",
+    "@types/node": "24.12.0",
+    "@types/react": "19.3.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,72 @@
+import type { GetContractMetaData, ListRunsData } from "./generated/types.gen";
+import {
+  getContractMeta as generatedMeta,
+  listRuns as generatedRuns,
+  type Options,
+} from "./generated/sdk.gen";
+import type { TDataShape } from "./generated/client";
+import type { ZodType } from "zod";
+import {
+  zErrorBody,
+  zGetContractMetaResponse,
+  zListRunsResponse,
+} from "./generated/zod.gen";
+import { ContractValidationError } from "./transport";
+
+type ReadOptions<T extends TDataShape> = Omit<
+  Options<T, true>,
+  | "throwOnError"
+  | "responseStyle"
+  | "parseAs"
+  | "requestValidator"
+  | "responseValidator"
+  | "responseTransformer"
+  | "url"
+  | "method"
+>;
+
+function validateResult<T>(
+  schema: ZodType<T>,
+  data: unknown,
+  response: Response,
+): T {
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    const requestId = zErrorBody.shape.requestId.safeParse(
+      response.headers.get("X-Request-ID"),
+    );
+    throw new ContractValidationError(
+      requestId.success ? requestId.data : null,
+    );
+  }
+  return parsed.data;
+}
+
+// Errors from the transport are Error subclasses, never a successful resource
+// or a generated field-result whose error type still describes raw wire JSON.
+export async function getContractMeta(
+  options?: ReadOptions<GetContractMetaData>,
+) {
+  const response = await generatedMeta({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  // Fetch transforms and empty-body shortcuts run after its response validator.
+  return validateResult(
+    zGetContractMetaResponse,
+    response.data,
+    response.response,
+  );
+}
+
+export async function listRuns(options: ReadOptions<ListRunsData>) {
+  const response = await generatedRuns({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(zListRunsResponse, response.data, response.response);
+}

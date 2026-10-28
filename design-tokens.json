@@ -1,0 +1,170 @@
+{
+  "version": 1,
+  "colorScheme": "dark",
+  "color": {
+    "surface": {
+      "canvas": "#0D0D0D",
+      "panel": "#151515",
+      "raised": "#1D1D1D",
+      "hover": "#202020",
+      "selected": "#2C2A18",
+      "disabled": "#202020"
+    },
+    "text": {
+      "primary": "#F4F4F5",
+      "secondary": "#A1A1AA",
+      "onBrand": "#111111",
+      "disabled": "#73737B"
+    },
+    "border": {
+      "subtle": "#2D2D2D",
+      "control": "#73737D",
+      "hover": "#A1A1AA"
+    },
+    "brand": {
+      "default": "#FFE234",
+      "hover": "#F2D323",
+      "pressed": "#DCC218"
+    },
+    "focus": {
+      "ring": "#FFE234"
+    },
+    "status": {
+      "success": {
+        "foreground": "#4ADE80",
+        "background": "#1B2D22"
+      },
+      "failure": {
+        "foreground": "#FB7185",
+        "background": "#312022"
+      },
+      "warning": {
+        "foreground": "#FB923C",
+        "background": "#31241A"
+      },
+      "pending": {
+        "foreground": "#60A5FA",
+        "background": "#1E2630"
+      },
+      "infrastructure": {
+        "foreground": "#C4B5FD",
+        "background": "#2A2831"
+      },
+      "neutral": {
+        "foreground": "#A1A1AA",
+        "background": "#262627"
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": "\"Hanken Grotesk\", system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+      "mono": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, \"Liberation Mono\", monospace"
+    },
+    "weight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "variant": {
+      "caption": {
+        "fontSizePx": 12,
+        "lineHeightPx": 16,
+        "weight": "regular"
+      },
+      "bodyCompact": {
+        "fontSizePx": 14,
+        "lineHeightPx": 20,
+        "weight": "regular"
+      },
+      "body": {
+        "fontSizePx": 16,
+        "lineHeightPx": 24,
+        "weight": "regular"
+      },
+      "sectionTitle": {
+        "fontSizePx": 20,
+        "lineHeightPx": 28,
+        "weight": "semibold"
+      },
+      "pageTitle": {
+        "fontSizePx": 24,
+        "lineHeightPx": 32,
+        "weight": "semibold"
+      },
+      "display": {
+        "fontSizePx": 32,
+        "lineHeightPx": 40,
+        "weight": "bold"
+      },
+      "button": {
+        "fontSizePx": 14,
+        "lineHeightPx": 20,
+        "weight": "semibold"
+      },
+      "code": {
+        "fontSizePx": 14,
+        "lineHeightPx": 20,
+        "weight": "regular"
+      }
+    }
+  },
+  "spacing": {
+    "unitPx": 4,
+    "scalePx": [0, 4, 8, 12, 16, 24, 32, 48, 64]
+  },
+  "radiusPx": {
+    "compact": 2,
+    "default": 4
+  },
+  "borderWidthPx": {
+    "default": 1,
+    "focus": 2
+  },
+  "focusOffsetPx": 2,
+  "shadow": {
+    "panel": "none",
+    "overlay": "0 8px 24px rgba(0, 0, 0, 0.32)"
+  },
+  "motion": {
+    "durationMs": {
+      "instant": 0,
+      "fast": 100,
+      "normal": 160,
+      "overlay": 220
+    },
+    "easing": "cubic-bezier(0.2, 0, 0, 1)",
+    "reducedMotionDurationMs": 0
+  },
+  "breakpointPx": {
+    "xs": 0,
+    "sm": 600,
+    "md": 900,
+    "lg": 1200,
+    "xl": 1536
+  },
+  "layoutPx": {
+    "sidebarWidth": 240,
+    "headerHeight": {
+      "desktop": 64,
+      "narrow": 56
+    },
+    "pagePadding": {
+      "desktop": 24,
+      "narrow": 16
+    },
+    "sectionGap": 24,
+    "formMaxWidth": 720,
+    "checkPaneWidth": 280
+  },
+  "component": {
+    "controlHeightPx": {
+      "desktop": 40,
+      "touch": 44
+    },
+    "tableRowMinHeightPx": 44,
+    "minTouchTargetPx": 44,
+    "buttonTextTransform": "none"
+  }
+}

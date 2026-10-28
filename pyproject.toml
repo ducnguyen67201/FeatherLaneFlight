@@ -1,0 +1,17 @@
+[project]
+name = "featherlane-workspace"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["packages/contracts/python", "src/api"]
+
+[dependency-groups]
+dev = ["ruff==0.17.3", "openapi-spec-validator==0.9.0"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

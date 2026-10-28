@@ -1,0 +1,9 @@
+[project]
+name = "featherlane-contracts"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["pydantic==2.14.1"]
+
+[build-system]
+requires = ["hatchling==1.30.0"]
+build-backend = "hatchling.build"
