@@ -3,14 +3,27 @@ import {
   getContractMetaQueryKey,
   listRunsQueryKey,
   getRunOptionsQueryKey,
+  getRunDetailQueryKey,
+  getRunEventsQueryKey,
+  getRunArtifactsQueryKey,
   createRunMutation as generatedCreateRunMutation,
+  cancelRunMutation as generatedCancelRunMutation,
 } from "./generated/@tanstack/react-query.gen";
 import type {
   GetContractMetaResponse,
   ListRunsResponse,
   GetRunOptionsResponse,
 } from "./generated/types.gen";
-import { getContractMeta, listRuns, getRunOptions, createRun } from "./sdk";
+import {
+  getContractMeta,
+  listRuns,
+  getRunOptions,
+  createRun,
+  getRunDetail,
+  getRunEvents,
+  getRunArtifacts,
+  cancelRun,
+} from "./sdk";
 
 // Later feature modules add authenticated scope and freshness policy.
 // Validation and typed errors resolve before Query can cache a resource.
@@ -74,4 +87,48 @@ export function getRunOptionsOptions(
     queryFn: ({ signal }) => getRunOptions({ ...options, signal }),
     retry: false,
   });
+}
+
+export function getRunDetailOptions(
+  options: Parameters<typeof getRunDetail>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getRunDetailQueryKey(options)];
+  return queryOptions({
+    queryKey,
+    queryFn: ({ signal }) => getRunDetail({ ...options, signal }),
+    retry: false,
+  });
+}
+
+export function getRunEventsOptions(
+  options: Parameters<typeof getRunEvents>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getRunEventsQueryKey(options)];
+  return queryOptions({
+    queryKey,
+    queryFn: ({ signal }) => getRunEvents({ ...options, signal }),
+    retry: false,
+  });
+}
+
+export function getRunArtifactsOptions(
+  options: Parameters<typeof getRunArtifacts>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getRunArtifactsQueryKey(options)];
+  return queryOptions({
+    queryKey,
+    queryFn: ({ signal }) => getRunArtifacts({ ...options, signal }),
+    retry: false,
+  });
+}
+
+export function cancelRunMutation() {
+  const generated = generatedCancelRunMutation();
+  const options = { mutationFn: cancelRun, retry: false as const };
+  return generated.mutationKey
+    ? mutationOptions({ ...options, mutationKey: generated.mutationKey })
+    : mutationOptions(options);
 }

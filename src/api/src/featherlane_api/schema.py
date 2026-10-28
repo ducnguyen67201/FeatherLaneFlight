@@ -19,6 +19,12 @@ from featherlane_contracts import (
     RunListEnvelope,
     RunOptionsEnvelope,
 )
+from featherlane_contracts.run_detail import (
+    ArtifactListEnvelope,
+    CancelRunRequest,
+    RunDetailEnvelope,
+    RunEventPage,
+)
 from pydantic import TypeAdapter
 
 
@@ -107,6 +113,75 @@ def create_schema_app() -> FastAPI:
         body: CreateRunRequest,
     ) -> RunEnvelope:
         raise RuntimeError("Metadata-only declaration; no live run admission exists")
+
+    @app.get(
+        "/api/v1/runs/{runId}",
+        operation_id="getRunDetail",
+        response_model=RunDetailEnvelope,
+        responses=errors,
+    )
+    def get_run_detail(
+        run_id: Annotated[Identifier, Path(alias="runId")],
+        contract_version: Annotated[
+            ContractVersion, Header(alias="x-flf-contract-version")
+        ],
+    ) -> RunDetailEnvelope:
+        raise RuntimeError("Metadata-only declaration; run details use local fixtures")
+
+    @app.get(
+        "/api/v1/runs/{runId}/events",
+        operation_id="getRunEvents",
+        response_model=RunEventPage,
+        responses={
+            **errors,
+            410: {"model": ErrorEnvelope, "description": "Event cursor expired"},
+        },
+    )
+    def get_run_events(
+        run_id: Annotated[Identifier, Path(alias="runId")],
+        contract_version: Annotated[
+            ContractVersion, Header(alias="x-flf-contract-version")
+        ],
+        after: Annotated[Cursor | None, Query()] = None,
+        limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = 100,
+    ) -> RunEventPage:
+        raise RuntimeError("Metadata-only declaration; JSON event pages only")
+
+    @app.get(
+        "/api/v1/runs/{runId}/artifacts",
+        operation_id="getRunArtifacts",
+        response_model=ArtifactListEnvelope,
+        responses=errors,
+    )
+    def get_run_artifacts(
+        run_id: Annotated[Identifier, Path(alias="runId")],
+        contract_version: Annotated[
+            ContractVersion, Header(alias="x-flf-contract-version")
+        ],
+    ) -> ArtifactListEnvelope:
+        raise RuntimeError("Metadata-only declaration; artifact metadata only")
+
+    @app.post(
+        "/api/v1/runs/{runId}/cancel",
+        operation_id="cancelRun",
+        response_model=RunEnvelope,
+        status_code=202,
+        responses={
+            **errors,
+            200: {"model": RunEnvelope, "description": "Already terminal"},
+        },
+    )
+    def cancel_run(
+        run_id: Annotated[Identifier, Path(alias="runId")],
+        contract_version: Annotated[
+            ContractVersion, Header(alias="x-flf-contract-version")
+        ],
+        idempotency_key: Annotated[Identifier, Header(alias="idempotency-key")],
+        body: CancelRunRequest,
+    ) -> RunEnvelope:
+        raise RuntimeError(
+            "Metadata-only declaration; no process cancellation is connected"
+        )
 
     schema = app.openapi()
     for model in STATUS_MODELS:
