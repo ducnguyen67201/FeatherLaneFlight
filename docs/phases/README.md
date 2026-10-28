@@ -18,6 +18,8 @@ Each phase owns only its planned scope and its own handoff file. Only the master
 
 UI tasks first produce a rendered isolated preview and then report AWAITING_UI_APPROVAL. Show it in the phase chat and wait for explicit human approval there, or approval relayed by the master with its trusted human-message source. This is not COMPLETE. Existing approval covers its unchanged shown scope. Do not infer approval from a master activation, roadmap approval, silence, or a revision request.
 
+Review screenshots and evaluation images are temporary. Keep captures outside the checkout or in ignored `previews/Pxx/artifacts/` directories while needed for review. Delete them after the relevant evaluation and approval, remove their document links, and retain the approval source and verification results as text. Do not commit review images; preserve product assets and user-supplied files.
+
 New application automated tests remain user-owned. Run applicable existing checks and manually verify meaningful behavior; do not add tests, snapshots, coverage targets, or placeholder test suites. Product scenario handlers are application functionality and remain in scope for their assigned phases. Only the explicit completed-phase submission approval below authorizes a scoped branch push and PR; deployment, unrelated publishing, and credential changes remain separate actions.
 
 ## Submission and merge gates
@@ -56,7 +58,7 @@ Write `docs/phases/handoffs/Pxx.md` for your own phase using this structure:
 - Phase ID and exact chat ID.
 - Scope completed and changed file paths.
 - Manual checks and existing tooling actually run, with outcomes.
-- Preview artifact/screenshot and explicit approval source, when UI is involved.
+- Rendered preview location and explicit approval source, when UI is involved. Record completed image evaluation and cleanup in text after removing temporary captures.
 - Exact candidate files/scope for the master's submission review; implementation completion itself does not authorize a push or PR.
 - Limitations/blockers, commands for the master to review, and dependency artifacts for the next phase.
 

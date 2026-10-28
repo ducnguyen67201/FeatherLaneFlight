@@ -1,6 +1,7 @@
 packages:
   - packages/contracts/typescript
   - src/web
+  - previews/P02
 allowBuilds:
   esbuild: true
 overrides:

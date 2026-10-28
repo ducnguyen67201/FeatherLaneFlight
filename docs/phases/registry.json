@@ -5,7 +5,7 @@
   "hostId": "local",
   "model": "gpt-6.1-sol",
   "reasoningEffort": "high",
-  "activePhase": "P01",
+  "activePhase": "P02",
   "heartbeatAutomationId": "coordinate-featherlaneflight-phases",
   "phases": [
     {
@@ -15,7 +15,7 @@
       "handoff": "docs/phases/handoffs/P01.md",
       "dependsOn": [],
       "threadId": "01a18387-f5aa-7c62-b537-b5b1ff4fd51f",
-      "status": "PR_OPEN",
+      "status": "COMPLETE",
       "hostId": "local",
       "lastCursor": "77d6322d-9384-4b5f-9c1c-b9dca5947d19:20",
       "branch": "codex/phase-01",
@@ -29,15 +29,15 @@
         "includesEmptyMainBootstrap": false
       },
       "pullRequestUrl": "https://github.com/ducnguyen67201/FeatherLaneFlight/pull/1",
-      "headSha": "c910e1d802a7b91fabd60b45292e423c067004d9",
-      "mergeStatus": "OPEN_UNMERGED",
+      "headSha": "c04bb158bf9b646f12ebbf3dd247b5b1f8ce0402",
+      "mergeStatus": "MERGED",
       "reviewStatus": "PASSED",
       "reviewNotes": [
         "Revised Python/schema and TypeScript/client reviews passed; final-result validation and body-stream error fixes were reproduced independently.",
         "Frozen installs, generation drift, format/lint/type/library-build checks and dependency audits passed on the consolidated layout.",
         "Current first PR diff contains 139 files: generated schema/client outputs are excluded, with canonical sources, handwritten client policy, tooling, 34 planning/design files, 75 vendor assets and two dependency lockfiles retained.",
         "No runnable business API, application UI, authentication, database, runner or PX4 integration is claimed. No application automated tests were authored.",
-        "User-directed generated-artifact revision passed source/docs review and isolated clean-workspace setup/typecheck/build checks. No UI, new application tests, deployment or merge was performed. Publishing this scoped revision to existing PR #1; P02 stays staged."
+        "PR #1 squash-merged at explicit human request after reviewed head verification. GitHub confirmed merge 9bdd939e8994bc50ce702b99c2b1bfa899424cc3; local main safely refreshed with the 139-file source-only baseline and prior coordinator state preserved."
       ],
       "reviewedFileCount": 139,
       "layoutRevisionSource": {
@@ -55,14 +55,24 @@
         "messageId": "01a183ac-7c9e-7cf2-a467-a7fe58f95464",
         "humanText": "i dont think we should push the generated file ... it will be generated when deploy ....",
         "scope": "Remove generated OpenAPI/manifest and TypeScript contract outputs from the current PR diff; regenerate during workspace setup/typecheck/build, preserve source definitions, pinned lockfiles and clean-source verification.",
-        "status": "VERIFIED_READY_TO_PUBLISH",
+        "status": "PUBLISHED",
         "generatedFilesRemoved": 21,
         "verification": [
           "Frozen source-only setup with generated folders and environments absent passed.",
           "typecheck and build explicitly regenerate missing outputs before compilation; missing/stale local checks are actionable.",
           "Format/lint/type/build, SDK/Query manual checks and dependency audits passed; source/docs reviews found no actionable defects.",
           "Master checked out the exact 139 staged source files with no generated folders or environments; frozen pnpm install plus pnpm build generated and compiled successfully."
-        ]
+        ],
+        "headSha": "c04bb158bf9b646f12ebbf3dd247b5b1f8ce0402"
+      },
+      "mergeCommitSha": "9bdd939e8994bc50ce702b99c2b1bfa899424cc3",
+      "mergedAt": "2026-10-28T19:19:44Z",
+      "mergeAuthorization": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a183f3-8b0c-7ea3-9e8b-0a8cd5530c86",
+        "messageId": "01a183f3-8b3a-7ab3-b456-20d3c48d346e",
+        "humanText": "ok good, merge phase 01 and kick off phase 02",
+        "scope": "Explicit one-time authorization to merge reviewed PR #1 and start P02. It does not grant future automatic merges or UI-preview approval."
       }
     },
     {
@@ -72,14 +82,146 @@
       "handoff": "docs/phases/handoffs/P02.md",
       "dependsOn": ["P01"],
       "threadId": "01a18386-034b-7453-8834-10d3a5e9f8c0",
-      "status": "STAGED",
+      "status": "APPROVED_FOR_PR",
       "hostId": "local",
-      "lastCursor": "887777b3-3ed6-4a9b-bef4-c907158b4c1e:1",
+      "lastCursor": "887777b3-3ed6-4a9b-bef4-c907158b4c1e:9",
       "branch": "codex/phase-02",
-      "submissionApproval": null,
+      "submissionApproval": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a18429-4e2c-7073-a54a-604314c6eb5c",
+        "messageId": "01a18429-4e5a-7673-b7a7-80770c219d73",
+        "humanText": "remove these image for me, when we finshed evals image, make sure to clean them up also i think phase 2 is good, create pr and merge them",
+        "verifiedVia": "Master read_thread confirmed this direct human message in the active turn.",
+        "scope": "Publish the reviewed P02 foundation on codex/phase-02 as a PR against main, after deleting 24 temporary review images, removing image links, and recording future cleanup/ignore rules. Excludes generated outputs and unrelated research."
+      },
       "pullRequestUrl": null,
       "headSha": null,
-      "mergeStatus": "NOT_OPENED"
+      "mergeStatus": "NOT_OPENED",
+      "baseSha": "9bdd939e8994bc50ce702b99c2b1bfa899424cc3",
+      "dispatchAuthorization": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a183f3-8b0c-7ea3-9e8b-0a8cd5530c86",
+        "messageId": "01a183f3-8b3a-7ab3-b456-20d3c48d346e",
+        "humanText": "ok good, merge phase 01 and kick off phase 02",
+        "scope": "Explicit one-time authorization to merge reviewed PR #1 and start P02. It does not grant future automatic merges or UI-preview approval."
+      },
+      "uiApproval": {
+        "threadId": "01a18386-034b-7453-8834-10d3a5e9f8c0",
+        "turnId": "01a18416-e277-74e2-93f6-2d545e2c20b5",
+        "messageId": "01a18416-e2a7-7a92-83fd-cc5460bce02a",
+        "humanText": "yes apply that for implement",
+        "verifiedVia": "Master read_thread confirmed the human message directly follows the rendered P02 preview and approval request.",
+        "scope": "Token-driven MUI dashboard shell, sidebar/header/project/user context, breadcrumb/title/actions/content layouts, responsive drawer, direct controls, status presentation and reference states.",
+        "previewPacket": "previews/P02/README.md",
+        "artifactSha256": {
+          "previews/P02/artifacts/desktop.jpg": "e44a8d01a25567020a1ffd779c94cbd4183dc5c1a50786c705157f1ca23f472e",
+          "previews/P02/artifacts/dialog-focus.jpg": "07c273e286e0c88942d594db5795c0e162a0fdef7c000959c7e8ad3731101a63",
+          "previews/P02/artifacts/disabled.jpg": "84a5784ae6f50488cb38156a8b40f10b6917a12f3b2bb03c8f58ffee5e307f9a",
+          "previews/P02/artifacts/empty.jpg": "f24421f39c2560ce66b047b9acc207a0c06623d647bb57ef4cd49e6c31f7d3c4",
+          "previews/P02/artifacts/error.jpg": "c4a5acb12370d6fffea563bf0471ac9de782cbb4a75a883736757d98ba2cc5bf",
+          "previews/P02/artifacts/large-text-desktop.jpg": "ca719083a8c2a6cf8c5440f4734ad69887387b9f353bd97ab2726853e5bebc64",
+          "previews/P02/artifacts/large-text-narrow.jpg": "afb1f091fb75e3cbc64da0d7eba12d0a49013ca1f15adfa0e3f513becda1d018",
+          "previews/P02/artifacts/loading.jpg": "2743427a682fa4512a823ceb8a87a235e0580940744bb692aacf599fa05dfb1d",
+          "previews/P02/artifacts/narrow-drawer.jpg": "02aa73d527653089f357a42e6f65546aee1d8f297d2867abf991e622579e8b3d",
+          "previews/P02/artifacts/narrow.jpg": "28d9b7d9a79acdcdbfc4a08d0a4f4efba9fec349722ce90ec8f0affcea885215",
+          "previews/P02/artifacts/no-project.jpg": "cba0e801c9af8edfa672fe8c2195d2171ef4d433468da24ebab65cd67d74b584",
+          "previews/P02/artifacts/status-vocabulary.jpg": "9afad70964840d2a1124c63ee3a1664faec173d1be814dd9f46aa0c25e1ba7b2"
+        },
+        "publicationApproved": false,
+        "artifactState": "Original approval-image hashes are historical provenance; all 24 temporary approval/comparison images were deleted after evaluation on the separate human cleanup instruction."
+      },
+      "dispatchScope": "Prepare and show an isolated rendered P02 foundation preview; stop at AWAITING_UI_APPROVAL before application UI implementation. Model gpt-6.1-sol / high.",
+      "scopeClarification": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a183f6-bce2-7f30-badc-6713bc81f660",
+        "messageId": "01a183f6-bd78-7c31-9746-e7fadf7b6d89",
+        "humanText": "for phase 2 , we should have like layout etc as dashboard like side dashboard etc as initial setup as welll ....",
+        "scope": "Dashboard-style shared application shell: sidebar navigation, header/project/user context, consistent page title/actions/content layouts, and responsive drawer. Included in the rendered foundation preview and later approved implementation; does not approve unseen UI."
+      },
+      "reviewStatus": "PASSED_APPROVED_FOR_SUBMISSION",
+      "preview": {
+        "url": "http://127.0.0.1:4202/",
+        "packet": "previews/P02/README.md",
+        "scope": "Token-driven MUI dashboard shell, sidebar/header/project/user context, breadcrumb/title/actions/content layouts, responsive drawer, direct controls, status presentation and reference states.",
+        "review": "Master inspected the rendered preview before UI approval, then the completed implementation. Temporary screenshots were deleted after completed evaluation on explicit human instruction; runnable preview source and textual verification remain.",
+        "handoffSha256": "2722f812b5aad9ded02324dd38eaf00e960400739adbf94c21600ad38d2ab294",
+        "limitations": [
+          "Fixture-only presentation; no live backend/runner behavior.",
+          "MUI directive and chunk-size build advisories are documented.",
+          "Reduced-motion mode and full screen-reader behavior were not fully exercised."
+        ]
+      },
+      "review": {
+        "reviewedAt": "2026-10-28T20:20:38.099374+00:00",
+        "packet": "/Users/ducng/.codex/visualizations/2026/10/28/01a17ecb-bb2e-7623-9b6b-1b83c79e4495/phase-02-review/review.md",
+        "scopeManifest": "/Users/ducng/.codex/visualizations/2026/10/28/01a17ecb-bb2e-7623-9b6b-1b83c79e4495/phase-02-review/scope-manifest.json",
+        "scopeManifestSha256": "d8901d631417413d690b7d2797c724cbf7328da4ace6f905a54df96e1103ae26",
+        "candidateFileCount": 30,
+        "candidateFiles": [
+          ".gitignore",
+          "AGENTS.md",
+          "DESIGN.md",
+          "README.md",
+          "docs/phases/P02.md",
+          "docs/phases/README.md",
+          "docs/phases/handoffs/P02.md",
+          "docs/phases/registry.json",
+          "package.json",
+          "pnpm-lock.yaml",
+          "pnpm-workspace.yaml",
+          "previews/P02/README.md",
+          "previews/P02/index.html",
+          "previews/P02/main.tsx",
+          "previews/P02/package.json",
+          "previews/P02/status.ts",
+          "previews/P02/theme.ts",
+          "previews/P02/tsconfig.json",
+          "src/web/README.md",
+          "src/web/app/FoundationReference.tsx",
+          "src/web/components/StatusBadge.tsx",
+          "src/web/design/statusPresentation.ts",
+          "src/web/design/theme.ts",
+          "src/web/index.html",
+          "src/web/layouts/AppShell.tsx",
+          "src/web/layouts/PageLayout.tsx",
+          "src/web/main.tsx",
+          "src/web/package.json",
+          "src/web/tsconfig.json",
+          "tsconfig.json"
+        ],
+        "scope": "Reviewed P02 theme, shared dashboard layouts, status/reference view, Vite/tooling, dependency lockfile, docs and isolated preview source. Includes requested image cleanup/ignore rules; excludes all review images and generated outputs.",
+        "verification": [
+          "Master reran frozen workspace install, format, scoped document/preview formatting, Ruff lint, contract drift, root/web and preview typechecks, root build, pnpm audit and git diff --check: passed. Audit reports zero vulnerabilities.",
+          "Two independent read-only source reviews: no material findings.",
+          "Before requested image cleanup, master inspected implemented desktop/narrow-drawer views and verified all 12 approved image hashes. Captures have now been deleted; historical hashes and verification remain in text.",
+          "Master checked the built app: dialog initial focus, Escape focus return, sample error state and explicit retry. Worker handoff records broader keyboard, responsive, text growth and state verification.",
+          "After cleanup, scoped format and whitespace checks pass; application source matches the prior passing review, refreshed dependency audit has zero vulnerabilities, and origin/main is verified at the phase base."
+        ],
+        "limitations": [
+          "MUI use-client directive and >500 kB chunk build advisories remain.",
+          "Reduced-motion preference was not emulated; no full screen-reader audit.",
+          "Shell destinations currently show a local foundation reference; live feature workflows belong to later phases."
+        ],
+        "publicationApproved": true
+      },
+      "mergeAuthorization": {
+        "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+        "turnId": "01a18429-4e2c-7073-a54a-604314c6eb5c",
+        "messageId": "01a18429-4e5a-7673-b7a7-80770c219d73",
+        "humanText": "remove these image for me, when we finshed evals image, make sure to clean them up also i think phase 2 is good, create pr and merge them",
+        "verifiedVia": "Master read_thread confirmed this direct human message in the active turn.",
+        "scope": "Explicit one-time instruction to merge the reviewed P02 PR after creation and checks; no authorization for future phase merges."
+      },
+      "imageCleanup": {
+        "requestedBy": {
+          "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
+          "turnId": "01a18429-4e2c-7073-a54a-604314c6eb5c",
+          "messageId": "01a18429-4e5a-7673-b7a7-80770c219d73"
+        },
+        "deletedImageCount": 24,
+        "deletedDirectory": "previews/P02/artifacts/",
+        "futurePolicy": "Temporary review captures are ignored and deleted after relevant evaluation/approval; preserve approval sources/check results as text, plus product and user assets."
+      }
     },
     {
       "id": "P03",
@@ -422,7 +564,7 @@
     "url": "https://github.com/ducnguyen67201/FeatherLaneFlight",
     "fullName": "ducnguyen67201/FeatherLaneFlight",
     "baseBranch": "main",
-    "initializationStatus": "INITIALIZED_EMPTY_MAIN_PHASE_PR_OPEN",
+    "initializationStatus": "INITIALIZED_PHASE_01_MERGED",
     "bootstrapApproval": {
       "threadId": "01a17ecb-bb2e-7623-9b6b-1b83c79e4495",
       "turnId": "01a183a8-e704-7851-982f-90051a553c02",
@@ -440,6 +582,7 @@
       "messageId": "01a1838b-e6e0-7c33-9b5c-52ca3cd2e8a6",
       "scope": "Conditional per-phase branch push and pull-request creation to ducnguyen67201/FeatherLaneFlight after explicit phase submission approval; merge decision stays with the user."
     },
-    "bootstrapCommitSha": "4f0fe02eb4b810db5dac0e3007cb8d289d07aef8"
+    "bootstrapCommitSha": "4f0fe02eb4b810db5dac0e3007cb8d289d07aef8",
+    "localBaseSha": "9bdd939e8994bc50ce702b99c2b1bfa899424cc3"
   }
 }
