@@ -24,6 +24,7 @@ from featherlane_contracts import (
 from pydantic import TypeAdapter
 
 from featherlane_api.http.errors import ERROR_RESPONSES
+from featherlane_api.modules.identity.http import router as identity_router
 
 
 def schema_json(schema: dict) -> str:
@@ -111,6 +112,7 @@ def create_schema_app() -> FastAPI:
     ) -> RunEnvelope:
         raise RuntimeError("Metadata-only declaration; no live run admission exists")
 
+    app.include_router(identity_router)
     schema = app.openapi()
     for model in STATUS_MODELS:
         schema["components"]["schemas"][model.__name__] = TypeAdapter(

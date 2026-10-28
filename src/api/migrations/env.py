@@ -5,6 +5,7 @@ import asyncio
 from alembic import context
 from featherlane_api.config import load_database_settings
 from featherlane_api.infrastructure.database import Base
+from featherlane_api.modules.identity import persistence  # noqa: F401
 from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
