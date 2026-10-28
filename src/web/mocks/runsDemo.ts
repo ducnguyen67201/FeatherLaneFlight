@@ -45,7 +45,7 @@ const historicalRows = zRunListEnvelope.parse({
       evaluationOutcome: "PASS",
       createdAt: "2026-10-28T16:00:00Z",
       startedAt: "2026-10-28T16:00:01Z",
-      finishedAt: "2026-10-28T16:03:00Z",
+      finishedAt: "2026-10-28T16:05:00Z",
     },
     {
       ...baseRun,
@@ -54,13 +54,13 @@ const historicalRows = zRunListEnvelope.parse({
       evaluationOutcome: "FAIL",
       createdAt: "2026-10-28T15:00:00Z",
       startedAt: "2026-10-28T15:00:01Z",
-      finishedAt: "2026-10-28T15:03:00Z",
+      finishedAt: "2026-10-28T15:05:00Z",
     },
     {
       ...baseRun,
       id: "run_180",
       executionState: "ERROR",
-      evaluationOutcome: "INCONCLUSIVE",
+      evaluationOutcome: "NOT_EVALUATED",
       createdAt: "2026-10-28T14:00:00Z",
       startedAt: "2026-10-28T14:00:01Z",
       finishedAt: "2026-10-28T14:03:00Z",
@@ -77,7 +77,18 @@ export function createRunsDemo() {
   let submissionMode: DemoSubmissionMode = "accept";
   let rows: RunListEntry[] = structuredClone(historicalRows);
   const receipts = new Map<string, { payload: string; result: RunEnvelope }>();
+  const admittedInputs = new Map<string, CreateRunRequest>();
   return {
+    inputFor(runId: string) {
+      return admittedInputs.get(runId) ?? null;
+    },
+    replaceRun(run: RunListEntry) {
+      const validated = zRunListEnvelope.parse({
+        data: [run],
+        meta: { nextCursor: null },
+      }).data[0]!;
+      rows = rows.map((item) => (item.id === run.id ? validated : item));
+    },
     get runsMode() {
       return runsMode;
     },
@@ -100,7 +111,8 @@ export function createRunsDemo() {
     setSubmissionMode(mode: DemoSubmissionMode) {
       submissionMode = mode;
     },
-    addRun(run: RunListEntry) {
+    addRun(run: RunListEntry, input?: CreateRunRequest) {
+      if (input) admittedInputs.set(run.id, structuredClone(input));
       rows = [run, ...rows];
       runsMode = "ready";
     },
@@ -390,6 +402,7 @@ export function createRunsHandlers(origin: string, demo: RunsDemo) {
             ],
             meta: { nextCursor: null },
           }).data[0]!,
+          body,
         );
         // The receipt is committed, but the first acknowledgment fails validation.
         // Replaying its original key returns the valid receipt above.

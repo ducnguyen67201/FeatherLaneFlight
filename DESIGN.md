@@ -205,3 +205,9 @@ Use a consistent Material Icons set. Give icon-only buttons accessible labels. M
 - [UI UX Pro Max setup](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill#installation), [Codex platform template](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/src/ui-ux-pro-max/templates/platforms/codex.json), and [skill workflow](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/ui-ux-pro-max/SKILL.md) support the optional development-time workflow above.
 
 The product layouts, dimensions, visual direction, and implementation sequence above are proposed FeatherLaneFlight decisions.
+
+## Run detail and evidence presentation
+
+P04's approved detail view extends the P03 Runs screen through its existing Open action; it preserves the list, filters, columns, pagination and 95dvh New Run modal. Use the same project header, AppShell, PageLayout and separate execution/evaluation badges. Trial/check navigation sits beside the selected evidence above lg and stacks on narrow screens. Requested and observed manifests remain separate immutable snapshots; queued runs have no observed manifest.
+
+Timeline uses a read-only terminal-style log with shared code typography, UTC/monotonic clock labels, ordered event names and indented messages. Wrap narrow lines and bound vertical scrolling; do not add command execution or infer success from empty output. `layoutPx.eventLogMaxHeightVh` and `layoutPx.manifestLabelWidth` own the approved geometry. Artifact metadata states availability, verification and retention explicitly, with missing/expired warnings; retain historical summaries without a regression verdict. Cancellation reports intent and pending/uncertain/rejected acknowledgments separately from confirmed Canceled or Error. UI components display validated outcomes and observations; they do not evaluate checks or optimistically advance execution.

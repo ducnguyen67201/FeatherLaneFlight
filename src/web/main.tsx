@@ -9,7 +9,7 @@ import "@fontsource/hanken-grotesk/latin-600.css";
 import "@fontsource/hanken-grotesk/latin-700.css";
 import { theme } from "./design/theme";
 import { FoundationReference } from "./app/FoundationReference";
-import { RunsPage } from "./features/runs/RunsPage";
+import { RunsWorkspace } from "./features/runs/RunsWorkspace";
 import { startRunsDemo } from "./mocks/browser";
 
 const root = document.getElementById("root");
@@ -27,8 +27,8 @@ async function start() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           {window.location.pathname === "/" ||
-          window.location.pathname === "/runs" ? (
-            <RunsPage />
+          /^\/runs(?:\/|$)/.test(window.location.pathname) ? (
+            <RunsWorkspace />
           ) : (
             <FoundationReference />
           )}

@@ -42,6 +42,8 @@ Use pnpm for frontend tooling and uv for Python packages. PX4 runs as a separate
 - Approval authorizes implementation of the shown scope. Do not request approval again for that unchanged scope. A materially different design or expanded UI scope requires an updated preview and approval.
 - Review screenshots and evaluation images are temporary. Keep them outside the checkout or in an ignored phase artifact directory while review is pending. After the relevant evaluation and approval are finished, delete the captures and remove their document links. Record approval sources and verification results as text; do not commit review images. Preserve product assets and user-supplied files.
 
+- Preview code is temporary review scaffolding. After the approved UI is implemented and verified, remove its preview-only source files, mock copies, entry points, build output and local preview servers before handoff or PR submission. Keep the application implementation and textual approval/verification evidence; do not retain a second preview application. Preserve product assets and user-supplied files.
+
 ## UI design and reuse
 
 - Follow `DESIGN.md`: establish the central theme/component defaults, shared shell and page layouts, and manually reviewed reference view before feature screens.
