@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import {
   Alert,
   AlertTitle,
@@ -25,8 +31,10 @@ import Refresh from "@mui/icons-material/Refresh";
 import StopCircleOutlined from "@mui/icons-material/StopCircleOutlined";
 import { AppShell } from "../../layouts/AppShell";
 import { PageLayout } from "../../layouts/PageLayout";
+import { ApiError } from "@featherlane/contracts";
 import { tokens } from "../../design/theme";
 import { detailModes } from "../../mocks/runDetailDemo";
+import type { RunTransport } from "./queries";
 import { useRunDetail } from "./useRunDetail";
 import { useRunCancellation } from "./useRunCancellation";
 import { RunDetailStatus } from "./RunDetailStatus";
@@ -38,7 +46,17 @@ import { RunEventLog } from "./RunEventLog";
 export function RunDetailPage({
   runId,
   onBack,
+  transport,
+  projectName = "PX4 qualification",
+  projectSelector,
+  userMenu,
+  listHref = "/runs",
 }: {
+  transport?: RunTransport;
+  projectName?: string;
+  projectSelector?: ReactNode;
+  userMenu?: ReactNode;
+  listHref?: string;
   runId: string;
   onBack: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
@@ -47,9 +65,16 @@ export function RunDetailPage({
   const [confirm, setConfirm] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const { detail, events, artifacts, mode, changing, chooseMode, refresh } =
-    useRunDetail(runId, tab);
-  const cancellation = useRunCancellation(runId);
-  const snapshot = detail.data?.data;
+    useRunDetail(runId, tab, transport);
+  const cancellation = useRunCancellation(runId, transport);
+  const accessDenied =
+    detail.error instanceof ApiError &&
+    [401, 403, 404].includes(detail.error.status);
+  const snapshot =
+    !accessDenied &&
+    (!transport || detail.data?.data.projectId === transport.projectId)
+      ? detail.data?.data
+      : undefined;
   const selectedTrial =
     snapshot?.trials.find((item) => item.id === trialId) ?? snapshot?.trials[0];
   const selectedAttemptId =
@@ -70,74 +95,80 @@ export function RunDetailPage({
     <AppShell
       activePath="/runs"
       projectSelector={
-        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
-          <Typography variant="body2" color="text.secondary">
-            FeatherLane /
-          </Typography>
-          <Typography variant="body2">PX4 qualification</Typography>
-          <Chip size="small" label="Demo" />
-        </Stack>
+        projectSelector ?? (
+          <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              FeatherLane /
+            </Typography>
+            <Typography variant="body2">PX4 qualification</Typography>
+            <Chip size="small" label="Demo" />
+          </Stack>
+        )
       }
       userMenu={
-        <Avatar
-          sx={{
-            width: tokens.component.controlHeightPx.desktop,
-            height: tokens.component.controlHeightPx.desktop,
-            bgcolor: "action.selected",
-            color: "text.primary",
-          }}
-        >
-          DN
-        </Avatar>
+        userMenu ?? (
+          <Avatar
+            sx={{
+              width: tokens.component.controlHeightPx.desktop,
+              height: tokens.component.controlHeightPx.desktop,
+              bgcolor: "action.selected",
+              color: "text.primary",
+            }}
+          >
+            DN
+          </Avatar>
+        )
       }
     >
-      <Paper sx={{ p: 4, mb: 5 }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          sx={{
-            justifyContent: "space-between",
-            gap: 4,
-            alignItems: { sm: "center" },
-          }}
-        >
-          <Box>
-            <Typography variant="body2" color="primary">
-              P04 · MOCK RUN DETAIL
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Synthetic snapshots · no live API, stream, runner or real flight
-            </Typography>
-          </Box>
-          <TextField
-            select
-            label="Snapshot state"
-            slotProps={{ select: { native: true } }}
-            value={mode}
-            disabled={changing || cancellation.pending || uncertain}
-            onChange={(event) => {
-              cancellation.reset();
-              void chooseMode(event.target.value);
+      {!transport && (
+        <Paper sx={{ p: 4, mb: 5 }}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            sx={{
+              justifyContent: "space-between",
+              gap: 4,
+              alignItems: { sm: "center" },
             }}
-            sx={{ width: { xs: "100%", sm: 260 } }}
           >
-            {detailModes.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </TextField>
-        </Stack>
-      </Paper>
+            <Box>
+              <Typography variant="body2" color="primary">
+                P04 · MOCK RUN DETAIL
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Synthetic snapshots · no live API, stream, runner or real flight
+              </Typography>
+            </Box>
+            <TextField
+              select
+              label="Snapshot state"
+              slotProps={{ select: { native: true } }}
+              value={mode}
+              disabled={changing || cancellation.pending || uncertain}
+              onChange={(event) => {
+                cancellation.reset();
+                void chooseMode(event.target.value);
+              }}
+              sx={{ width: { xs: "100%", sm: 260 } }}
+            >
+              {detailModes.map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </TextField>
+          </Stack>
+        </Paper>
+      )}
       <div ref={pageRef}>
         <PageLayout
           breadcrumbs={[
-            <Typography key="project">PX4 qualification</Typography>,
-            <Link key="runs" href="/runs" onClick={onBack}>
+            <Typography key="project">{projectName}</Typography>,
+            <Link key="runs" href={listHref} onClick={onBack}>
               Runs
             </Link>,
             <Typography key="id">{runId}</Typography>,
           ]}
-          eyebrow="RUN DETAIL · SYNTHETIC EVIDENCE"
+          eyebrow={transport ? "RUN DETAIL" : "RUN DETAIL · SYNTHETIC EVIDENCE"}
           title={runId}
           description={
             snapshot
@@ -152,7 +183,7 @@ export function RunDetailPage({
             >
               <Button
                 component="a"
-                href="/runs"
+                href={listHref}
                 onClick={onBack}
                 startIcon={<ArrowBack />}
               >
@@ -278,8 +309,9 @@ export function RunDetailPage({
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                Evidence and results are synthetic. Comparison, rerun and
-                baseline actions are deferred.
+                {transport
+                  ? "Queued work has no execution evidence. Event and evidence transport are supplied by later phases."
+                  : "Evidence and results are synthetic. Comparison, rerun and baseline actions are deferred."}
               </Typography>
             </Stack>
           )}
@@ -296,7 +328,7 @@ export function RunDetailPage({
         <DialogContent>
           <DialogContentText id="cancellation-description">
             {snapshot?.executionState === "QUEUED"
-              ? "Queued work has no owned execution to stop. The mock server can cancel it immediately."
+              ? "Queued work has no owned execution to stop. The server can cancel it immediately."
               : "The server records intent and asks the runner to stop its owned simulation process. This request does not confirm that execution stopped."}
           </DialogContentText>
           <Alert severity="warning" sx={{ mt: 4 }}>

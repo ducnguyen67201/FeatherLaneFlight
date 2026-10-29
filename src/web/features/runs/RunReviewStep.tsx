@@ -8,6 +8,7 @@ import type {
 import { capacity, connection } from "../../design/statusPresentation";
 
 export function ReviewStep({
+  live = false,
   runner,
   build,
   profile,
@@ -16,6 +17,7 @@ export function ReviewStep({
   locked,
   onEdit,
 }: {
+  live?: boolean;
   runner: RunRunnerOption | undefined;
   build: RunBuildOption | undefined;
   profile: RunLocalProfileOption | undefined;
@@ -50,7 +52,8 @@ export function ReviewStep({
   return (
     <>
       <Typography variant="body2" color="text.secondary">
-        Confirm the immutable inputs before requesting a mock run.
+        Confirm the immutable inputs before requesting{" "}
+        {live ? "a run" : "a mock run"}.
       </Typography>
       <Box component="dl" sx={{ m: 0 }}>
         {review.map(([label, value, index]) => (
@@ -101,9 +104,9 @@ export function ReviewStep({
         {profile?.digest ?? "unavailable"}
       </Typography>
       <Alert severity="info">
-        The mock transport rechecks selected inputs on submission. Acceptance
-        only acknowledges a queued request; it does not establish execution or a
-        passing outcome.
+        {live ? "The server" : "The mock transport"} rechecks selected inputs on
+        submission. Acceptance only acknowledges a queued request; it does not
+        establish execution or a passing outcome.
       </Alert>
     </>
   );

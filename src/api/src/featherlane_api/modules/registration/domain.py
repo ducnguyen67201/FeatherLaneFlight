@@ -2,11 +2,12 @@
 
 from featherlane_contracts import ErrorCode
 from featherlane_contracts.registration import (
-    BuildDeclaration,
     BuildView,
     IntegrationProfileView,
     LocalProfileDeclaration,
     LocalProfileView,
+    RegisteredBuildDeclaration,
+    RegisteredBuildView,
     RegisteredIntegrationProfileView,
     RegistrationCompatibility,
     build_identity,
@@ -18,7 +19,7 @@ from featherlane_contracts.registration import (
 from featherlane_api.http.errors import ApiError
 
 
-def validate_build(declaration: BuildDeclaration) -> None:
+def validate_build(declaration: RegisteredBuildDeclaration) -> None:
     if declaration.id != build_identity(declaration):
         raise ApiError(
             422,
@@ -47,18 +48,18 @@ def validate_integration(profile: RegisteredIntegrationProfileView) -> None:
 
 
 def compatibility(
-    build: BuildView,
+    build: RegisteredBuildView,
     local: LocalProfileView,
     integration: RegisteredIntegrationProfileView,
 ) -> RegistrationCompatibility:
     reasons = []
-    if integration.runtime_family != "PX4":
+    if integration.runtime_family != build.flight_stack:
         reasons.append("RUNTIME_FAMILY_MISMATCH")
     if not (
         build.execution_target == local.execution_target == integration.execution_target
     ):
         reasons.append("TARGET_MISMATCH")
-    if isinstance(integration, IntegrationProfileView):
+    if isinstance(integration, IntegrationProfileView) and isinstance(build, BuildView):
         if build.base_flight_stack_revision != integration.base_flight_stack_revision:
             reasons.append("BASE_REVISION_MISMATCH")
         if build.flight_stack_version != integration.flight_stack_version:

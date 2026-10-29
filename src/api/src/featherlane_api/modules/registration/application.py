@@ -12,10 +12,12 @@ from featherlane_contracts.registration import (
     LocalProfileListEnvelope,
     LocalProfileView,
     RegisterBuildRequest,
+    RegisteredBuildView,
     RegisteredIntegrationProfileView,
     RegisterIntegrationProfileRequest,
     RegisterLocalProfileRequest,
     RegistrationCompatibilityEnvelope,
+    SyntheticBuildView,
     SyntheticIntegrationProfileView,
     integration_digest,
     integration_identity,
@@ -40,9 +42,9 @@ from featherlane_api.modules.registration.persistence import (
 )
 from featherlane_api.modules.runners.application import require_runner_declarations
 
-CatalogView = BuildView | RegisteredIntegrationProfileView | LocalProfileView
+CatalogView = RegisteredBuildView | RegisteredIntegrationProfileView | LocalProfileView
 VIEW_TYPES = {
-    "BUILD": TypeAdapter(BuildView),
+    "BUILD": TypeAdapter(RegisteredBuildView),
     "INTEGRATION": TypeAdapter(RegisteredIntegrationProfileView),
     "LOCAL_PROFILE": TypeAdapter(LocalProfileView),
 }
@@ -330,7 +332,7 @@ class RegistrationService:
             await self.authorize(principal, handle, project_id)
             build = await self.read(project_id, "BUILD", build_id)
             local = await self.read(project_id, "LOCAL_PROFILE", local_profile_id)
-            if not isinstance(build, BuildView) or not isinstance(
+            if not isinstance(build, (BuildView, SyntheticBuildView)) or not isinstance(
                 local, LocalProfileView
             ):
                 raise RuntimeError("Unexpected registration variant.")

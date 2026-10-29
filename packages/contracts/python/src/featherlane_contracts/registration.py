@@ -49,6 +49,38 @@ class BuildView(BuildDeclaration):
     created_at: UtcTimestamp
 
 
+class SyntheticBuildMetadata(WireModel):
+    """Measured synthetic input artifact; never a PX4 executable or qualification."""
+
+    label: DisplayName
+    flight_stack: Literal["SYNTHETIC"]
+    source_revision: Revision
+    source_digest: Digest
+    artifact_sha256: Digest
+    execution_target: ExecutionTarget
+    configuration_digest: Digest
+
+
+class SyntheticBuildDeclaration(SyntheticBuildMetadata):
+    id: Identifier
+
+
+class SyntheticBuildView(SyntheticBuildDeclaration):
+    project_id: Identifier
+    created_at: UtcTimestamp
+
+
+RegisteredBuildMetadata = Annotated[
+    BuildMetadata | SyntheticBuildMetadata, Field(discriminator="flight_stack")
+]
+RegisteredBuildDeclaration = Annotated[
+    BuildDeclaration | SyntheticBuildDeclaration, Field(discriminator="flight_stack")
+]
+RegisteredBuildView = Annotated[
+    BuildView | SyntheticBuildView, Field(discriminator="flight_stack")
+]
+
+
 class IntegrationProfileSpec(WireModel):
     runtime_family: Literal["PX4"]
     name: DisplayName
@@ -141,7 +173,7 @@ class LocalProfileView(LocalProfileDeclaration):
 
 class RegisterBuildRequest(WireModel):
     runner_id: Identifier
-    declaration: BuildDeclaration
+    declaration: RegisteredBuildDeclaration
 
 
 class RegisterLocalProfileRequest(WireModel):
@@ -153,7 +185,7 @@ class RegisterIntegrationProfileRequest(WireModel):
     profile: RegisteredIntegrationProfileSpec
 
 
-class BuildEnvelope(SuccessEnvelope[BuildView]):
+class BuildEnvelope(SuccessEnvelope[RegisteredBuildView]):
     pass
 
 
@@ -166,7 +198,7 @@ class LocalProfileEnvelope(SuccessEnvelope[LocalProfileView]):
 
 
 class BuildListEnvelope(WireModel):
-    data: Annotated[list[BuildView], Field(max_length=100)]
+    data: Annotated[list[RegisteredBuildView], Field(max_length=100)]
     meta: CursorMeta
 
 
@@ -216,8 +248,13 @@ def metadata_digest(model: WireModel, fields: set[str] | None = None) -> str:
     return hashlib.sha256(data.encode()).hexdigest()
 
 
-def build_identity(metadata: BuildMetadata) -> str:
-    return "build_" + metadata_digest(metadata, set(BuildMetadata.model_fields))
+def build_identity(metadata: BuildMetadata | SyntheticBuildMetadata) -> str:
+    fields = (
+        SyntheticBuildMetadata.model_fields
+        if isinstance(metadata, SyntheticBuildMetadata)
+        else BuildMetadata.model_fields
+    )
+    return "build_" + metadata_digest(metadata, set(fields))
 
 
 def integration_digest(

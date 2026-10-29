@@ -2,7 +2,7 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BeforeValidator, Field
+from pydantic import BeforeValidator, Field, model_validator
 
 from . import (
     CheckOutcome,
@@ -63,6 +63,7 @@ type CheckDefinition = Annotated[
 
 
 class ExecutionManifest(WireModel):
+    runtime_family: Literal["PX4", "SYNTHETIC"] = "PX4"
     contract_version: ContractVersion
     protocol_version: ProtocolVersion
     build_id: Identifier
@@ -77,10 +78,10 @@ class ExecutionManifest(WireModel):
     local_profile_digest: Digest
     runner_version: DisplayName
     python_version: DisplayName
-    mavsdk_version: DisplayName
-    px4_version: DisplayName
+    mavsdk_version: DisplayName | None
+    px4_version: DisplayName | None
     simulator: DisplayName
-    vehicle_configuration: DisplayName
+    vehicle_configuration: DisplayName | None
     operating_system: DisplayName
     architecture: DisplayName
     clock_policy: Literal["MONOTONIC_AND_SIMULATION"]
@@ -91,6 +92,23 @@ class ExecutionManifest(WireModel):
     checks: Annotated[list[CheckDefinition], Field(min_length=1, max_length=100)]
     evidence_policy: Annotated[list[ArtifactKind], Field(min_length=1, max_length=3)]
     evaluator_version: DisplayName
+
+    @model_validator(mode="after")
+    def runtime_fields(self) -> "ExecutionManifest":
+        real = (self.mavsdk_version, self.px4_version, self.vehicle_configuration)
+        if self.runtime_family == "SYNTHETIC":
+            if self.simulator != "FAKE" or any(value is not None for value in real):
+                raise ValueError("Synthetic manifests cannot describe a PX4 runtime")
+        elif self.simulator != "SIH" or any(value is None for value in real):
+            raise ValueError("PX4 manifests require the complete SIH toolchain")
+        return self
+
+
+class ExpectedTrial(WireModel):
+    id: Identifier
+    scenario_id: Identifier
+    repetition_index: Annotated[int, Field(ge=1, le=10)]
+    random_seed: Annotated[int, Field(ge=0, le=2147483647)]
 
 
 class TerminalReason(WireModel):
@@ -146,7 +164,7 @@ class CheckResult(WireModel):
 
 class TrialView(WireModel):
     id: Identifier
-    attempt_id: Identifier
+    attempt_id: Identifier | None
     scenario_id: Identifier
     scenario_title: DisplayName
     repetition_index: Annotated[int, Field(ge=1, le=10)]

@@ -1,50 +1,83 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ApiError,
   getRunArtifactsOptions,
   getRunDetailOptions,
   getRunEventsOptions,
 } from "@featherlane/contracts";
 import { runDetailDemo } from "../../mocks/browser";
 import { detailModes, type DetailMode } from "../../mocks/runDetailDemo";
-import { demoScope, headers, runsPrefix } from "./queries";
+import {
+  demoRunTransport,
+  type RunTransport,
+  runScope,
+  headers,
+  runsQueryPrefix,
+} from "./queries";
 
-export const detailPrefix = (runId: string) => [
-  demoScope.epoch,
-  demoScope.organizationId,
-  demoScope.projectId,
+export const detailPrefix = (runId: string, transport = demoRunTransport) => [
+  ...runScope(transport),
   "run-detail",
   runId,
 ];
-export function useRunDetail(runId: string, tab: number) {
+export function useRunDetail(
+  runId: string,
+  tab: number,
+  transport?: RunTransport,
+) {
   const client = useQueryClient();
-  const [mode, setMode] = useState<DetailMode>(() => runDetailDemo.mode(runId));
+  const current = transport ?? demoRunTransport;
+  const [mode, setMode] = useState<DetailMode>(() =>
+    transport ? "Queued" : runDetailDemo.mode(runId),
+  );
   const [changing, setChanging] = useState(false);
-  const scope = detailPrefix(runId);
+  const scope = detailPrefix(runId, current);
   const detail = useQuery({
-    ...getRunDetailOptions({ path: { runId }, headers }, scope),
+    ...getRunDetailOptions(
+      { client: current.client, path: { runId }, headers },
+      scope,
+    ),
     refetchOnWindowFocus: false,
   });
   const events = useQuery({
     ...getRunEventsOptions(
-      { path: { runId }, headers, query: { limit: 100 } },
+      {
+        client: current.client,
+        path: { runId },
+        headers,
+        query: { limit: 100 },
+      },
       scope,
     ),
     enabled: !!detail.data && tab === 1,
     refetchOnWindowFocus: false,
   });
   const artifacts = useQuery({
-    ...getRunArtifactsOptions({ path: { runId }, headers }, scope),
+    ...getRunArtifactsOptions(
+      { client: current.client, path: { runId }, headers },
+      scope,
+    ),
     enabled: !!detail.data && tab === 3,
     refetchOnWindowFocus: false,
   });
+  useEffect(() => {
+    const error = detail.error;
+    if (
+      transport &&
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403 || error.status === 404)
+    )
+      transport.onAccessFailure(error.status);
+  }, [detail.error, transport]);
   const invalidate = async () => {
     await Promise.all([
       client.invalidateQueries({ queryKey: scope }),
-      client.invalidateQueries({ queryKey: runsPrefix }),
+      client.invalidateQueries({ queryKey: runsQueryPrefix(current) }),
     ]);
   };
   async function chooseMode(value: string) {
+    if (transport) return;
     const next = detailModes.find((item) => item === value);
     if (!next || changing) return;
     setChanging(true);
@@ -54,7 +87,10 @@ export function useRunDetail(runId: string, tab: number) {
         await client.resetQueries({ queryKey: scope });
         if (
           !client.getQueryData(
-            getRunDetailOptions({ path: { runId }, headers }, scope).queryKey,
+            getRunDetailOptions(
+              { client: current.client, path: { runId }, headers },
+              scope,
+            ).queryKey,
           )
         )
           return;
@@ -64,15 +100,17 @@ export function useRunDetail(runId: string, tab: number) {
       if (next === "Stale view") await invalidate();
       else {
         await client.resetQueries({ queryKey: scope });
-        await client.invalidateQueries({ queryKey: runsPrefix });
+        await client.invalidateQueries({ queryKey: runsQueryPrefix(current) });
       }
     } finally {
       setChanging(false);
     }
   }
   async function refresh() {
-    runDetailDemo.recoverRead(runId);
-    setMode(runDetailDemo.mode(runId));
+    if (!transport) {
+      runDetailDemo.recoverRead(runId);
+      setMode(runDetailDemo.mode(runId));
+    }
     await invalidate();
   }
   return { detail, events, artifacts, mode, changing, chooseMode, refresh };

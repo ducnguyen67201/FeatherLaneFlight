@@ -4,6 +4,7 @@ import {
   ApiError,
   createRunMutation,
   type CreateRunRequest,
+  type RunSummary,
   type RunRunnerOption,
   type RunBuildOption,
   type RunLocalProfileOption,
@@ -11,11 +12,12 @@ import {
 } from "@featherlane/contracts";
 import { zCreateRunRequest } from "@featherlane/contracts/validators";
 import {
-  demoScope,
+  demoRunTransport,
+  type RunTransport,
   errorMessage,
   headers,
-  optionsPrefix,
-  runsPrefix,
+  optionsQueryPrefix,
+  runsQueryPrefix,
   selectionOptions,
 } from "./queries";
 
@@ -69,12 +71,14 @@ export function useNewRunWorkflow({
   onClose,
   onCreated,
   onRetryOptions,
+  transport = demoRunTransport,
 }: {
+  transport?: RunTransport;
   open: boolean;
   session: number;
   revision: number;
   onClose: () => void;
-  onCreated: (id: string) => void;
+  onCreated: (run: RunSummary) => void;
   onRetryOptions: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -87,6 +91,13 @@ export function useNewRunWorkflow({
   const busyRef = useRef(false);
   const attemptRef = useRef<SubmissionAttempt | null>(null);
   const sessionRef = useRef(session);
+  const active = useRef(true);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
   const mutation = useMutation(createRunMutation());
   const selection = {
     ...(draft.runnerId ? { runnerId: draft.runnerId } : {}),
@@ -94,10 +105,18 @@ export function useNewRunWorkflow({
     ...(draft.profileId ? { localProfileId: draft.profileId } : {}),
   };
   const options = useQuery({
-    ...selectionOptions(selection, revision),
+    ...selectionOptions(selection, revision, transport),
     enabled: open && !unconfirmed,
   });
-  const data = options.data?.data;
+  useEffect(() => {
+    const error = options.error;
+    if (
+      error instanceof ApiError &&
+      (error.status === 401 || error.status === 403 || error.status === 404)
+    )
+      transport.onAccessFailure(error.status);
+  }, [options.error, transport]);
+  const data = options.isError ? undefined : options.data?.data;
   const currentSelected: SelectedInputs = {
     runner: data?.runners.find((item) => item.id === draft.runnerId),
     build: data?.builds.find((item) => item.id === draft.buildId),
@@ -110,7 +129,7 @@ export function useNewRunWorkflow({
       : currentSelected;
   const availableRunner =
     selected.runner?.connectionState === "CONNECTED" &&
-    selected.runner.capacityState === "AVAILABLE";
+    ["AVAILABLE", "BUSY"].includes(selected.runner.capacityState);
   const validRepetitions = Boolean(
     data &&
     /^\d+$/.test(draft.repetitions) &&
@@ -154,7 +173,9 @@ export function useNewRunWorkflow({
   }
   async function prepareAttempt(): Promise<SubmissionAttempt> {
     const fresh = (
-      await queryClient.fetchQuery(selectionOptions(selection, revision))
+      await queryClient.fetchQuery(
+        selectionOptions(selection, revision, transport),
+      )
     ).data;
     const runner = fresh.runners.find((item) => item.id === draft.runnerId);
     const build = fresh.builds.find((item) => item.id === draft.buildId);
@@ -166,7 +187,7 @@ export function useNewRunWorkflow({
     );
     if (
       runner?.connectionState !== "CONNECTED" ||
-      runner.capacityState !== "AVAILABLE" ||
+      !["AVAILABLE", "BUSY"].includes(runner.capacityState) ||
       !build ||
       !profile ||
       profile.digest !== selected.profile?.digest ||
@@ -208,7 +229,7 @@ export function useNewRunWorkflow({
     const recovering = Boolean(attemptRef.current?.unconfirmed);
     if (!recovering) setFailure("");
     let sent = false;
-    let acknowledgedId: string | undefined;
+    let acknowledged: RunSummary | undefined;
     try {
       // Recovery replays the original operation. Fresh eligibility describes a new
       // request and must never prevent retrieving an already committed receipt.
@@ -218,22 +239,43 @@ export function useNewRunWorkflow({
       attemptRef.current = attempt;
       sent = true;
       const result = await mutation.mutateAsync({
+        client: transport.client,
         body: attempt.body,
-        path: { projectId: demoScope.projectId },
-        headers: { ...headers, "idempotency-key": attempt.key },
+        path: { projectId: transport.projectId },
+        headers: {
+          ...headers,
+          "x-csrf-token": transport.csrfToken,
+          "idempotency-key": attempt.key,
+        },
       });
-      acknowledgedId = result.data.id;
+      if (!active.current) return;
+      acknowledged = result.data;
       attemptRef.current = null;
       setUnconfirmed(false);
       setFailure("");
     } catch (error) {
-      // These demo admission errors follow receipt lookup and establish that no
-      // run was queued. Other failures do not resolve an unknown prior outcome.
+      if (!active.current) return;
+      // Auth/schema errors cannot resolve an earlier uncertain commit. Only
+      // business rejections after receipt lookup prove that no job was admitted.
+      const afterReceipt = [
+        "QUEUE_LIMIT_REACHED",
+        "RUNNER_UNAVAILABLE",
+        "BUILD_UNAVAILABLE",
+        "PROFILE_MISMATCH",
+        "CAPABILITY_UNSUPPORTED",
+        "IDEMPOTENCY_CONFLICT",
+      ];
       const noAdmission =
         error instanceof ApiError &&
-        ((error.status === 409 && error.detail.code === "BUILD_UNAVAILABLE") ||
-          (error.status === 422 &&
-            error.detail.code === "CAPABILITY_UNSUPPORTED"));
+        (recovering
+          ? afterReceipt.includes(error.detail.code)
+          : [400, 401, 403, 404, 409, 413, 415, 422].includes(error.status));
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403 || error.status === 404)
+      ) {
+        transport.onAccessFailure(error.status);
+      }
       const uncertain = (recovering || sent) && !noAdmission;
       if (attemptRef.current) attemptRef.current.unconfirmed = uncertain;
       setUnconfirmed(uncertain);
@@ -242,11 +284,15 @@ export function useNewRunWorkflow({
       busyRef.current = false;
       setPending(false);
     }
-    if (acknowledgedId) {
+    if (acknowledged) {
       // Cache refresh failures cannot undo a definitive creation acknowledgment.
-      void queryClient.invalidateQueries({ queryKey: runsPrefix });
-      void queryClient.invalidateQueries({ queryKey: optionsPrefix });
-      onCreated(acknowledgedId);
+      void queryClient.invalidateQueries({
+        queryKey: runsQueryPrefix(transport),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: optionsQueryPrefix(transport),
+      });
+      onCreated(acknowledged);
     }
   }
   return {
@@ -257,7 +303,7 @@ export function useNewRunWorkflow({
     availableRunner,
     validRepetitions,
     choices: {
-      data,
+      data: options.isError ? undefined : data,
       loading: options.isPending,
       refreshing: options.isFetching,
       failure: options.isError ? errorMessage(options.error) : "",

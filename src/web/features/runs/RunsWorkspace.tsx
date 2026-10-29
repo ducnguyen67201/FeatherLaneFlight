@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { RunsPage, initialRunsListContext } from "./RunsPage";
+import { runsPath } from "./navigation";
+import type { RunTransport } from "./queries";
 import { RunDetailPage } from "./RunDetailPage";
 
 function selectedRun() {
@@ -11,7 +19,24 @@ function selectedRun() {
     return match[1];
   }
 }
-export function RunsWorkspace() {
+export function RunsWorkspace({
+  transport,
+  projectName,
+  projectSelector,
+  userMenu,
+}: {
+  transport?: RunTransport;
+  projectName?: string;
+  projectSelector?: ReactNode;
+  userMenu?: ReactNode;
+}) {
+  const listHref = transport
+    ? runsPath(transport.organizationId, transport.projectId)
+    : "/runs";
+  const detailHref = (id: string) =>
+    transport
+      ? runsPath(transport.organizationId, transport.projectId, id)
+      : `/runs/${encodeURIComponent(id)}`;
   const lastOpened = useRef<string | null>(selectedRun());
   const [listContext, setListContext] = useState(initialRunsListContext);
   const [runId, setRunId] = useState(selectedRun);
@@ -42,7 +67,7 @@ export function RunsWorkspace() {
       link.origin === window.location.origin &&
       link.pathname === "/runs"
     )
-      follow(event, "/runs");
+      follow(event, listHref);
   }
   return (
     <div onClick={followRunsLink}>
@@ -50,16 +75,25 @@ export function RunsWorkspace() {
         <RunDetailPage
           key={runId}
           runId={runId}
-          onBack={(event) => follow(event, "/runs")}
+          transport={transport}
+          projectName={projectName}
+          projectSelector={projectSelector}
+          userMenu={userMenu}
+          listHref={listHref}
+          onBack={(event) => follow(event, listHref)}
         />
       ) : (
         <RunsPage
+          transport={transport}
+          projectName={projectName}
+          projectSelector={projectSelector}
+          userMenu={userMenu}
           returnFocusRunId={lastOpened.current}
           listContext={listContext}
           setListContext={setListContext}
           onOpen={(event, id) => {
             lastOpened.current = id;
-            follow(event, `/runs/${encodeURIComponent(id)}`);
+            follow(event, detailHref(id));
           }}
         />
       )}

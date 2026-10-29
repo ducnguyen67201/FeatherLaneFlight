@@ -23,12 +23,14 @@ import { capacity, connection } from "../../design/statusPresentation";
 import { StatusBadge } from "../../components/StatusBadge";
 
 export function RunnerStep({
+  live = false,
   runners,
   runnerId,
   attempted,
   availableRunner,
   onSelect,
 }: {
+  live?: boolean;
   runners: RunRunnerOption[];
   runnerId: string;
   attempted: boolean;
@@ -38,8 +40,10 @@ export function RunnerStep({
   return (
     <>
       <Typography variant="body2" color="text.secondary">
-        Connection health and capacity are separate. Only an available,
-        compatible runner can accept this mock run.
+        Connection health and capacity are separate. The server requires a
+        connected, compatible runner with verified capabilities to accept{" "}
+        {live ? "a run" : "this mock run"}. Available and busy runners may
+        accept queued requests.
       </Typography>
       {runners.length === 0 ? (
         <Alert severity="info">
@@ -60,7 +64,7 @@ export function RunnerStep({
                 value={item.id}
                 disabled={
                   item.connectionState !== "CONNECTED" ||
-                  item.capacityState !== "AVAILABLE"
+                  !["AVAILABLE", "BUSY"].includes(item.capacityState)
                 }
                 control={<Radio />}
                 label={
@@ -81,7 +85,7 @@ export function RunnerStep({
                       {item.lastSeenAt
                         ? `${item.lastSeenAt.slice(0, 16).replace("T", " ")} UTC`
                         : "unknown"}{" "}
-                      · synthetic fixture
+                      {live ? "" : "· synthetic fixture"}
                     </Typography>
                   </Box>
                 }
