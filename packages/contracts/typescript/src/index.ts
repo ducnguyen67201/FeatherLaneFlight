@@ -36,3 +36,14 @@ export {
   getRunArtifactsOptions,
   cancelRunMutation,
 } from "./queries";
+export {
+  listOrganizations,
+  listProjects,
+  getProject,
+  createProject,
+} from "./projects";
+export {
+  listOrganizationsOptions,
+  listProjectsOptions,
+  getProjectOptions,
+} from "./projectQueries";

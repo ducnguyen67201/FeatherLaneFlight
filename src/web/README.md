@@ -26,6 +26,26 @@ Open <http://127.0.0.1:4200/runs>. Dev binds only to loopback. The current entry
 
 The context is an explicitly fixed demo organization/project, not sign-in or authorization. Real sessions, identity-change cache cleanup, API integration and live updates remain their assigned later phases. See [mock transport notes](mocks/README.md).
 
+## Organization and projects UI
+
+Open `/settings` for the approved P07 organization/project UI. Organization selection is inside Settings; the project selector is above the left navigation and inside the mobile drawer. The page supports project selection and a creation dialog with generated name validation, pending protection, recoverable errors and focus restoration. Roles, detailed permissions and membership editing are deferred.
+
+The clearly labeled `ProjectsDemo` adapter supplies local samples, loading/empty/error/access-loss states and accepted/rejected creation. It makes no API calls and changes reset on reload. Display data is parsed through canonical generated OrganizationView/ProjectView validators. The reusable feature components and creation hook are under `features/projects/`; sample behavior is confined to `mocks/ProjectsDemo.tsx` and `mocks/projects.json`. `/settings` does not start the Runs mock worker. The existing `/runs` demo remains independently scoped.
+
+`AuthenticatedProjects` supplies the same workspace from the real P05/P06A-backed discovery and creation operations. P06.5 owns its final application mount and provides `userId`, `csrfToken`, `userMenu`, `client`, `cacheScope`, and `onAccessFailure`. Mount it inside the identity-owned QueryClientProvider, keyed by the auth epoch, using that epoch's validated client and query prefix. P07 does not create another auth controller or client. The current `/settings` entry remains the labeled sample until that composition lands.
+
+The feature uses bounded cursor pages, validates every result before caching, scopes queries by identity/organization/project, and hides/cancels/removes its protected state on 401/403/404. A 401 delegates identity retirement to P06.5. A 403/404 refreshes actual organization discovery and requires an explicit access refresh before showing protected content again; failed recovery is an error, not a false empty membership. Discovery/selected project rechecks every 30 seconds. There are no project streams yet. Creation preserves the operation key and submitted name when an acknowledgment is
+uncertain (network, malformed response, server failure or idempotency conflict).
+The approved “Creation unconfirmed” state makes the name read-only and retries the
+same operation. Closing/reopening or switching organizations retains unresolved
+requests per organization while the feature remains mounted. A rejection of a retry
+cannot disprove an earlier committed creation, so it does not unlock that request.
+A first definitive canonical4xx rejection remains editable. Confirmed success clears
+the saved operation; identity retirement/unmount or a page reload discards in-memory
+recovery. No persistent cache is added. The server grants only the creator access.
+
+Both organization_memberships and project_memberships are required for project visibility. UI sample data is not an authorization boundary. See `docs/phases/handoffs/P07.md` for actual manual/tooling checks and remaining integration limits.
+
 ## Foundation reference and verification
 
 `app/FoundationReference.tsx` remains the approved P02 component/reference view on the other shell locations. It does not implement Compare, Suites, Runners or Settings. Ordinary shell links and Vite SPA fallback still support navigation/reload. The shared shell’s original reference footer remains as shown in the approved preview.

@@ -357,3 +357,59 @@ CSRF in that transaction when needed; the HTTP `require_csrf` dependency remains
 mandatory. Commit before returning a successful response. P07 owns both explicit
 membership checks within that same transaction and must not import identity ORM
 rows or infer membership from this principal.
+
+## Organization and project access (P07)
+
+Migration `0003_access` follows `0002_identity`. `modules/access/` owns organizations,
+projects, exactly two membership tables, and safe access audit events. Organization
+membership alone grants no project visibility. Project membership has composite
+foreign keys to its organization membership and project/organization pair. Removing
+an organization grant cascades its project grants; rejoining does not restore them.
+There are no roles, permission flags, automatic admission, or browser membership editors.
+
+Protected operations are `GET /api/v1/orgs`, `GET /api/v1/orgs/{orgId}/projects`,
+`GET /api/v1/projects/{projectId}`, and `POST /api/v1/orgs/{orgId}/projects`.
+Lists use `limit` (1–100) and `cursor`, returning `meta.nextCursor`. Requests require
+the contract-version header. Creation additionally requires same-origin/CSRF and an
+`Idempotency-Key` identifier. An unchanged retry returns the same project; changed
+inputs with the same key return 409. First creation and replay both return201 with
+`Location: /api/v1/projects/{projectId}`. Creation, the creator's explicit project grant,
+and its audit event commit together. Other organization members receive no grant.
+
+`AccessStore.require_organization` and `require_project` are the shared consumer
+authorization helpers. Call them inside the consumer's explicit transaction after
+`IdentityService.require_live`. Both memberships are checked for project resources;
+lock the organization membership before reading the current project grant. Unknown,
+cross-organization and ungranted resources return the same non-disclosing 404.
+Future project resources must reuse this boundary; an ID in a DTO is not authority.
+
+Membership provisioning is an operator command against an existing active identity,
+matched by its exact verified issuer/subject. The identity lookup uses `lock=True`
+inside the same transaction before membership changes. It neither creates users nor
+matches email. Supply process configuration through the project's authorized Doppler
+run; do not store credentials in files. For example, inside that configured process:
+
+```sh
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT bootstrap --name "Organization name"
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT organization-member grant --organization-id ORGANIZATION_ID
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT project-member grant --project-id PROJECT_ID
+```
+
+Use `revoke` in place of `grant` to remove membership. Project grants require an
+existing organization grant. Repeated grant/revoke operations are no-ops when already
+in the requested state; bootstrap deliberately creates a new organization each time.
+Commands print success only after commit. Configuration, socket/timeout/pool and
+known PostgreSQL connection/authentication/resource failures have a sanitized error
+boundary. Programming errors (for example SQL syntax/missing columns) still surface.
+An operational failure may occur after a commit whose acknowledgment was lost:
+inspect current state before retrying, especially non-idempotent bootstrap. No raw
+exception, SQL parameter, connection URL or credential is printed by this boundary.
+
+P07 now uses only `infra/compose.database.yaml` and the six variables above. The
+stopped original data directory `.local/p07/postgres` is preserved; its ephemeral
+password was not retained, so changing initialization variables cannot make that
+existing database reusable. The final manual review deliberately used a separate
+fresh private instance (project featherlane-p07-review, loopback55417, database
+featherlane_p07_review, user flf, absolute directory `.local/p07-review-final/postgres`,
+API8017). This did not recreate, reset, migrate or delete the original P07 data.
+No phase-specific database Compose file is part of the publication packet.

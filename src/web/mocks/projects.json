@@ -1,0 +1,23 @@
+{
+  "organizations": [
+    { "id": "org_northstar", "name": "Northstar Robotics" },
+    { "id": "org_research", "name": "Flight Research" }
+  ],
+  "projects": [
+    {
+      "id": "project_sih",
+      "organizationId": "org_northstar",
+      "name": "SIH qualification"
+    },
+    {
+      "id": "project_release",
+      "organizationId": "org_northstar",
+      "name": "Release validation"
+    },
+    {
+      "id": "project_research",
+      "organizationId": "org_research",
+      "name": "Research flights"
+    }
+  ]
+}
