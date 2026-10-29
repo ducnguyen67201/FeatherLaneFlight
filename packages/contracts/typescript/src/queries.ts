@@ -1,5 +1,11 @@
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import {
+  getSessionQueryKey,
+  logoutMutation as generatedLogoutMutation,
+} from "./generated/@tanstack/react-query.gen";
+import type { GetSessionResponse } from "./generated/types.gen";
+import { getSession, logout } from "./sdk";
+import {
   getContractMetaQueryKey,
   listRunsQueryKey,
   getRunOptionsQueryKey,
@@ -128,6 +134,32 @@ export function getRunArtifactsOptions(
 export function cancelRunMutation() {
   const generated = generatedCancelRunMutation();
   const options = { mutationFn: cancelRun, retry: false as const };
+  return generated.mutationKey
+    ? mutationOptions({ ...options, mutationKey: generated.mutationKey })
+    : mutationOptions(options);
+}
+
+export function getSessionOptions(
+  options: Parameters<typeof getSession>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getSessionQueryKey(options)];
+  return queryOptions<
+    GetSessionResponse,
+    Error,
+    GetSessionResponse,
+    typeof queryKey
+  >({
+    queryKey,
+    queryFn: ({ signal }) => getSession({ ...options, signal }),
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function logoutMutation() {
+  const generated = generatedLogoutMutation();
+  const options = { mutationFn: logout, retry: false as const };
   return generated.mutationKey
     ? mutationOptions({ ...options, mutationKey: generated.mutationKey })
     : mutationOptions(options);

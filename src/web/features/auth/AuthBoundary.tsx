@@ -11,6 +11,7 @@ import {
   type AuthenticatedSession,
 } from "./sessionController";
 import { SignInPage } from "./SignInPage";
+import { SignOutPage } from "./SignOutPage";
 
 export type AuthenticatedWorkspaceProps = Omit<
   AuthenticatedSession,
@@ -36,6 +37,19 @@ export function AuthBoundary({
     controller.subscribe,
     controller.getSnapshot,
   );
+  useEffect(() => {
+    if (
+      [
+        "sign-in",
+        "session-expired",
+        "sign-in-error",
+        "connection-error",
+      ].includes(state.state) &&
+      window.location.pathname !== "/sign-in"
+    ) {
+      window.history.replaceState(null, "", "/sign-in");
+    }
+  }, [state.state]);
   useEffect(() => {
     void controller.checkSession();
     const recheck = () => {
@@ -74,23 +88,18 @@ export function AuthBoundary({
   return (
     <Box sx={{ minHeight: "100dvh", display: "flex", flexDirection: "column" }}>
       {state.state === "sign-out-error" ? (
-        <SignInPage
-          state="sign-out-error"
-          displayName={state.session.user.displayName}
-          email={state.session.user.email}
-          accessUnchanged={false}
-          onCheckAccess={() => {
-            void controller.checkSession();
-          }}
-          onSignOut={() => {
+        <SignOutPage
+          state="error"
+          user={state.session.user}
+          onRetry={() => {
             void controller.signOut();
           }}
         />
+      ) : state.state === "signing-out" ? (
+        <SignOutPage state="pending" />
       ) : (
         <SignInPage
-          state={
-            state.state === "signing-out" ? "checking-session" : state.state
-          }
+          state={state.state}
           onSignIn={controller.signIn}
           onRetrySession={() => {
             void controller.checkSession();

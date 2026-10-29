@@ -41,17 +41,21 @@ context. Both callbacks guard their originating epoch. Session checks repeat on
 focus/visible-page return. Use `onSessionExpired` for a current 401; P07 owns
 403/404 access changes and organization/project-scoped query keys and invalidation.
 
-The final normal-entry mount is **WAITING_DEPENDENCY** on P07's actual reviewed
-discovery source. `main.tsx` is still the prior isolated demo entry; this partial
-checkpoint is not a live authenticated application. SessionView alone cannot
-select access-required or grant project access. No P07 paths/contracts or fake
-empty memberships are supplied here.
+The normal entry now mounts `AuthBoundary` and actual P07 `AuthenticatedProjects`.
+Only real discovery determines organization access. `AccountControl` renders the
+approved name/email and single Sign out button in the existing header slot.
+`SignOutPage` hides project content during pending/uncertain logout and exposes
+the approved retry state. Authenticated content is keyed by epoch; account
+callbacks cannot act on a newer identity. The normal app and explicit mock demo
+have separate startup paths and development origins.
 
-The independently exercised development seam uses canonical
-`http://127.0.0.1:4248`, API `127.0.0.1:8009`, and `/api` plus `/auth` proxies with
-`changeOrigin: false`. Google callback registration must use
-`http://127.0.0.1:4248/auth/google/callback`, returning to `/`. The manual proxy
-and harness were temporary, not application configuration. Real Google and HTTPS
-browser verification remain pending with the identity owner. An unconfigured
-native Google navigation currently shows the API's canonical AUTH_UNAVAILABLE
-JSON failure; it does not fabricate a successful login.
+Development uses canonical `http://127.0.0.1:4248`, API `127.0.0.1:8009`, and
+`/api` plus `/auth` proxies preserving browser Host/Origin with
+`changeOrigin: false`. Google returns through
+`http://127.0.0.1:4248/auth/google/callback`, then `/` routes to the live Settings
+workspace. A canonical anonymous/expired response routes to `/sign-in`.
+Real Google sign-in/callback, persisted session reload and UI logout through this
+loopback proxy have been verified using the human-confirmed rotated Doppler pair.
+HTTPS deployment remains separately unverified. With a provider-unconfigured API,
+native Google navigation fails closed with canonical AUTH_UNAVAILABLE JSON; no
+browser error redirect or successful login is fabricated.
