@@ -37,6 +37,7 @@ const checkOptions: readonly { value: CheckKind; label: string }[] = [
 ];
 type Props = {
   projectName: string;
+  draftsHref: string;
   rows: readonly SuiteRevisionView[];
   state: "loading" | "error" | "ready";
   search: string;
@@ -71,14 +72,19 @@ export function SuiteCatalogPage(props: Props) {
         eyebrow="TEST SUITES"
         description="See what each suite does, what it checks, and the evidence it needs."
         actions={
-          <Button
-            variant="outlined"
-            color="secondary"
-            startIcon={<InfoOutlined />}
-            onClick={() => setAdding(true)}
-          >
-            How to add suites
-          </Button>
+          <Stack direction="row" spacing={3}>
+            <Button component="a" href={props.draftsHref} variant="contained">
+              Drafts & editor
+            </Button>
+            <Button
+              variant="outlined"
+              color="secondary"
+              startIcon={<InfoOutlined />}
+              onClick={() => setAdding(true)}
+            >
+              How to add suites
+            </Button>
+          </Stack>
         }
         filters={
           <Stack
@@ -311,8 +317,7 @@ export function SuiteCatalogPage(props: Props) {
             </Paper>
           )}
           <Typography variant="body2" color="text.secondary">
-            Published revisions are immutable. Suite authoring is not available
-            yet.
+            Continue editing in Drafts & editor to publish a new revision.
           </Typography>
         </Stack>
       </PageLayout>
@@ -333,8 +338,8 @@ export function SuiteCatalogPage(props: Props) {
               qualification.
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Creating drafts, editing scenarios, and publishing new revisions
-              through the UI will be available in the suite authoring workflow.
+              Open Drafts & editor to create a suite. Open any published
+              revision and choose Edit draft to work on its next version.
             </Typography>
           </Stack>
         </DialogContent>

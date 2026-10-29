@@ -32,6 +32,7 @@ class SuiteCatalog:
         cursor: str | None,
         search: str | None = None,
         required_check: str | None = None,
+        suite_id: str | None = None,
     ) -> SuiteCatalogEnvelope:
         async with self.session.begin():
             await self.identity.require_live(principal, handle)
@@ -39,7 +40,7 @@ class SuiteCatalog:
                 principal.user_id, project_id
             )
             rows = await self.store.catalog(
-                project_id, limit, cursor, search, required_check
+                project_id, limit, cursor, search, required_check, suite_id
             )
             return SuiteCatalogEnvelope(
                 data=[revision_view(row) for row in rows[:limit]],

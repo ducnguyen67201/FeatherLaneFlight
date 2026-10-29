@@ -97,6 +97,7 @@ function SuiteProjectWorkspace({
           organizationId={project.organizationId}
           projectId={project.id}
           projectName={project.name}
+          csrfToken={props.csrfToken}
           client={props.client}
           cacheScope={[...props.cacheScope, props.userId]}
           onAccessFailure={props.onAccessFailure}

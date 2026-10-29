@@ -170,10 +170,13 @@ class SuiteStore:
         cursor: str | None,
         search: str | None = None,
         required_check: str | None = None,
+        suite_id: str | None = None,
     ) -> list[SuiteRevisionRecord]:
         query = select(SuiteRevisionRecord).where(
             SuiteRevisionRecord.project_id == project_id
         )
+        if suite_id is not None:
+            query = query.where(SuiteRevisionRecord.suite_id == suite_id)
         if search and search.strip():
             needle = (
                 search.strip()

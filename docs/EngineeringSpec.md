@@ -55,6 +55,8 @@ Do not introduce Redis, a separate message broker, Kubernetes, or independent sc
 
 Subsystem detail: [build and profile registration architecture](architecture/build-profile-registration.md) records the approved P09 scope and its implementation status.
 
+Subsystem detail: [suite authoring architecture](architecture/suite-authoring.md) records the approved P11 draft/publication scope, edit and publication versioning, trust boundary and local implementation status.
+
 ```text
  USER'S BROWSER                         FEATHERLANEFLIGHT CONTROL PLANE
  +--------------------------+           +-----------------------------------+
@@ -550,13 +552,14 @@ Normalize FastAPI request-validation errors into the canonical `ErrorEnvelope`: 
 | `GET /api/v1/projects/:projectId/settings`                                        | Current membership, build/baseline settings and effective retention; no role/permission matrix or secret values.                              |
 | `GET /api/v1/projects/:projectId/run-options`                                     | Runner/profile/build selections and server-calculated eligible suites/reasons. Bounded query fields: `runnerId`, `localProfileId`, `buildId`. |
 | `GET /api/v1/projects/:projectId/integration-profiles`                            | Supported compatibility profiles and capabilities.                                                                                            |
-| `GET /api/v1/projects/:projectId/test-suites`                                     | Suite drafts and published revisions.                                                                                                         |
-| `POST /api/v1/projects/:projectId/test-suites`                                    | Project member creates draft.                                                                                                                 |
-| `GET /api/v1/test-suites/:suiteId`                                                | Suite identity, draft summary, and published revision list.                                                                                   |
-| `GET /api/v1/test-suites/:suiteId/draft`                                          | Authorized editable draft content and its expected revision.                                                                                  |
-| `GET /api/v1/suite-revisions/:revisionId`                                         | Exact published immutable content for detail/review screens.                                                                                  |
-| `PATCH /api/v1/test-suites/:suiteId/draft`                                        | Project member edits with revision precondition; no last-write-wins overwrite.                                                                |
-| `POST /api/v1/test-suites/:suiteId/revisions`                                     | Validate and publish immutable revision.                                                                                                      |
+| `GET /api/v1/projects/:projectId/suites`                                          | Published immutable revisions; search/check filtering before cursor pagination.                                                               |
+| `GET /api/v1/projects/:projectId/test-suites`                                     | Bounded editable draft summaries; published history uses the separate catalog.                                                                |
+| `POST /api/v1/projects/:projectId/test-suites`                                    | Create a preset draft with an unselected profile, or open an exact published source; principal/project-scoped idempotency.                    |
+| `GET /api/v1/projects/:projectId/test-suites/:suiteId/draft`                      | Editable draft content, saved draft version, next published revision and incomplete-field issues.                                             |
+| `PATCH /api/v1/projects/:projectId/test-suites/:suiteId/draft`                    | Replace bounded draft content with `expectedDraftVersion`; reject stale edits without overwriting.                                            |
+| `POST /api/v1/projects/:projectId/test-suites/:suiteId/draft/validate`            | Validate the saved expected version, canonical definition, exact profile and synthetic reference qualification without publication.           |
+| `POST /api/v1/projects/:projectId/test-suites/:suiteId/revisions`                 | Publish the expected saved version atomically with optional reviewed-definition digest fencing; retry recovers the same immutable revision.   |
+| `GET /api/v1/projects/:projectId/suite-revisions/:suiteRevisionId`                | Exact published immutable content; suite identities and all authoring access remain project-scoped.                                           |
 | `GET/POST /api/v1/projects/:projectId/runs`                                       | Read runs / admit idempotent simulation job.                                                                                                  |
 | `GET /api/v1/runs/:runId`                                                         | Run manifest, execution, outcome, trials, and checks.                                                                                         |
 | `GET /api/v1/runs/:runId/events`                                                  | JSON event page by default; `Accept: text/event-stream` selects authenticated resumable SSE.                                                  |
