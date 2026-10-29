@@ -20,6 +20,9 @@ from featherlane_api.modules.identity.http import install_identity_errors
 from featherlane_api.modules.identity.http import router as identity_router
 from featherlane_api.modules.identity.oidc import GoogleOidc
 from featherlane_api.modules.identity.persistence import IdentityStore
+from featherlane_api.modules.leases.http import install_lease_errors
+from featherlane_api.modules.leases.http import router as leases_router
+from featherlane_api.modules.leases.persistence import LeaseStore
 from featherlane_api.modules.registration.http import router as registration_router
 from featherlane_api.modules.registration.persistence import RegistrationStore
 from featherlane_api.modules.runners.http import install_runner_errors
@@ -55,6 +58,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
                     await SuiteStore(session).check_ready()
                     await SuiteDraftStore(session).check_ready()
                     await RunStore(session).check_ready()
+                    await LeaseStore(session).check_ready()
             except Exception:
                 logger.error("Database startup check failed")
                 raise RuntimeError(
@@ -82,6 +86,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     install_identity_errors(app)
     install_access_errors(app)
     install_runner_errors(app)
+    install_lease_errors(app)
     app.include_router(meta_router)
     app.include_router(identity_router)
     app.include_router(access_router)
@@ -91,4 +96,5 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(suites_router)
     app.include_router(draft_router)
     app.include_router(runs_router)
+    app.include_router(leases_router)
     return app

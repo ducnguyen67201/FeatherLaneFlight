@@ -11,12 +11,14 @@ from featherlane_contracts import (
 )
 from featherlane_contracts.run_detail import (
     ArtifactSummary,
+    RunAttempt,
     RunDetail,
     TerminalReason,
     TrialCounts,
     TrialView,
 )
 
+from featherlane_api.modules.leases.persistence import AttemptRecord
 from featherlane_api.modules.runs.persistence import RunRecord
 from featherlane_api.modules.runs.snapshots import admission_snapshot
 
@@ -56,14 +58,18 @@ def run_entry(row: RunRecord) -> RunListEntry:
     )
 
 
-def run_detail(row: RunRecord, now: datetime) -> RunDetail:
-    # P13/P15 extend attempts/event composition from their actual persisted data.
-    # Queued/canceled-before-claim rows have never had an attempt or artifacts.
-    if row.execution_state not in {"QUEUED", "CANCELED"} or row.started_at is not None:
-        raise RuntimeError("Attempt-backed inspection requires its owning composition.")
+def run_detail(
+    row: RunRecord, now: datetime, attempts: list[AttemptRecord] | None = None
+) -> RunDetail:
+    attempts = attempts or []
+    if not attempts and (
+        row.execution_state not in {"QUEUED", "CANCELED"} or row.started_at is not None
+    ):
+        raise RuntimeError("Attempt-backed run is missing its persisted attempt.")
+    current = attempts[-1] if attempts else None
     manifest, suite, matrix = admission_snapshot(row)
     scenarios = {scenario.id: scenario for scenario in suite.scenarios}
-    canceled = row.execution_state == "CANCELED"
+    skipped = row.execution_state in {"CANCELED", "ERROR"}
     reason = (
         TerminalReason.model_validate(row.terminal_reason)
         if row.terminal_reason
@@ -73,12 +79,12 @@ def run_detail(row: RunRecord, now: datetime) -> RunDetail:
         TrialView.model_validate(
             {
                 "id": trial.id,
-                "attemptId": None,
+                "attemptId": current.id if current else None,
                 "scenarioId": trial.scenario_id,
                 "scenarioTitle": scenarios[trial.scenario_id].title,
                 "repetitionIndex": trial.repetition_index,
                 "executionState": TrialExecutionState.SKIPPED
-                if canceled
+                if skipped
                 else TrialExecutionState.PENDING,
                 "evaluationOutcome": EvaluationOutcome.NOT_EVALUATED,
                 "startedAt": None,
@@ -95,7 +101,18 @@ def run_detail(row: RunRecord, now: datetime) -> RunDetail:
         {
             **run_entry(row).model_dump(),
             "requestedManifest": manifest.model_dump(),
-            "attempts": [],
+            "attempts": [
+                RunAttempt.model_validate(
+                    {
+                        "id": attempt.id,
+                        "observedManifest": attempt.observed_manifest,
+                        "startedAt": timestamp(attempt.manifest_accepted_at),
+                        "finishedAt": timestamp(attempt.finished_at),
+                        "terminalReason": attempt.terminal_reason,
+                    }
+                ).model_dump()
+                for attempt in attempts
+            ],
             "trials": [trial.model_dump() for trial in trials],
             "checks": [check.model_dump() for check in suite.checks],
             "artifactSummary": ArtifactSummary(
@@ -108,7 +125,7 @@ def run_detail(row: RunRecord, now: datetime) -> RunDetail:
                 inconclusive=0,
                 canceled=0,
                 infrastructureError=0,
-                skipped=len(matrix) if canceled else 0,
+                skipped=len(matrix) if skipped else 0,
             ).model_dump(),
             "terminalReason": reason.model_dump() if reason else None,
             "serverEventCursor": "0",

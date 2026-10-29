@@ -27,6 +27,9 @@ class RunnerRecord(Base):
             name="capacity_state",
         ),
         CheckConstraint("heartbeat_sequence >= 0", name="heartbeat_sequence"),
+        CheckConstraint(
+            "fencing_number BETWEEN 0 AND 9007199254740991", name="fencing_number"
+        ),
     )
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     project_id: Mapped[str] = mapped_column(
@@ -43,6 +46,7 @@ class RunnerRecord(Base):
     contract_version: Mapped[str] = mapped_column(String(32))
     protocol_version: Mapped[str] = mapped_column(String(32))
     capacity_state: Mapped[str] = mapped_column(String(32))
+    fencing_number: Mapped[int] = mapped_column(BigInteger, server_default="0")
     heartbeat_sequence: Mapped[int] = mapped_column(BigInteger)
     heartbeat_digest: Mapped[str | None] = mapped_column(String(64))
     available_builds: Mapped[list[dict]] = mapped_column(JSONB)

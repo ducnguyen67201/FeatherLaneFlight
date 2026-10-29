@@ -16,6 +16,7 @@ from pydantic import ValidationError
 from featherlane_runner.inventory import declaration_heartbeat
 from featherlane_runner.registration import LocalRegistrationError
 from featherlane_runner.storage import LocalStateError, RunnerState, StateStore
+from featherlane_runner.synthetic import synthetic_heartbeat
 from featherlane_runner.transport import (
     RunnerTransport,
     RunnerTransportError,
@@ -105,7 +106,12 @@ def recover(store: StateStore) -> None:
         transport.close()
 
 
-def start(store: StateStore, once: bool, inventory: Path | None = None) -> None:
+def start(
+    store: StateStore,
+    once: bool,
+    inventory: Path | None = None,
+    synthetic_inventory: Path | None = None,
+) -> None:
     state = store.read()
     if state is None or state.runner_id is None:
         raise LocalStateError()
@@ -116,8 +122,10 @@ def start(store: StateStore, once: bool, inventory: Path | None = None) -> None:
             if state.pending_heartbeat is None:
                 state.sequence += 1
                 try:
-                    state.pending_heartbeat = declaration_heartbeat(
-                        state.sequence, inventory
+                    state.pending_heartbeat = (
+                        synthetic_heartbeat(state.sequence, synthetic_inventory)
+                        if synthetic_inventory is not None
+                        else declaration_heartbeat(state.sequence, inventory)
                     )
                 except (LocalRegistrationError, ValidationError, OSError, ValueError):
                     # Withdraw drifted/invalid input declarations without exposing
@@ -187,10 +195,16 @@ def main() -> None:
         "start", help="Send idle heartbeats; does not claim or execute jobs"
     )
     running.add_argument("--once", action="store_true")
-    running.add_argument(
+    inputs = running.add_mutually_exclusive_group()
+    inputs.add_argument(
         "--inventory",
         type=Path,
         help="Owner-only approved local inventory JSON; metadata only",
+    )
+    inputs.add_argument(
+        "--synthetic-inventory",
+        type=Path,
+        help="Owner-only non-executing synthetic input inventory; remains DISABLED",
     )
     args = parser.parse_args()
     store = StateStore(args.state_dir)
@@ -201,7 +215,7 @@ def main() -> None:
             elif args.command == "recover":
                 recover(store)
             else:
-                start(store, args.once, args.inventory)
+                start(store, args.once, args.inventory, args.synthetic_inventory)
     except KeyboardInterrupt:
         print("Runner stopped. Saved state is retained.")
     except (
