@@ -49,17 +49,23 @@ Update values in design-tokens.json when foundation review warrants a change. In
 
 ## Brand mark
 
-Use the approved three-stroke flight mark in `src/web/assets/brand/mark.svg` for
-all product branding and browser icons. `BrandMark` provides its shared header
-presentation; keep the adjacent product name as readable text and treat the mark
-as decorative there. Preserve the transparent background and original proportions.
-Do not substitute the generic airplane icon or the later four-propeller variant.
+Use the approved **D / Impossible Lane** mark in `src/web/assets/brand/mark.svg`
+for all product branding. Its three separate polygon planes, asymmetric opening,
+open seams, hanging right toe, and projecting lower blade preserve the selected
+artwork. Keep its original proportions and flat token-defined yellow.
 
-The user approved this exact smooth three-stroke version on October 28, 2026,
-by attaching the selected image and instructing: “THIS IGS OOG, replace all logo
-with this”. The SVG traces the original artwork's three contours; it is a product
-asset, not a temporary review capture. The center trajectory represents mission
-behavior and the outer strokes represent evaluation boundaries.
+`BrandMark` supplies the shared square header image for navigation and authentication
+views. Keep the adjacent product name as readable text and the image decorative.
+The small cut in `src/web/assets/brand/favicon.svg` widens the seams for browser
+icons. The web entry also supplies ICO fallback, Apple touch and app icons, and a
+manifest from `src/web/public/brand/`. All preview tabs use the same small SVG.
+
+Approval source: in the logo-design chat on October 28, 2026, the user attached the
+original **D / Impossible Lane** screenshot and wrote “i'll choose this”. After
+reviewing the completed vector/icon kit, they instructed “Let's change of our logo
+with this everywhere” and explicitly requested a separate worktree branch and PR.
+This supersedes the earlier three-stroke mark; use the selected original D rather
+than the later K/M variations. No review screenshots are included in the repository.
 
 ## Build from the top down
 
