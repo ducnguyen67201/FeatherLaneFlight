@@ -84,6 +84,9 @@ try {
       }
       const responses = Object.entries(operation.responses).map(
         ([status, response]) => {
+          if (status === "204" && response.content === undefined) {
+            return `${JSON.stringify(status)}: null`;
+          }
           const ref = response.content?.["application/json"]?.schema?.$ref;
           if (
             !/^\d{3}$/.test(status) ||

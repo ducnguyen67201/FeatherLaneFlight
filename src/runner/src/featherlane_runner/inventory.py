@@ -26,7 +26,7 @@ class ApprovedInventory(WireModel):
     local_profiles: Annotated[list[LocalLaunchProfile], Field(max_length=100)]
 
 
-def load_inventory(path: Path) -> ApprovedInventory:
+def read_private_input(path: Path) -> bytes:
     selected = _path(str(path.expanduser().absolute()))
     if any((parent / ".git").exists() for parent in selected.parents):
         raise LocalRegistrationError("Keep private inventory outside the checkout.")
@@ -43,7 +43,11 @@ def load_inventory(path: Path) -> ApprovedInventory:
         raw = stream.read(1_048_577)
     if len(raw) > 1_048_576:
         raise LocalRegistrationError("The approved inventory is too large.")
-    return ApprovedInventory.model_validate_json(raw)
+    return raw
+
+
+def load_inventory(path: Path) -> ApprovedInventory:
+    return ApprovedInventory.model_validate_json(read_private_input(path))
 
 
 def declaration_heartbeat(sequence: int, path: Path | None) -> RunnerHeartbeat:

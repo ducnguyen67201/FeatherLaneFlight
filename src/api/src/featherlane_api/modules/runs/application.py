@@ -24,6 +24,7 @@ from featherlane_api.http.errors import ApiError
 from featherlane_api.modules.access.persistence import AccessStore
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
+from featherlane_api.modules.leases.persistence import LeaseStore
 from featherlane_api.modules.registration.application import RegistrationService
 from featherlane_api.modules.registration.domain import (
     validate_build,
@@ -217,9 +218,13 @@ class RunService:
         self, principal: Principal, handle: str | None, run_id: str
     ) -> RunDetailEnvelope:
         async with self.session.begin():
-            row = await self.store.exact(run_id)
-            await self.authorize(principal, handle, row.project_id)
-            return RunDetailEnvelope(data=run_detail(row, datetime.now(UTC)))
+            # Read-only inspection locks the run through attempt composition.
+            # It never acquires a runner lock or mutates assignment state.
+            lookup = await self.store.exact(run_id)
+            await self.authorize(principal, handle, lookup.project_id)
+            row = await self.store.exact(run_id, lock=True)
+            attempts = await LeaseStore(self.session).for_run(run_id)
+            return RunDetailEnvelope(data=run_detail(row, datetime.now(UTC), attempts))
 
     async def cancel(
         self, principal: Principal, handle: str | None, csrf: str, run_id: str

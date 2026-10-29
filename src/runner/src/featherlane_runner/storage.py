@@ -8,13 +8,25 @@ import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 
-from featherlane_contracts import Identifier
+from featherlane_contracts import Digest, Identifier
+from featherlane_contracts.leases import AttemptHeartbeat, LeaseGrant
 from featherlane_contracts.runners import RunnerHeartbeat, SecretToken
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class LocalStateError(Exception):
     pass
+
+
+class AttemptJournalEntry(BaseModel):
+    """One durable assignment; recovery never grants a fresh local deadline."""
+
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, strict=True)
+    claim_request_id: Identifier
+    lease: LeaseGrant
+    manifest_digest: Digest | None = None
+    pending_heartbeat: AttemptHeartbeat | None = None
+    terminal: bool = False
 
 
 class RunnerState(BaseModel):
@@ -28,6 +40,8 @@ class RunnerState(BaseModel):
     project_id: Identifier | None = None
     sequence: int = Field(default=0, ge=0, le=9_007_199_254_740_991)
     pending_heartbeat: RunnerHeartbeat | None = None
+    pending_claim_id: Identifier | None = None
+    attempt: AttemptJournalEntry | None = None
 
 
 class StateStore:

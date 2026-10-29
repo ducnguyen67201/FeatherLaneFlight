@@ -1,0 +1,125 @@
+"""Persist protocol intent before sending; an assignment is never started twice."""
+
+from uuid import uuid4
+
+from featherlane_contracts.leases import AttemptHeartbeat, ClaimRequest, LeaseGrant
+
+from featherlane_runner.storage import (
+    AttemptJournalEntry,
+    LocalStateError,
+    RunnerState,
+    StateStore,
+)
+
+
+def same_assignment(left: LeaseGrant, right: LeaseGrant) -> bool:
+    return all(
+        getattr(left, field) == getattr(right, field)
+        for field in (
+            "attempt_id",
+            "run_id",
+            "runner_id",
+            "project_id",
+            "lease_id",
+            "fencing_number",
+        )
+    )
+
+
+class ProtocolJournal:
+    """Used under StateStore.lock; persisted grants are recovery data, not authority."""
+
+    def __init__(self, store: StateStore, state: RunnerState):
+        if state.runner_id is None or state.project_id is None:
+            raise LocalStateError()
+        self.store = store
+        self.state = state
+
+    def claim_request(self) -> ClaimRequest:
+        attempt = self.state.attempt
+        if attempt is not None and attempt.terminal:
+            # P14 owns explicit cleanup/recovery. Never auto-claim after loss.
+            raise LocalStateError()
+        if self.state.pending_claim_id is None:
+            self.state.pending_claim_id = (
+                attempt.claim_request_id if attempt is not None else uuid4().hex
+            )
+            self.store.save(self.state)
+        return ClaimRequest(requestId=self.state.pending_claim_id)
+
+    def record_claim(self, lease: LeaseGrant | None) -> None:
+        request_id = self.state.pending_claim_id
+        if request_id is None:
+            raise LocalStateError()
+        if lease is None:
+            if self.state.attempt is not None:
+                raise LocalStateError()
+        else:
+            self._require_owner(lease)
+            attempt = self.state.attempt
+            if attempt is None:
+                self.state.attempt = AttemptJournalEntry(
+                    claim_request_id=request_id, lease=lease
+                )
+            else:
+                if (
+                    request_id != attempt.claim_request_id
+                    or not same_assignment(attempt.lease, lease)
+                    or lease.last_heartbeat_sequence
+                    < attempt.lease.last_heartbeat_sequence
+                ):
+                    raise LocalStateError()
+                attempt.lease = lease
+        self.state.pending_claim_id = None
+        self.store.save(self.state)
+
+    def renewal_request(self) -> AttemptHeartbeat:
+        attempt = self._active()
+        if attempt.pending_heartbeat is None:
+            attempt.pending_heartbeat = AttemptHeartbeat(
+                leaseId=attempt.lease.lease_id,
+                fencingNumber=attempt.lease.fencing_number,
+                sequence=attempt.lease.last_heartbeat_sequence + 1,
+            )
+            self.store.save(self.state)
+        return attempt.pending_heartbeat
+
+    def record_renewal(self, lease: LeaseGrant) -> None:
+        attempt = self._active()
+        self._require_owner(lease)
+        if (
+            not same_assignment(attempt.lease, lease)
+            or attempt.pending_heartbeat is None
+            or lease.last_heartbeat_sequence != attempt.pending_heartbeat.sequence
+        ):
+            raise LocalStateError()
+        attempt.lease = lease
+        attempt.pending_heartbeat = None
+        self.store.save(self.state)
+
+    def record_manifest(self, digest: str) -> None:
+        attempt = self._active()
+        if attempt.manifest_digest is not None and attempt.manifest_digest != digest:
+            raise LocalStateError()
+        attempt.manifest_digest = digest
+        self.store.save(self.state)
+
+    def mark_expired(self) -> None:
+        attempt = self.state.attempt
+        if attempt is not None:
+            attempt.terminal = True
+            attempt.pending_heartbeat = None
+        self.store.save(self.state)
+
+    def _active(self) -> AttemptJournalEntry:
+        attempt = self.state.attempt
+        if attempt is None or attempt.terminal:
+            raise LocalStateError()
+        return attempt
+
+    def _require_owner(self, lease: LeaseGrant) -> None:
+        if (
+            lease.runner_id != self.state.runner_id
+            or lease.project_id != self.state.project_id
+        ):
+            raise LocalStateError()

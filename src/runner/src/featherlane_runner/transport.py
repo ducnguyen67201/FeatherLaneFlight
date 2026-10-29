@@ -4,7 +4,23 @@ from ipaddress import ip_address
 from urllib.parse import urlsplit
 
 import httpx2
-from featherlane_contracts import CONTRACT_VERSION, PROTOCOL_VERSION, ErrorEnvelope
+from featherlane_contracts import (
+    CONTRACT_VERSION,
+    PROTOCOL_VERSION,
+    ErrorEnvelope,
+    Identifier,
+)
+from featherlane_contracts.leases import (
+    RUNNER_ATTEMPT_HEARTBEAT_PATH,
+    RUNNER_ATTEMPT_MANIFEST_PATH,
+    RUNNER_CLAIMS_PATH,
+    AttemptHeartbeat,
+    AttemptHeartbeatEnvelope,
+    AttemptManifestEnvelope,
+    AttemptManifestRequest,
+    ClaimEnvelope,
+    ClaimRequest,
+)
 from featherlane_contracts.runners import (
     RUNNER_ENROLLMENTS_PATH,
     RUNNER_HEARTBEAT_PATH,
@@ -13,7 +29,7 @@ from featherlane_contracts.runners import (
     RunnerHeartbeat,
     RunnerIdentityEnvelope,
 )
-from pydantic import AnyHttpUrl, ValidationError
+from pydantic import AnyHttpUrl, TypeAdapter, ValidationError
 
 
 class RunnerTransportError(Exception):
@@ -60,13 +76,15 @@ class RunnerTransport:
     def close(self) -> None:
         self.client.close()
 
-    def _request(
+    def _send(
         self,
         method: str,
         path: str,
         credential: str | None = None,
         body: dict | None = None,
-    ) -> RunnerIdentityEnvelope:
+        *,
+        allow_empty: bool = False,
+    ) -> bytes | None:
         try:
             with self.client.stream(
                 method,
@@ -76,9 +94,13 @@ class RunnerTransport:
             ) as response:
                 raw = bytearray()
                 for chunk in response.iter_bytes():
-                    if len(raw) + len(chunk) > 262144:
+                    if len(raw) + len(chunk) > 1_048_576:
                         raise RunnerTransportError()
                     raw.extend(chunk)
+                if allow_empty and response.status_code == 204:
+                    if raw:
+                        raise RunnerTransportError(response.status_code)
+                    return None
                 if (
                     response.headers.get("content-type", "").split(";", 1)[0]
                     != "application/json"
@@ -92,9 +114,59 @@ class RunnerTransport:
                         # HTTP status so heartbeat retry/journal policy still applies.
                         raise RunnerTransportError(response.status_code) from None
                     raise RunnerTransportError(response.status_code, error.error.code)
-                return RunnerIdentityEnvelope.model_validate_json(bytes(raw))
+                return bytes(raw)
         except httpx2.HTTPError:
             raise RunnerTransportError() from None
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        credential: str | None = None,
+        body: dict | None = None,
+    ) -> RunnerIdentityEnvelope:
+        raw = self._send(method, path, credential, body)
+        if raw is None:
+            raise RunnerTransportError()
+        return RunnerIdentityEnvelope.model_validate_json(raw)
+
+    def claim(self, credential: str, body: ClaimRequest) -> ClaimEnvelope | None:
+        raw = self._send(
+            "POST",
+            RUNNER_CLAIMS_PATH,
+            credential,
+            body.model_dump(mode="json"),
+            allow_empty=True,
+        )
+        return ClaimEnvelope.model_validate_json(raw) if raw is not None else None
+
+    def attempt_heartbeat(
+        self, credential: str, attempt_id: str, body: AttemptHeartbeat
+    ) -> AttemptHeartbeatEnvelope:
+        attempt_id = TypeAdapter(Identifier).validate_python(attempt_id)
+        raw = self._send(
+            "POST",
+            RUNNER_ATTEMPT_HEARTBEAT_PATH.format(attemptId=attempt_id),
+            credential,
+            body.model_dump(mode="json"),
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return AttemptHeartbeatEnvelope.model_validate_json(raw)
+
+    def attempt_manifest(
+        self, credential: str, attempt_id: str, body: AttemptManifestRequest
+    ) -> AttemptManifestEnvelope:
+        attempt_id = TypeAdapter(Identifier).validate_python(attempt_id)
+        raw = self._send(
+            "POST",
+            RUNNER_ATTEMPT_MANIFEST_PATH.format(attemptId=attempt_id),
+            credential,
+            body.model_dump(mode="json"),
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return AttemptManifestEnvelope.model_validate_json(raw)
 
     def enroll(self, body: EnrollRunnerRequest) -> RunnerIdentityEnvelope:
         return self._request(

@@ -108,9 +108,16 @@ function installValidation(
       (operation) =>
         operation.method === options.method && operation.path === options.url,
     );
-    const responses: Readonly<Record<string, ZodType>> | undefined =
+    const responses: Readonly<Record<string, ZodType | null>> | undefined =
       policy?.responses;
     const validator = responses?.[String(response.status)];
+    if (response.status === 204 && validator === null) {
+      if ((await response.clone().arrayBuffer()).byteLength !== 0) {
+        throw invalid();
+      }
+      requireCurrent();
+      return response;
+    }
     if (
       !validator ||
       response.headers.get("content-type")?.split(";")[0]?.trim() !==
