@@ -21,6 +21,7 @@ import { useCreateProjectForm } from "./useCreateProjectForm";
 
 export type WorkspaceDisplayState =
   "ready" | "loading" | "error" | "access-required" | "access-removed";
+export type SettingsSection = "projects" | "registrations";
 type ProjectsWorkspaceProps = {
   organizations: readonly OrganizationView[];
   projects: readonly ProjectView[];
@@ -32,6 +33,9 @@ type ProjectsWorkspaceProps = {
   notice?: string;
   canCreate?: boolean;
   peopleHref?: string;
+  section?: SettingsSection;
+  onSectionChange?: (section: SettingsSection) => void;
+  registrationCatalog?: ReactNode;
   onOrganizationChange: (organizationId: string) => void;
   onProjectChange: (projectId: string) => void;
   onRetry: () => void;
@@ -57,6 +61,9 @@ export function ProjectsWorkspace({
   notice,
   canCreate = true,
   peopleHref,
+  section = "projects",
+  onSectionChange,
+  registrationCatalog,
   onOrganizationChange,
   onProjectChange,
   onRetry,
@@ -116,13 +123,24 @@ export function ProjectsWorkspace({
             Settings
           </Typography>,
           <Typography key="projects" variant="body2">
-            Organization & projects
+            {section === "registrations"
+              ? "Builds & profiles"
+              : "Organization & projects"}
           </Typography>,
         ]}
-        title="Organization & projects"
-        description="Manage your organization’s projects. Switch projects from the sidebar."
+        title={
+          section === "registrations"
+            ? "Builds & profiles"
+            : "Organization & projects"
+        }
+        description={
+          section === "registrations"
+            ? "Inspect immutable build and profile registrations for this project."
+            : "Manage your organization’s projects. Switch projects from the sidebar."
+        }
         actions={
-          organization && (
+          organization &&
+          section === "projects" && (
             <Stack
               direction="row"
               spacing={3}
@@ -147,6 +165,24 @@ export function ProjectsWorkspace({
           )
         }
       >
+        {onSectionChange && organization && (
+          <Stack direction="row" spacing={2} sx={{ mb: 5 }}>
+            <Button
+              variant={section === "projects" ? "outlined" : "text"}
+              aria-current={section === "projects" ? "page" : undefined}
+              onClick={() => onSectionChange("projects")}
+            >
+              Organization & projects
+            </Button>
+            <Button
+              variant={section === "registrations" ? "outlined" : "text"}
+              aria-current={section === "registrations" ? "page" : undefined}
+              onClick={() => onSectionChange("registrations")}
+            >
+              Builds & profiles
+            </Button>
+          </Stack>
+        )}
         {notice && organization && (
           <Alert severity="success" sx={{ mb: 5, overflowWrap: "anywhere" }}>
             {notice}
@@ -200,27 +236,35 @@ export function ProjectsWorkspace({
         ) : (
           organization && (
             <Stack spacing={6}>
-              <OrganizationSettings
-                organizations={organizations}
-                organizationId={organization.id}
-                onChange={onOrganizationChange}
-                onMore={moreOrganizations}
-                loadingMore={loadingMoreOrganizations}
-              />
-              <ProjectsTable
-                projects={visibleProjects}
-                projectId={projectId}
-                onSelect={onProjectChange}
-                onCreate={canCreate ? startCreate : undefined}
-                onMore={moreProjects}
-                loadingMore={loadingMoreProjects}
-              />
+              {section === "registrations" ? (
+                registrationCatalog
+              ) : (
+                <>
+                  <OrganizationSettings
+                    organizations={organizations}
+                    organizationId={organization.id}
+                    onChange={onOrganizationChange}
+                    onMore={moreOrganizations}
+                    loadingMore={loadingMoreOrganizations}
+                  />
+                  <ProjectsTable
+                    projects={visibleProjects}
+                    projectId={projectId}
+                    onSelect={onProjectChange}
+                    onCreate={canCreate ? startCreate : undefined}
+                    onMore={moreProjects}
+                    loadingMore={loadingMoreProjects}
+                  />
+                </>
+              )}
             </Stack>
           )
         )}
       </PageLayout>
       <CreateProjectDialog
-        open={form.open && !!organization && canCreate}
+        open={
+          form.open && !!organization && canCreate && section === "projects"
+        }
         organizationName={organization?.name ?? ""}
         name={form.name}
         pending={form.pending}

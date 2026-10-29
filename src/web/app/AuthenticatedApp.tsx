@@ -20,10 +20,12 @@ function Workspace({
 }: WorkspaceProps) {
   const organizationId = peopleOrganization(window.location.pathname);
   useEffect(() => {
-    // Live Settings/people routes share auth; run workflows remain in the explicit demo.
+    // Live Settings, People and Runners share authentication.
     if (
       !organizationId &&
-      !["/settings", "/runners"].includes(window.location.pathname)
+      !["/settings", "/settings/builds", "/runners"].includes(
+        window.location.pathname,
+      )
     )
       window.history.replaceState(null, "", "/settings");
   }, [organizationId]);

@@ -10,13 +10,11 @@ from pathlib import Path
 from uuid import uuid4
 
 from featherlane_contracts import CONTRACT_VERSION, PROTOCOL_VERSION
-from featherlane_contracts.runners import (
-    EnrollRunnerRequest,
-    RunnerDiagnostic,
-    RunnerHeartbeat,
-)
+from featherlane_contracts.runners import EnrollRunnerRequest, RunnerDiagnostic
 from pydantic import ValidationError
 
+from featherlane_runner.inventory import declaration_heartbeat
+from featherlane_runner.registration import LocalRegistrationError
 from featherlane_runner.storage import LocalStateError, RunnerState, StateStore
 from featherlane_runner.transport import (
     RunnerTransport,
@@ -107,7 +105,7 @@ def recover(store: StateStore) -> None:
         transport.close()
 
 
-def start(store: StateStore, once: bool) -> None:
+def start(store: StateStore, once: bool, inventory: Path | None = None) -> None:
     state = store.read()
     if state is None or state.runner_id is None:
         raise LocalStateError()
@@ -117,15 +115,23 @@ def start(store: StateStore, once: bool) -> None:
         while True:
             if state.pending_heartbeat is None:
                 state.sequence += 1
-                state.pending_heartbeat = RunnerHeartbeat(
-                    sequence=state.sequence,
-                    contractVersion=CONTRACT_VERSION,
-                    protocolVersion=PROTOCOL_VERSION,
-                    capacityState="DISABLED",
-                    availableBuilds=[],
-                    localProfiles=[],
-                    diagnostics=[RunnerDiagnostic(code="NOT_CONFIGURED")],
-                )
+                try:
+                    state.pending_heartbeat = declaration_heartbeat(
+                        state.sequence, inventory
+                    )
+                except (LocalRegistrationError, ValidationError, OSError, ValueError):
+                    # Withdraw drifted/invalid input declarations without exposing
+                    # private paths or skipping the durable heartbeat journal.
+                    state.pending_heartbeat = declaration_heartbeat(
+                        state.sequence, None
+                    )
+                    state.pending_heartbeat.diagnostics = [
+                        RunnerDiagnostic(code="LOCALLY_DISABLED")
+                    ]
+                    print(
+                        "Approved inputs are unavailable; declarations withdrawn.",
+                        file=sys.stderr,
+                    )
                 store.save(state)
             try:
                 result = transport.heartbeat(state.credential, state.pending_heartbeat)
@@ -181,6 +187,11 @@ def main() -> None:
         "start", help="Send idle heartbeats; does not claim or execute jobs"
     )
     running.add_argument("--once", action="store_true")
+    running.add_argument(
+        "--inventory",
+        type=Path,
+        help="Owner-only approved local inventory JSON; metadata only",
+    )
     args = parser.parse_args()
     store = StateStore(args.state_dir)
     try:
@@ -190,7 +201,7 @@ def main() -> None:
             elif args.command == "recover":
                 recover(store)
             else:
-                start(store, args.once)
+                start(store, args.once, args.inventory)
     except KeyboardInterrupt:
         print("Runner stopped. Saved state is retained.")
     except (

@@ -13,7 +13,7 @@ from featherlane_contracts.runners import (
     RunnerHeartbeat,
     RunnerIdentityEnvelope,
 )
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, ValidationError
 
 
 class RunnerTransportError(Exception):
@@ -85,7 +85,12 @@ class RunnerTransport:
                 ):
                     raise RunnerTransportError(response.status_code)
                 if response.status_code not in (200, 201):
-                    error = ErrorEnvelope.model_validate_json(bytes(raw))
+                    try:
+                        error = ErrorEnvelope.model_validate_json(bytes(raw))
+                    except ValidationError:
+                        # Gateways may return non-contract JSON. Preserve the
+                        # HTTP status so heartbeat retry/journal policy still applies.
+                        raise RunnerTransportError(response.status_code) from None
                     raise RunnerTransportError(response.status_code, error.error.code)
                 return RunnerIdentityEnvelope.model_validate_json(bytes(raw))
         except httpx2.HTTPError:

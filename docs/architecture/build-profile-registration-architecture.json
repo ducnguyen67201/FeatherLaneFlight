@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Build and profile registration architecture — P09 scope",
+    "locale": "en",
+    "output": "docs/architecture/build-profile-registration-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "d243ba2c54cca716b48cc273a71661cada290569",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "member",
+      "type": "external",
+      "label": "Project member",
+      "sublabel": "Browser session",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        130,
+        70
+      ],
+      "tag": "EXISTING",
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/access/application.py",
+          "line": 66,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "access",
+      "type": "security",
+      "label": "Identity + membership",
+      "sublabel": "Rechecked project access",
+      "pos": [
+        350,
+        40
+      ],
+      "size": [
+        180,
+        80
+      ],
+      "tag": "MERGED",
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/access/application.py",
+          "line": 66,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "backend",
+      "label": "🟡 Profile catalog",
+      "sublabel": "PX4 or SYNTHETIC",
+      "pos": [
+        670,
+        40
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "tag": "🟡 THIS BRANCH",
+      "sources": [
+        {
+          "path": "docs/phases/P09.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "exact",
+      "type": "backend",
+      "label": "🟡 Exact lookup",
+      "sublabel": "ID + revision + digest",
+      "pos": [
+        350,
+        230
+      ],
+      "size": [
+        180,
+        80
+      ],
+      "tag": "🟡 THIS BRANCH",
+      "sources": [
+        {
+          "path": "docs/phases/P09.md",
+          "line": 20,
+          "end_line": 35
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 360,
+          "end_line": 380
+        }
+      ]
+    },
+    {
+      "id": "profiles",
+      "type": "database",
+      "label": "🟡 Registered profiles",
+      "sublabel": "Immutable; DECLARED",
+      "pos": [
+        670,
+        230
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "tag": "🟡 THIS BRANCH",
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 360,
+          "end_line": 380
+        },
+        {
+          "path": "docs/phases/P09.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "suites",
+      "type": "database",
+      "label": "Suite revisions",
+      "sublabel": "Immutable definitions",
+      "pos": [
+        40,
+        440
+      ],
+      "size": [
+        130,
+        80
+      ],
+      "tag": "P10 PLANNED",
+      "sources": [
+        {
+          "path": "docs/phases/P10.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "importer",
+      "type": "backend",
+      "label": "Bounded suite import",
+      "sublabel": "Caller owns transaction",
+      "pos": [
+        350,
+        440
+      ],
+      "size": [
+        180,
+        80
+      ],
+      "tag": "P10 PLANNED",
+      "sources": [
+        {
+          "path": "docs/phases/P10.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "verifier",
+      "type": "backend",
+      "label": "Synthetic verifier",
+      "sublabel": "Fixture evidence only",
+      "pos": [
+        350,
+        650
+      ],
+      "size": [
+        180,
+        80
+      ],
+      "tag": "P10 PLANNED",
+      "sources": [
+        {
+          "path": "docs/phases/P10.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "proof",
+      "type": "database",
+      "label": "Qualification proof",
+      "sublabel": "Exact profile + versions",
+      "pos": [
+        670,
+        650
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "tag": "P10 PLANNED",
+      "sources": [
+        {
+          "path": "docs/phases/P10.md",
+          "line": 20,
+          "end_line": 35
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Authorized project operations (logical boundary)",
+      "wraps": [
+        "access",
+        "catalog",
+        "exact",
+        "profiles"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "Synthetic-only qualification (proposed)",
+      "wraps": [
+        "verifier",
+        "proof"
+      ],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "from": "member",
+      "to": "access",
+      "label": "session",
+      "variant": "security"
+    },
+    {
+      "from": "access",
+      "to": "catalog",
+      "label": "scope check",
+      "variant": "security"
+    },
+    {
+      "from": "catalog",
+      "to": "profiles",
+      "label": "insert / read",
+      "variant": "emphasis"
+    },
+    {
+      "from": "exact",
+      "to": "profiles",
+      "label": "exact read",
+      "variant": "emphasis"
+    },
+    {
+      "from": "importer",
+      "to": "exact",
+      "label": "authorized tx",
+      "variant": "security"
+    },
+    {
+      "from": "importer",
+      "to": "suites",
+      "label": "publish"
+    },
+    {
+      "from": "importer",
+      "to": "verifier",
+      "label": "fixture spec"
+    },
+    {
+      "from": "verifier",
+      "to": "proof",
+      "label": "bind ID + hash"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "🟡 This branch — P09",
+      "items": [
+        "Yellow dots mark the P09 shipping scope. Local implementation and integration are verified; branch/PR publication is approved, with merge and deployment still pending.",
+        "Typed PX4 and SYNTHETIC/FAKE profiles share exact identity and digest rules. Registration stays DECLARED.",
+        "The exact lookup requires prior project authorization and an existing caller-owned transaction; it neither commits nor qualifies.",
+        "Synthetic imports need no Build. No synthetic build, upload pipeline, or hosting change is included."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "P10 proposed ownership",
+      "items": [
+        "Bounded import checks the exact profile revision, digest, runtime family and advertised inventory.",
+        "Only fake.nominal plus mission_complete, landed_disarmed and duration are advertised. Check and capability versions belong to P10 provenance.",
+        "A separate immutable VERIFIED synthetic proof must not enable real PX4 options or rewrite the registered profile."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Execution and trust limits",
+      "items": [
+        "The proposed verifier evaluates synthetic fixture observations and records bounded evidence; this is not an autopilot worker or a claim of deployed execution.",
+        "Real PX4 host qualification and the first simulated mission remain P18/P19. Paths, secrets and executable bytes do not flow through this catalog."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "How to read the evidence",
+      "items": [
+        "Logical contract/ownership view, not a deployment diagram. MERGED marks the existing access foundation; P09 LOCAL and P10 PLANNED are not deployed claims.",
+        "Repository links cite committed access code and phase requirements at the pinned base. P09 is implemented and locally verified; actual P08 PR14 source and migrations are reconciled at main06be441. P09 remains unmerged and undeployed.",
+        "The master-authorized parallel work supersedes the sequential dispatch language in the cited phase-plan baseline."
+      ]
+    }
+  ]
+}

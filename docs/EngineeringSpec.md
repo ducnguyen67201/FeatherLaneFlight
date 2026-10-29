@@ -53,6 +53,8 @@ Do not introduce Redis, a separate message broker, Kubernetes, or independent sc
 
 ## 3. System architecture
 
+Subsystem detail: [build and profile registration architecture](architecture/build-profile-registration.md) records the approved P09 scope and its implementation status.
+
 ```text
  USER'S BROWSER                         FEATHERLANEFLIGHT CONTROL PLANE
  +--------------------------+           +-----------------------------------+
