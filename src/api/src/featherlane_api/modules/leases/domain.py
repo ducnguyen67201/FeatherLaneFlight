@@ -1,11 +1,12 @@
 """Lease rules shared by claim recovery, attempt writes and the expiry worker."""
 
 import math
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from featherlane_contracts.run_detail import ExecutionManifest
 
 LEASE_LIFETIME_SECONDS = 60
+MAX_ATTEMPT_DURATION_SECONDS = 300
 HEARTBEAT_INTERVAL_SECONDS = 10
 STOPPING_MARGIN_SECONDS = 10
 
@@ -20,6 +21,14 @@ class StaleAttempt(Exception):
 
 class ManifestMismatch(Exception):
     pass
+
+
+def effective_lease_expiry(
+    created_at: datetime, lease_expires_at: datetime
+) -> datetime:
+    return min(
+        lease_expires_at, created_at + timedelta(seconds=MAX_ATTEMPT_DURATION_SECONDS)
+    )
 
 
 def remaining_ttl_ms(expires_at: datetime, now: datetime) -> int:

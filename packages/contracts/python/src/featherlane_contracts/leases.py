@@ -36,7 +36,7 @@ class LeaseGrant(AttemptWrite):
     project_id: Identifier
     expires_at: UtcTimestamp
     remaining_ttl_ms: Annotated[int, Field(ge=1, le=60_000)]
-    policy_version: Literal["1"]
+    policy_version: Literal["2"]
     heartbeat_interval_seconds: Literal[10]
     stopping_margin_seconds: Literal[10]
     last_heartbeat_sequence: Annotated[int, Field(ge=0, le=9_007_199_254_740_991)]

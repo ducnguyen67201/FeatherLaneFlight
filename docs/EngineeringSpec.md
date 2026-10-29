@@ -680,6 +680,8 @@ After expiry, a claim replay returns LEASE_EXPIRED rather than a positive durati
 
 Proposed defaults: claim polling every 2 seconds while available with bounded backoff; idle heartbeat every 10 seconds; active heartbeat every 10 seconds; lease lifetime 60 seconds. These are versioned configuration values, not simulator timing settings.
 
+Lease policy version 2 caps each attempt at five minutes from assignment. Queue wait is excluded; startup, execution and finalization share that budget. A heartbeat may renew for at most 60 seconds, bounded by the fixed five-minute deadline, credential expiry and any cancellation deadline. Replay never resets the deadline. At the cap, apply the existing `ERROR / LEASE_EXPIRED` and `NEEDS_CLEANUP` rules. The runner still applies its ten-second stopping margin. This bounds lease authority; physical process supervision remains required under section 10.2 and is not implemented by P13.
+
 ```text
 Runner                API / database                  Attempt child
   | claim(request ID)      |                               |

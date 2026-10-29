@@ -28,9 +28,11 @@ from featherlane_api.modules.access.domain import AccessNotFound
 from featherlane_api.modules.leases.domain import (
     HEARTBEAT_INTERVAL_SECONDS,
     LEASE_LIFETIME_SECONDS,
+    MAX_ATTEMPT_DURATION_SECONDS,
     STOPPING_MARGIN_SECONDS,
     LeaseExpired,
     StaleAttempt,
+    effective_lease_expiry,
     remaining_ttl_ms,
     require_fence,
     verify_manifest,
@@ -302,7 +304,11 @@ class LeaseService:
         attempt: AttemptRecord,
         now: datetime,
     ) -> bool:
-        if attempt.finished_at is not None or attempt.lease_expires_at > now:
+        if (
+            attempt.finished_at is not None
+            or effective_lease_expiry(attempt.created_at, attempt.lease_expires_at)
+            > now
+        ):
             return False
         reason = {
             "code": "LEASE_EXPIRED",
@@ -319,6 +325,9 @@ class LeaseService:
         return True
 
     def grant(self, attempt: AttemptRecord, now: datetime) -> LeaseGrant:
+        expires_at = effective_lease_expiry(
+            attempt.created_at, attempt.lease_expires_at
+        )
         return LeaseGrant(
             leaseId=attempt.lease_id,
             fencingNumber=attempt.fencing_number,
@@ -326,9 +335,9 @@ class LeaseService:
             runId=attempt.run_id,
             runnerId=attempt.runner_id,
             projectId=attempt.project_id,
-            expiresAt=stamp(attempt.lease_expires_at),
-            remainingTtlMs=remaining_ttl_ms(attempt.lease_expires_at, now),
-            policyVersion="1",
+            expiresAt=stamp(expires_at),
+            remainingTtlMs=remaining_ttl_ms(expires_at, now),
+            policyVersion="2",
             heartbeatIntervalSeconds=HEARTBEAT_INTERVAL_SECONDS,
             stoppingMarginSeconds=STOPPING_MARGIN_SECONDS,
             lastHeartbeatSequence=attempt.heartbeat_sequence,
@@ -368,7 +377,9 @@ class LeaseService:
                     lease_id=body.lease_id,
                     fencing_number=body.fencing_number,
                     active=True,
-                    expires_at=attempt.lease_expires_at,
+                    expires_at=effective_lease_expiry(
+                        attempt.created_at, attempt.lease_expires_at
+                    ),
                     now=now,
                 )
                 if isinstance(body, AttemptHeartbeat):
@@ -382,6 +393,8 @@ class LeaseService:
                         attempt.lease_expires_at = min(
                             now + timedelta(seconds=LEASE_LIFETIME_SECONDS),
                             runner.credential_expires_at,
+                            attempt.created_at
+                            + timedelta(seconds=MAX_ATTEMPT_DURATION_SECONDS),
                         )
                         if run.cancellation_deadline_at is not None:
                             attempt.lease_expires_at = min(
@@ -437,7 +450,12 @@ class LeaseService:
                         select(AttemptRecord.runner_id)
                         .where(
                             AttemptRecord.finished_at.is_(None),
-                            AttemptRecord.lease_expires_at <= func.clock_timestamp(),
+                            (AttemptRecord.lease_expires_at <= func.clock_timestamp())
+                            | (
+                                AttemptRecord.created_at
+                                <= func.clock_timestamp()
+                                - timedelta(seconds=MAX_ATTEMPT_DURATION_SECONDS)
+                            ),
                         )
                         .order_by(AttemptRecord.lease_expires_at)
                         .limit(limit)

@@ -35,6 +35,14 @@ qualification does not qualify an execution-capable runner.
 
 ## Claims and recovery
 
+Lease policy 2 limits each attempt to five minutes from assignment, including
+startup and protocol/finalization time. The queue wait does not count. Heartbeats
+are still requested every ten seconds and renew for at most sixty seconds, capped
+by that fixed deadline, credential expiry and any cancellation deadline. Replays
+cannot reset the five-minute clock. The runner's ten-second stopping margin still
+applies, so its usable local authority ends before the server deadline. This is a
+lease-ownership limit; P14 still owns physical process supervision and cleanup.
+
 `ProtocolClient` composes the real pinned `RunnerTransport`, `ProtocolJournal`
 and an in-memory `LeaseWindow`, under `StateStore.lock()`:
 
