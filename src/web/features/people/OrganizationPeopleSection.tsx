@@ -60,9 +60,7 @@ export function OrganizationPeopleSection({
   const members = people.filter((p) =>
     `${p.user.displayName} ${p.user.email}`.toLowerCase().includes(query),
   );
-  const saved = emails.filter(
-    (e) => e.waitingForSignIn && e.email.toLowerCase().includes(query),
-  );
+  const saved = emails.filter((e) => e.email.toLowerCase().includes(query));
   return (
     <AccessSection
       title="Organization people"
@@ -203,24 +201,32 @@ export function OrganizationPeopleSection({
                         {email.email}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Saved for their next sign-in
+                        {email.waitingForSignIn
+                          ? "Saved for their next sign-in"
+                          : "Saved rule for future sign-ins"}
                       </Typography>
                     </Box>
                   </Stack>
                 </TableCell>
                 <TableCell>
-                  <PersonStatus waiting />
+                  {email.waitingForSignIn ? (
+                    <PersonStatus waiting />
+                  ) : (
+                    <Typography variant="body2">Active rule</Typography>
+                  )}
                 </TableCell>
                 <TableCell>Added by email</TableCell>
-                <TableCell>None yet</TableCell>
+                <TableCell>
+                  {email.waitingForSignIn ? "None yet" : "Assigned separately"}
+                </TableCell>
                 <TableCell align="right">
                   <Button
                     color="secondary"
                     size="small"
-                    aria-label={`Remove ${email.email}`}
+                    aria-label={`Remove saved email ${email.email}`}
                     onClick={() => onRemoveEmail(email)}
                   >
-                    Remove
+                    Remove email
                   </Button>
                 </TableCell>
               </TableRow>

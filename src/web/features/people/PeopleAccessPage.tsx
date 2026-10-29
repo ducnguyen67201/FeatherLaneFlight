@@ -196,7 +196,7 @@ function PeopleAccessContent(props: PeopleAccessPageProps) {
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     {owner
-                      ? `${access.memberCount} ${access.memberCount === 1 ? "member" : "members"} · ${access.savedEmailCount} saved ${access.savedEmailCount === 1 ? "email" : "emails"}`
+                      ? `${access.memberCount} ${access.memberCount === 1 ? "member" : "members"} · ${access.savedEmailCount} pending ${access.savedEmailCount === 1 ? "email" : "emails"}`
                       : "Organization access"}
                   </Typography>
                 </Box>
