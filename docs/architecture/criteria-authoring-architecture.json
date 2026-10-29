@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Criteria authoring \u2014 P17.5 proposal within P11",
+    "output": ".archify/criteria-authoring/criteria-authoring-architecture.html",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "16dcc4cea1da1cbcdd3424f228f902165bb043de",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "manual",
+      "type": "frontend",
+      "label": "Manual criteria editor",
+      "sublabel": "PROPOSED \u00b7 same three checks",
+      "pos": [40, 60],
+      "size": [220, 76],
+      "sources": [
+        {
+          "path": "src/web/features/suites/SuiteChecksEditor.tsx",
+          "line": 14,
+          "end_line": 29,
+          "label": "Existing extension seam"
+        }
+      ]
+    },
+    {
+      "id": "draft",
+      "type": "frontend",
+      "label": "One local suite draft",
+      "sublabel": "EXISTING \u00b7 Save / Publish",
+      "pos": [450, 60],
+      "size": [220, 76],
+      "sources": [
+        {
+          "path": "src/web/features/suites/useSuiteDraftEditor.ts",
+          "line": 144,
+          "end_line": 188
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "security",
+      "label": "P11 authorized API",
+      "sublabel": "EXISTING \u00b7 CSRF + version + digest",
+      "pos": [860, 60],
+      "size": [235, 76],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/suites/drafts.py",
+          "line": 296,
+          "end_line": 321
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/suites/drafts.py",
+          "line": 364,
+          "end_line": 415
+        }
+      ]
+    },
+    {
+      "id": "untrusted",
+      "type": "external",
+      "label": "Untrusted suggestion input",
+      "sublabel": "PROPOSED \u00b7 fixture preview only",
+      "pos": [40, 290],
+      "size": [220, 76],
+      "sources": [
+        {
+          "path": "packages/contracts/python/src/featherlane_contracts/suite_drafts.py",
+          "line": 85,
+          "end_line": 89,
+          "label": "Existing accepted check shapes"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "type": "frontend",
+      "label": "Validate + human review",
+      "sublabel": "PROPOSED \u00b7 accept / edit / reject",
+      "pos": [450, 290],
+      "size": [220, 76],
+      "sources": [
+        {
+          "path": "packages/contracts/python/src/featherlane_contracts/run_detail.py",
+          "line": 31,
+          "end_line": 63
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/suites/qualification.py",
+          "line": 108,
+          "end_line": 118
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "P11 PostgreSQL records",
+      "sublabel": "EXISTING \u00b7 draft + immutable revisions",
+      "pos": [860, 290],
+      "size": [235, 76],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/suites/drafts.py",
+          "line": 440,
+          "end_line": 449
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/suites/publication.py",
+          "line": 70,
+          "end_line": 119
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Browser \u00b7 local fixture remains untrusted",
+      "wraps": ["manual", "draft", "review", "untrusted"],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Existing trusted server \u00b7 live membership checks",
+      "wraps": ["api", "store"],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "manual-edit",
+      "from": "manual",
+      "to": "draft",
+      "label": "Edit supported fields"
+    },
+    {
+      "id": "save-publish",
+      "from": "draft",
+      "to": "api",
+      "label": "Explicit save / publish",
+      "variant": "security"
+    },
+    {
+      "id": "suggest-review",
+      "from": "untrusted",
+      "to": "review",
+      "label": "Canonical types + bounds",
+      "variant": "security"
+    },
+    {
+      "id": "review-accept",
+      "from": "review",
+      "to": "draft",
+      "label": "Accept if unchanged",
+      "variant": "emphasis"
+    },
+    {
+      "id": "append",
+      "from": "api",
+      "to": "store",
+      "label": "Guarded write / append"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "P17.5 proposal \u00b7 not implemented",
+      "items": [
+        "Edit the existing mission completion, landing/disarm and duration criteria.",
+        "Suggestions never write a draft or publish; human acceptance checks the captured edit state.",
+        "Unsupported IDs, kinds, units, versions or out-of-range values are rejected."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Optional provider boundary \u00b7 not connected",
+      "items": [
+        "No live provider exists in this base; preview callbacks are explicitly local fixtures.",
+        "A live model would require separately approved server mediation and data transmission.",
+        "Unavailable suggestions leave manual editing usable; no new worker, store or hosting."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Existing publication and adjacent ownership",
+      "items": [
+        "P11 revalidates canonical references, exact profile and synthetic qualification before append.",
+        "Published suite revisions and run criteria remain frozen; edits need a new revision.",
+        "P17 owns queued evaluation, finalization and results; P17.5 adds no evaluation responsibility."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Loaded once by the API. Restart it after changing these settings.
+# Enabling this requires a separately supplied private key file and incurs API usage.
+[criteria_generation]
+enabled = false
+provider = "openai"
+model = "gpt-6.1-sol"
+reasoning_effort = "low"
+service_tier = "default"
+timeout_seconds = 30
+max_output_tokens = 2048
+max_concurrent_requests = 2
+api_key_file = "../.local/secrets/openai-api-key"

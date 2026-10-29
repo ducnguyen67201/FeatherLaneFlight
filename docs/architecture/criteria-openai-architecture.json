@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Criteria suggestions \u2014 OpenAI design",
+    "locale": "en",
+    "output": ".archify/criteria-openai/criteria-openai-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Reviewed suite editor",
+      "sublabel": "LOCAL \u00b7 manual editing + review",
+      "pos": [40, 60],
+      "size": [225, 76]
+    },
+    {
+      "id": "gate",
+      "type": "security",
+      "label": "New suggestion endpoint",
+      "sublabel": "P17.5 \u00b7 session / CSRF / version",
+      "pos": [480, 60],
+      "size": [245, 76]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "Existing P11 draft records",
+      "sublabel": "Read version; never apply suggestions",
+      "pos": [950, 60],
+      "size": [235, 76]
+    },
+    {
+      "id": "review",
+      "type": "frontend",
+      "label": "Human accepts / edits / rejects",
+      "sublabel": "Recheck local edit + saved version",
+      "pos": [40, 300],
+      "size": [225, 76]
+    },
+    {
+      "id": "validate",
+      "type": "backend",
+      "label": "Canonical response validation",
+      "sublabel": "P17.5 \u00b7 recheck access + version",
+      "pos": [480, 300],
+      "size": [245, 76]
+    },
+    {
+      "id": "openai",
+      "type": "external",
+      "label": "OpenAI Responses API",
+      "sublabel": "UNVERIFIED \u00b7 gpt-6.1-sol",
+      "pos": [950, 300],
+      "size": [235, 76]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Browser \u00b7 existing P11 Save / Publish remain explicit",
+      "wraps": ["browser", "review"],
+      "pad": 20
+    },
+    {
+      "kind": "security-group",
+      "label": "Existing FastAPI process \u00b7 P17.5 extension",
+      "wraps": ["gate", "validate"],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "request",
+      "from": "browser",
+      "to": "gate",
+      "label": "Click Suggest criteria",
+      "variant": "security"
+    },
+    {
+      "id": "read",
+      "from": "gate",
+      "to": "db",
+      "label": "Authorized version read"
+    },
+    {
+      "id": "invoke",
+      "from": "gate",
+      "to": "openai",
+      "label": "Description + fixed schema",
+      "variant": "security"
+    },
+    {
+      "id": "response",
+      "from": "openai",
+      "to": "validate",
+      "label": "Untrusted structured output",
+      "variant": "security"
+    },
+    {
+      "id": "return",
+      "from": "validate",
+      "to": "review",
+      "label": "Return reviewable draft"
+    },
+    {
+      "id": "accept",
+      "from": "review",
+      "to": "browser",
+      "label": "Explicit acceptance only"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Approved design \u00b7 local implementation",
+      "items": [
+        "Human selected OpenAI and gpt-6.1-sol; model and limits come from a project TOML file, not environment variables.",
+        "Human directed implementation with gpt-6.1-sol and file configuration. Local adapter is disabled; no credentials, live request, paid verification or deployment.",
+        "Use the existing API process; no evaluation worker, new store, migration or publication ledger."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Data and execution boundary",
+      "items": [
+        "Send only entered mission description (up to 2,000 characters), fixed supported-check schema and generic instructions.",
+        "Do not send project/user identifiers, stored artifacts, logs, telemetry or the whole suite. Server credentials never reach the browser.",
+        "One synchronous request; 30-second deadline; 2,048 output tokens; store:false; no tools or automatic retries. Bound API-process concurrency; no global quota claim.",
+        "Proposed TOML config: gpt-6.1-sol, low reasoning, standard service tier. Credentials referenced through a private owner-only key file; never tracked or sent to the browser."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Preserve draft and publication authority",
+      "items": [
+        "Release the database transaction during the external request; reauthorize and compare the saved version before returning.",
+        "Reject unsupported kinds, fields, IDs, versions, units and bounds. Explain unsupported requirements rather than inventing measurements.",
+        "Browser guards every acceptance with saved version plus local edit generation. Only the existing P11 Save / Publish path persists changes."
+      ]
+    }
+  ]
+}
