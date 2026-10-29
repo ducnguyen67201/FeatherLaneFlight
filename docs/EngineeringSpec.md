@@ -53,6 +53,8 @@ Do not introduce Redis, a separate message broker, Kubernetes, or independent sc
 
 ## 3. System architecture
 
+Subsystem detail: [events and live updates](architecture/events-live-updates.md) records the approved P15 event delivery, authorized SSE and snapshot recovery design, local implementation status and dependency gates.
+
 Subsystem detail: [build and profile registration architecture](architecture/build-profile-registration.md) records the approved P09 scope and its implementation status.
 
 Subsystem detail: [suite authoring architecture](architecture/suite-authoring.md) records the approved P11 draft/publication scope, edit and publication versioning, trust boundary and local implementation status.

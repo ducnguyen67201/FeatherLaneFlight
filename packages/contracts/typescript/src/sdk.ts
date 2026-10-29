@@ -173,6 +173,15 @@ export async function getRunEvents(options: ReadOptions<GetRunEventsData>) {
   const client = options.client;
   const response = await generatedEvents({
     ...options,
+    headers: {
+      ...Object.fromEntries(
+        Object.entries(options.headers).filter(
+          ([name]) => name.toLowerCase() !== "accept",
+        ),
+      ),
+      "x-flf-contract-version": options.headers["x-flf-contract-version"],
+      Accept: "application/json",
+    },
     throwOnError: true,
     responseStyle: "fields",
     parseAs: "json",

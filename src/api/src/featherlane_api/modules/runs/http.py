@@ -1,4 +1,4 @@
-"""Authenticated admission, queue inspection and queued cancellation routes."""
+"""Authenticated admission, run inspection and cancellation routes."""
 
 from typing import Annotated
 
@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from featherlane_api.http.dependencies import get_session
 from featherlane_api.http.errors import ERROR_RESPONSES
+from featherlane_api.modules.events.domain import EventCursors
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.dependencies import (
     get_identity_service,
@@ -38,7 +39,10 @@ def get_service(
     identity: Annotated[IdentityService, Depends(get_identity_service)],
 ) -> RunService:
     return RunService(
-        session, identity, request.app.state.settings.project_queued_run_limit
+        session,
+        identity,
+        request.app.state.settings.project_queued_run_limit,
+        EventCursors(request.app.state.settings.session_hash_key.get_secret_value()),
     )
 
 
@@ -156,9 +160,16 @@ async def get_run_detail(
     operation_id="cancelRun",
     response_model=RunEnvelope,
     status_code=200,
+    responses={
+        202: {
+            "model": RunEnvelope,
+            "description": "Cancellation intent recorded; stop confirmation pending.",
+        }
+    },
 )
 async def cancel_run(
     request: Request,
+    response: Response,
     run_id: RunId,
     principal: MutationUser,
     service: Service,
@@ -167,6 +178,11 @@ async def cancel_run(
     key: RequestKey,
     body: CancelRunRequest,
 ):
-    # The only accepted payload is schemaVersion=1; queued cancellation has one
-    # transition and repeated keys return its current canonical terminal record.
-    return await service.cancel(principal, session_handle(request), csrf, run_id)
+    result = await service.cancel(principal, session_handle(request), csrf, run_id)
+    response.status_code = (
+        200
+        if result.data.execution_state
+        in {ExecutionState.COMPLETED, ExecutionState.CANCELED, ExecutionState.ERROR}
+        else 202
+    )
+    return result

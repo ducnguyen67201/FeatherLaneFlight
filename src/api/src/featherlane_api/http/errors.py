@@ -55,10 +55,13 @@ def error_response(request: Request, error: ApiError) -> JSONResponse:
             requestId=request_id,
         )
     )
+    headers = {"X-Request-ID": request_id, "Cache-Control": "no-store"}
+    if error.status == 429:
+        headers["Retry-After"] = "5"
     return JSONResponse(
         status_code=error.status,
         content=envelope.model_dump(mode="json"),
-        headers={"X-Request-ID": request_id, "Cache-Control": "no-store"},
+        headers=headers,
     )
 
 

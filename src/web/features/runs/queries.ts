@@ -1,4 +1,6 @@
 import {
+  ApiError,
+  ContractValidationError,
   getRunOptionsOptions,
   listRunsOptions,
   contractManifest,
@@ -34,6 +36,11 @@ export const runScope = (transport: RunTransport) => [
   ...transport.cacheScope,
   transport.organizationId,
   transport.projectId,
+];
+export const detailPrefix = (runId: string, transport = demoRunTransport) => [
+  ...runScope(transport),
+  "run-detail",
+  runId,
 ];
 export const runsQueryPrefix = (transport: RunTransport) => [
   ...runScope(transport),
@@ -85,4 +92,18 @@ export function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
     : "The request failed. Try again.";
+}
+
+export function permanentReadFailure(error: unknown) {
+  return (
+    error instanceof ContractValidationError ||
+    (error instanceof ApiError && error.status < 500 && error.status !== 429)
+  );
+}
+
+export function canRefreshAutomatically(error: unknown) {
+  return (
+    !permanentReadFailure(error) &&
+    !(error instanceof ApiError && (error.retryAt ?? 0) > Date.now())
+  );
 }

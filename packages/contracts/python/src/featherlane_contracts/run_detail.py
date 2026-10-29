@@ -270,7 +270,9 @@ class ObservationPayload(WireModel):
 
 
 class TrialFinishedPayload(WireModel):
-    execution_state: TrialExecutionState
+    # FastAPI validates parsed JSON dictionaries; accept the canonical enum's
+    # wire strings while retaining the enum's complete allowed-value check.
+    execution_state: Annotated[TrialExecutionState, Field(strict=False)]
 
 
 class CleanupPayload(WireModel):
@@ -302,6 +304,33 @@ class ObservationEvent(EventBase):
     payload: ObservationPayload
 
 
+class TriggerPayload(WireModel):
+    trigger_id: Identifier
+
+
+class DisturbancePayload(WireModel):
+    disturbance_id: Identifier
+
+
+class DisturbanceConfirmedPayload(DisturbancePayload):
+    observation_id: Identifier
+
+
+class TriggerObservedEvent(EventBase):
+    type: Literal["TRIGGER_OBSERVED"]
+    payload: TriggerPayload
+
+
+class DisturbanceRequestedEvent(EventBase):
+    type: Literal["DISTURBANCE_REQUESTED"]
+    payload: DisturbancePayload
+
+
+class DisturbanceConfirmedEvent(EventBase):
+    type: Literal["DISTURBANCE_CONFIRMED"]
+    payload: DisturbanceConfirmedPayload
+
+
 class TrialFinishedEvent(EventBase):
     type: Literal["TRIAL_FINISHED"]
     payload: TrialFinishedPayload
@@ -312,12 +341,15 @@ class CleanupEvent(EventBase):
     payload: CleanupPayload
 
 
-RunEvent = Annotated[
+type RunEvent = Annotated[
     AttemptStartingEvent
     | TrialStartedEvent
     | ReadinessEvent
     | MissionStartedEvent
     | ObservationEvent
+    | TriggerObservedEvent
+    | DisturbanceRequestedEvent
+    | DisturbanceConfirmedEvent
     | TrialFinishedEvent
     | CleanupEvent,
     Field(discriminator="type"),

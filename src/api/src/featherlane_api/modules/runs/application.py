@@ -23,6 +23,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from featherlane_api.http.errors import ApiError
 from featherlane_api.modules.access.persistence import AccessStore
+from featherlane_api.modules.events.domain import EventCursors
+from featherlane_api.modules.events.persistence import EventStore
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
 from featherlane_api.modules.leases.expiry import expire_attempt
@@ -43,12 +45,17 @@ from featherlane_api.modules.suites.application import require_qualified_suite
 
 class RunService:
     def __init__(
-        self, session: AsyncSession, identity: IdentityService, queue_limit: int
+        self,
+        session: AsyncSession,
+        identity: IdentityService,
+        queue_limit: int,
+        event_cursors: EventCursors,
     ):
         self.session = session
         self.identity = identity
         self.store = RunStore(session)
         self.queue_limit = queue_limit
+        self.event_cursors = event_cursors
 
     async def authorize(
         self,
@@ -230,9 +237,12 @@ class RunService:
             usage = await usage_summaries(
                 self.session, [attempt.id for attempt in attempts]
             )
-            return RunDetailEnvelope(
-                data=run_detail(row, datetime.now(UTC), attempts, usage)
+            detail = run_detail(row, datetime.now(UTC), attempts, usage)
+            stream = await EventStore(self.session).stream(run_id)
+            detail.server_event_cursor = self.event_cursors.encode(
+                run_id, stream.last_position if stream else 0
             )
+            return RunDetailEnvelope(data=detail)
 
     async def cancel(
         self, principal: Principal, handle: str | None, csrf: str, run_id: str

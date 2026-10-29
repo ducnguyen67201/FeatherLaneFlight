@@ -46,3 +46,35 @@ Generation sources: [Hey API SDK validation](https://heyapi.dev/docs/openapi/typ
 The workspace pins `js-yaml` 4.x consumers to patched 4.3.2 through a narrow pnpm override. The generator's original transitive 4.2.0 resolution triggered three high-severity dependency advisories; the patch remains within its major version. See the [upstream advisory and patched release](https://github.com/advisories/GHSA-2883-xcg3-v3hh). Generation and type checks passed with the override.
 
 P04 adds validated `getRunDetail`, `getRunEvents` (JSON pages), `getRunArtifacts` (metadata only) and `cancelRun`, their scoped Query option factories and a safe cancellation mutation factory. Each public function validates the final transformed result as well as status-aware wire validation before returning data. Their keys and routes derive from generation; no UI-maintained paths or parallel domain DTOs are required. Canonical inspection models live in `featherlane_contracts.run_detail`. They are bounded wire contracts; lifecycle, cross-record authorization, evidence sufficiency and evaluation remain authoritative application rules in their owning phases.
+
+## Event pages and browser streams (P15 candidate)
+
+`getRunEvents` explicitly requests JSON pages even if a caller supplies a streaming
+Accept header. `BrowserStreamMessage`, `RunEventMessage`, `StreamResetMessage` and
+all typed event variants are generated from canonical Python definitions. The
+route's `x-flf-stream-*` metadata documents content negotiation without changing
+the JSON SDK response into a stream or a RunDetail union.
+
+`runEventMessages` is a separate fetch-based async iterator for same-origin SSE.
+Pass the validated client, application origin, run ID, snapshot's
+`serverEventCursor`, AbortSignal, current-context guard and access-loss callback.
+It sends the session cookie, contract header, streaming Accept and Last-Event-ID.
+Every yielded message passes generated validation and the client's auth-epoch
+guard. Framing and incomplete frames are bounded; a gap, schema failure or unknown
+message stops delivery. At most two transient retries resume after the last
+validated cursor. Retry-After is respected; long deferrals return control to the
+consumer. Idle reads time out after 15 seconds, and connections have a 45-second
+transport bound. Server streams rotate at 30 seconds.
+
+The consumer invalidates existing scoped Query resources; it never inserts event
+payloads as complete resources or maintains a second run lifecycle machine.
+Active views also keep bounded REST snapshot checks for server-side cancellation,
+expiry and cleanup changes that have no runner observation to stream. An absent
+event does not establish unchanged execution or a stopped process.
+JSON 410 or `STREAM_RESET` requires a fresh validated RunDetail snapshot before
+resuming from its cursor. Contract/sequence diagnostics stop stream-driven cache
+updates. Access loss closes the stream and clears affected resources through the
+existing authenticated context. Dispose/abort the iterator on run/context changes.
+The application adapter and shown freshness/error UI remain unimplemented while
+human preview approval is pending. These transport checks do not establish a
+normally admitted execution or result.

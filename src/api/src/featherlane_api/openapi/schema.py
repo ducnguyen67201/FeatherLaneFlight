@@ -4,27 +4,27 @@ import hashlib
 import json
 from typing import Annotated
 
-from fastapi import FastAPI, Header, Path, Query
+from fastapi import FastAPI, Header, Path
 from featherlane_contracts import (
     CONTRACT_VERSION,
-    MAX_PAGE_SIZE,
     STATUS_MODELS,
     ContractMetaEnvelope,
     ContractVersion,
-    Cursor,
     ErrorEnvelope,
     Identifier,
 )
+from featherlane_contracts.events import BrowserStreamMessage
 from featherlane_contracts.projects import OrganizationView, ProjectView
 from featherlane_contracts.run_detail import (
     ArtifactListEnvelope,
-    RunEventPage,
 )
+from featherlane_contracts.runner_policy import RunnerStoragePolicy
 from pydantic import TypeAdapter
 
 from featherlane_api.http.errors import ERROR_RESPONSES
 from featherlane_api.modules.access.http import router as access_router
 from featherlane_api.modules.access.people_http import router as people_router
+from featherlane_api.modules.events.http import router as events_router
 from featherlane_api.modules.identity.http import router as identity_router
 from featherlane_api.modules.leases.http import router as leases_router
 from featherlane_api.modules.registration.http import router as registration_router
@@ -61,25 +61,6 @@ def create_schema_app() -> FastAPI:
         )
 
     @app.get(
-        "/api/v1/runs/{runId}/events",
-        operation_id="getRunEvents",
-        response_model=RunEventPage,
-        responses={
-            **errors,
-            410: {"model": ErrorEnvelope, "description": "Event cursor expired"},
-        },
-    )
-    def get_run_events(
-        run_id: Annotated[Identifier, Path(alias="runId")],
-        contract_version: Annotated[
-            ContractVersion, Header(alias="x-flf-contract-version")
-        ],
-        after: Annotated[Cursor | None, Query()] = None,
-        limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = 100,
-    ) -> RunEventPage:
-        raise RuntimeError("Metadata-only declaration; JSON event pages only")
-
-    @app.get(
         "/api/v1/runs/{runId}/artifacts",
         operation_id="getRunArtifacts",
         response_model=ArtifactListEnvelope,
@@ -101,11 +82,21 @@ def create_schema_app() -> FastAPI:
     app.include_router(suites_router)
     app.include_router(draft_router)
     app.include_router(runs_router)
+    app.include_router(events_router)
     app.include_router(leases_router)
     schema = app.openapi()
     for model in (*STATUS_MODELS, OrganizationView, ProjectView):
         schema["components"]["schemas"][model.__name__] = TypeAdapter(
             model
         ).json_schema()
+    # Named stream variants are schema exports, not JSON event-page responses.
+    # The runtime route documents content negotiation in x-flf-stream-* metadata.
+    for model in (BrowserStreamMessage, RunnerStoragePolicy):
+        exported = TypeAdapter(model).json_schema(
+            ref_template="#/components/schemas/{model}"
+        )
+        schema["components"]["schemas"].update(exported.pop("$defs", {}))
+        if "$ref" not in exported:
+            schema["components"]["schemas"][model.__name__] = exported
     app.openapi_schema = schema
     return app

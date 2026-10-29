@@ -89,7 +89,7 @@ export function RunDetailStatus({
           have changed; refresh before relying on this view.
         </Alert>
       )}
-      {detail.terminalReason && (
+      {detail.executionState === "ERROR" && detail.terminalReason && (
         <Alert severity="error">
           <AlertTitle>
             {detail.terminalReason.code === "CANCELLATION_UNCONFIRMED"
