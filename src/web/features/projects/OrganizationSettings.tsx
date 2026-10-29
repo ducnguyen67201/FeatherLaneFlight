@@ -1,16 +1,27 @@
-import { MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import {
+  Button,
+  MenuItem,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import type { OrganizationView } from "@featherlane/contracts";
 
 type OrganizationSettingsProps = {
   organizations: readonly OrganizationView[];
   organizationId: string;
   onChange: (organizationId: string) => void;
+  onMore?: () => void;
+  loadingMore?: boolean;
 };
 
 export function OrganizationSettings({
   organizations,
   organizationId,
   onChange,
+  onMore,
+  loadingMore,
 }: OrganizationSettingsProps) {
   return (
     <Paper variant="outlined" sx={{ p: 5 }}>
@@ -35,6 +46,16 @@ export function OrganizationSettings({
             </MenuItem>
           ))}
         </TextField>
+        {onMore && (
+          <Button
+            variant="outlined"
+            onClick={onMore}
+            disabled={loadingMore}
+            sx={{ alignSelf: "flex-start" }}
+          >
+            {loadingMore ? "Loading…" : "More organizations"}
+          </Button>
+        )}
         <Typography variant="body2" color="text.secondary">
           Projects below belong to this organization.
         </Typography>

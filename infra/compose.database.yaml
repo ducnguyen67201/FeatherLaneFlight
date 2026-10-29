@@ -1,0 +1,21 @@
+name: ${COMPOSE_PROJECT_NAME:?Set a unique database instance project name}
+services:
+  postgres:
+    image: postgres:18.4-alpine
+    environment:
+      POSTGRES_USER: ${FLF_DB_USER:?Set the database user}
+      POSTGRES_DB: ${FLF_DB_NAME:?Set the database name}
+      POSTGRES_PASSWORD: ${FLF_DB_PASSWORD:?Supply a private process-injected password}
+    ports:
+      - "127.0.0.1:${FLF_DB_HOST_PORT:?Set a unique loopback database port}:5432"
+    volumes:
+      - type: bind
+        source: ${FLF_DB_DATA_DIR:?Set an absolute private database directory}
+        target: /var/lib/postgresql
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 2s
+      timeout: 3s
+      retries: 15

@@ -7,7 +7,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import type { ProjectView } from "@featherlane/contracts";
+import { ApiError, type ProjectView } from "@featherlane/contracts";
 import {
   zOrganizationView,
   zProjectView,
@@ -70,7 +70,13 @@ export function ProjectsDemo() {
     const wasEmpty = mode === "empty";
     await new Promise<void>((resolve) => setTimeout(resolve, 800));
     if (scope.current !== id) return;
-    if (reject) throw new Error("Simulated creation failure");
+    if (reject)
+      throw new ApiError(422, {
+        code: "VALIDATION_FAILED",
+        message: "Simulated creation rejection",
+        details: [],
+        requestId: "demo_project_creation",
+      });
     const project = zProjectView.parse({
       id: `project_${crypto.randomUUID()}`,
       organizationId: id,

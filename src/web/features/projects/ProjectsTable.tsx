@@ -21,6 +21,8 @@ type ProjectsTableProps = {
   projectId: string | null;
   onSelect: (projectId: string) => void;
   onCreate: () => void;
+  onMore?: () => void;
+  loadingMore?: boolean;
 };
 
 export function ProjectsTable({
@@ -28,6 +30,8 @@ export function ProjectsTable({
   projectId,
   onSelect,
   onCreate,
+  onMore,
+  loadingMore,
 }: ProjectsTableProps) {
   return (
     <Paper variant="outlined" sx={{ p: 5, minWidth: 0 }}>
@@ -100,6 +104,16 @@ export function ProjectsTable({
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+      {onMore && (
+        <Button
+          variant="outlined"
+          sx={{ mt: 4 }}
+          onClick={onMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? "Loading…" : "More projects"}
+        </Button>
       )}
     </Paper>
   );

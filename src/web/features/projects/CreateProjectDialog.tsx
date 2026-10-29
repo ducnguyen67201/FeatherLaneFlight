@@ -1,5 +1,7 @@
 import { useEffect, useRef, type FormEvent } from "react";
 import {
+  Alert,
+  AlertTitle,
   Button,
   Dialog,
   DialogActions,
@@ -15,6 +17,7 @@ type CreateProjectDialogProps = {
   organizationName: string;
   name: string;
   pending: boolean;
+  uncertain: boolean;
   error: string | null;
   onNameChange: (name: string) => void;
   onClose: () => void;
@@ -27,6 +30,7 @@ export function CreateProjectDialog({
   organizationName,
   name,
   pending,
+  uncertain,
   error,
   onNameChange,
   onClose,
@@ -62,6 +66,13 @@ export function CreateProjectDialog({
               Create in {organizationName}. Projects group your builds, suites,
               and runs.
             </Typography>
+            {uncertain && (
+              <Alert severity="warning" role="status">
+                <AlertTitle>Creation unconfirmed</AlertTitle>
+                We didn’t receive confirmation. This project may already exist.
+                Retry to confirm the same request.
+              </Alert>
+            )}
             <TextField
               autoFocus
               inputRef={nameRef}
@@ -70,8 +81,13 @@ export function CreateProjectDialog({
               onChange={(event) => onNameChange(event.target.value)}
               disabled={pending}
               error={!!error}
-              helperText={error || "Use a clear name, up to 100 characters."}
+              helperText={
+                uncertain
+                  ? "Name is locked until this request is confirmed."
+                  : error || "Use a clear name, up to 100 characters."
+              }
               slotProps={{
+                input: { readOnly: uncertain },
                 htmlInput: { maxLength: 100 },
                 formHelperText: { role: error ? "alert" : undefined },
               }}
@@ -79,17 +95,23 @@ export function CreateProjectDialog({
             />
             {pending && (
               <Typography variant="body2" role="status" color="text.secondary">
-                Creating project…
+                {uncertain ? "Confirming project…" : "Creating project…"}
               </Typography>
             )}
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button disabled={pending} onClick={onClose}>
-            Cancel
+            {uncertain ? "Close" : "Cancel"}
           </Button>
           <Button type="submit" variant="contained" disabled={pending}>
-            {pending ? "Creating…" : "Create project"}
+            {pending
+              ? uncertain
+                ? "Confirming…"
+                : "Creating…"
+              : uncertain
+                ? "Retry creation"
+                : "Create project"}
           </Button>
         </DialogActions>
       </form>

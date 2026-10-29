@@ -33,7 +33,15 @@ type ProjectsWorkspaceProps = {
   onOrganizationChange: (organizationId: string) => void;
   onProjectChange: (projectId: string) => void;
   onRetry: () => void;
-  onCreate: (organizationId: string, name: string) => Promise<void>;
+  moreOrganizations?: () => void;
+  moreProjects?: () => void;
+  loadingMoreOrganizations?: boolean;
+  loadingMoreProjects?: boolean;
+  onCreate: (
+    organizationId: string,
+    name: string,
+    key: string,
+  ) => Promise<void>;
 };
 
 export function ProjectsWorkspace({
@@ -49,6 +57,10 @@ export function ProjectsWorkspace({
   onProjectChange,
   onRetry,
   onCreate,
+  moreOrganizations,
+  moreProjects,
+  loadingMoreOrganizations,
+  loadingMoreProjects,
 }: ProjectsWorkspaceProps) {
   const organization =
     state === "ready"
@@ -171,12 +183,16 @@ export function ProjectsWorkspace({
                 organizations={organizations}
                 organizationId={organization.id}
                 onChange={onOrganizationChange}
+                onMore={moreOrganizations}
+                loadingMore={loadingMoreOrganizations}
               />
               <ProjectsTable
                 projects={visibleProjects}
                 projectId={projectId}
                 onSelect={onProjectChange}
                 onCreate={startCreate}
+                onMore={moreProjects}
+                loadingMore={loadingMoreProjects}
               />
             </Stack>
           )
@@ -187,6 +203,7 @@ export function ProjectsWorkspace({
         organizationName={organization?.name ?? ""}
         name={form.name}
         pending={form.pending}
+        uncertain={form.uncertain}
         error={form.error}
         onNameChange={form.changeName}
         onClose={form.close}

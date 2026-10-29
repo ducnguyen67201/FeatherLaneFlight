@@ -27,7 +27,40 @@ export class ApiError extends Error {
   }
 }
 
-function installValidation(client: Client): Client {
+export type SessionTransportPolicy = {
+  origin: string;
+  isCurrent: () => boolean;
+  csrfToken: () => string | null;
+  onUnauthorized: (error: ApiError) => void;
+};
+
+const sessionChecks = new WeakMap<Client, () => void>();
+
+/** Validate the final generated result, including the supplied client's auth epoch. */
+export function validateResult<T>(
+  schema: ZodType<T>,
+  data: unknown,
+  response: Response,
+  client: Client = defaultClient,
+): T {
+  const parsed = schema.safeParse(data);
+  // Generated body reads, validation and transforms all finish before this check.
+  sessionChecks.get(client)?.();
+  if (!parsed.success) {
+    const requestId = zErrorBody.shape.requestId.safeParse(
+      response.headers.get("X-Request-ID"),
+    );
+    throw new ContractValidationError(
+      requestId.success ? requestId.data : null,
+    );
+  }
+  return parsed.data;
+}
+
+function installValidation(
+  client: Client,
+  session?: SessionTransportPolicy,
+): Client {
   client.setConfig({
     headers: {
       "x-flf-contract-version": contractManifest.contractVersion,
@@ -35,7 +68,37 @@ function installValidation(client: Client): Client {
     },
     credentials: "same-origin",
   });
+  const requireCurrent = () => {
+    if (session && !session.isCurrent()) {
+      throw new DOMException("The session has changed.", "AbortError");
+    }
+  };
+  if (session) {
+    sessionChecks.set(client, requireCurrent);
+    client.interceptors.request.use((request) => {
+      requireCurrent();
+      if (new URL(request.url).origin !== session.origin) {
+        throw new Error(
+          "Authenticated requests must use the application origin.",
+        );
+      }
+      // Generated request validation already ran. Clone rather than mutate its headers.
+      const headers = new Headers(request.headers);
+      if (!["GET", "HEAD", "OPTIONS"].includes(request.method)) {
+        const csrf = session.csrfToken();
+        if (!csrf) throw new Error("A current session is required.");
+        headers.set("X-CSRF-Token", csrf);
+      }
+      return new Request(request, {
+        headers,
+        credentials: "same-origin",
+        cache: "no-store",
+        redirect: "error",
+      });
+    });
+  }
   client.interceptors.response.use(async (response, _request, options) => {
+    requireCurrent();
     const requestId = zErrorBody.shape.requestId.safeParse(
       response.headers.get("X-Request-ID"),
     );
@@ -63,11 +126,14 @@ function installValidation(client: Client): Client {
       throw error;
     }
     const parsed = await validator.safeParseAsync(body);
+    requireCurrent();
     if (!parsed.success) throw invalid();
     if (!response.ok) {
       const envelope = zErrorEnvelope.safeParse(parsed.data);
       if (!envelope.success) throw invalid();
-      throw new ApiError(response.status, envelope.data.error);
+      const error = new ApiError(response.status, envelope.data.error);
+      if (response.status === 401) session?.onUnauthorized(error);
+      throw error;
     }
     return response;
   });
@@ -78,9 +144,16 @@ function installValidation(client: Client): Client {
 }
 
 /** Isolated client for a specific transport/origin. Validation is always installed. */
-export function createValidatedClient(config: Config = {}): Client {
-  return installValidation(createClient(config));
+export function createValidatedClient(
+  config: Config = {},
+  session?: SessionTransportPolicy,
+): Client {
+  return installValidation(createClient(config), session);
 }
 
 export const client = installValidation(defaultClient);
-export { contractManifest, operationPolicies } from "./generated/policy.gen";
+export {
+  contractManifest,
+  operationPolicies,
+  browserNavigationPolicies,
+} from "./generated/policy.gen";
