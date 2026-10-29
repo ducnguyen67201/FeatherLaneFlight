@@ -129,6 +129,11 @@ export {
   listSuiteDraftsOptions,
   getSuiteDraftOptions,
 } from "./suiteDraftQueries";
+export {
+  getSuiteCriteriaSuggestionStatus,
+  getSuiteCriteriaSuggestionStatusOptions,
+  suggestSuiteCriteria,
+} from "./suiteCriteria";
 
 export {
   runEventMessages,

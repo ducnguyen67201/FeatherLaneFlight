@@ -126,3 +126,53 @@ content changes. Automatic review returns `nextPublishedRevision` and a canonica
 `definitionDigest`; browser publication supplies that digest as
 `expectedDefinitionDigest` to reject intervening publication changes. Receipt
 recovery checks a supplied digest against the original committed definition.
+
+## Criteria suggestions (P17.5)
+
+The existing synthetic draft editor also authors the three current criteria and
+reviews AI suggestions. `GET .../draft/criteria-suggestions` reports availability
+and the configured model after live session/project authorization. `POST` to that
+same route takes `expectedDraftVersion` and `missionDescription` (1–2,000 nonblank
+characters). It requires the existing same-origin CSRF/session and both membership
+checks. Only the entered description, generic instructions and the fixed canonical
+supported-check schema go to OpenAI; project/user IDs, saved suite contents,
+artifacts, logs and telemetry do not.
+
+The service reads the expected saved version, ends that database transaction,
+performs one bounded OpenAI Responses request, then opens a fresh transaction to
+recheck live access and the saved version. It rejects unsupported check identity,
+kind, version, unit or evidence requirements. The response contains canonical
+check definitions, unsupported/underspecified requirements, provider/model and the
+saved draft version. It does not write a draft, publish a suite, create evidence,
+qualify flight behavior, evaluate a run or make executable rules. The browser also
+checks the captured local edit generation before every explicit acceptance.
+Accepted suggestions still use the existing Save/Publish path.
+
+Disabled/missing/invalid provider configuration or an unavailable private key
+leaves manual authoring usable. A stale saved version returns 409; unsupported,
+refused, malformed, oversized or failed provider responses return safe 503 errors.
+Busy generation returns 429. Upstream credential errors never masquerade as a lost
+browser login. Raw provider errors and credentials are not returned or logged.
+
+Settings are read once from [config/criteria-generation.toml](../../../../../../config/criteria-generation.toml),
+not environment variables. Restart the API after changing the file, or choose a
+file explicitly from the repository root:
+
+```sh
+uv run --package featherlane-control-plane flf-api --criteria-config config/criteria-generation.toml
+```
+
+The reviewed default is `gpt-6.1-sol`, low reasoning, standard service, a 30-second
+deadline and at most 2,048 output tokens. `enabled = false` keeps live generation
+off. The API key is referenced by `api_key_file`, resolved relative to the TOML
+file's directory; its contents must be a bounded, owner-only regular file. The
+default reference points into ignored `.local/secrets/`. No key is shipped, created,
+read from an environment variable or exposed to the browser. Account/key setup,
+live paid verification and deployment require their own authorization.
+
+There are no tools or automatic provider retries. At most two requests run in an
+API process by default, with one in flight per session; this is not a distributed
+quota or an account spending cap. Browser cancellation discards its response; the
+server deadline remains authoritative. No worker, migration or second store is
+introduced. See the [authoring architecture](../../../../../../docs/architecture/criteria-authoring.md)
+for approval sources, the external trust boundary and verification limits.

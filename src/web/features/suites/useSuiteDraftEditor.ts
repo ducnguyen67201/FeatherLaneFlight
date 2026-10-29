@@ -13,6 +13,7 @@ import {
   type SuiteDraftValidation,
 } from "@featherlane/contracts";
 import { zSuiteDraftContent } from "@featherlane/contracts/validators";
+import type { DraftEditPrecondition } from "./useSuiteSuggestions";
 
 export type DraftEditorConnection = {
   client: ReturnType<typeof createValidatedClient>;
@@ -27,6 +28,7 @@ export function useSuiteDraftEditor(
   onPublished: (revision: SuiteRevisionView) => void,
 ) {
   const [content, setContent] = useState(draft.content);
+  const editVersion = useRef(0);
   const baseline = useRef({
     version: draft.draftVersion,
     content: JSON.stringify(draft.content),
@@ -57,6 +59,7 @@ export function useSuiteDraftEditor(
   };
   const path = { projectId: connection.projectId, suiteId: draft.suiteId };
   function reset(saved: SuiteDraftView) {
+    editVersion.current += 1;
     baseline.current = {
       version: saved.draftVersion,
       content: JSON.stringify(saved.content),
@@ -67,11 +70,22 @@ export function useSuiteDraftEditor(
     setConflict(false);
     setNotice("");
   }
-  function change(next: SuiteDraftContent) {
+  function change(
+    next: SuiteDraftContent,
+    expected?: DraftEditPrecondition,
+  ): boolean {
     if (pending.current || uncertainPublication !== null || review !== null)
-      return;
+      return false;
+    if (
+      expected &&
+      (expected.savedVersion !== baseline.current.version ||
+        expected.editVersion !== editVersion.current)
+    )
+      return false;
+    editVersion.current += 1;
     setContent(next);
     setNotice("");
+    return true;
   }
   function showIssues(next: FieldError[]) {
     const visible = next.map((issue) => {
@@ -224,6 +238,8 @@ export function useSuiteDraftEditor(
     conflict,
     issueAttempt,
     baselineVersion: baseline.current.version,
+    editVersion: editVersion.current,
+    handleError: handle,
     alreadyPublished: !dirty && publishedVersion === baseline.current.version,
     review,
     closeReview: () => setReview(null),

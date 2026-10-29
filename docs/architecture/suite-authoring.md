@@ -80,3 +80,8 @@ Related contracts and API behavior: [suite module](../../src/api/src/featherlane
 Related dependency: [build/profile registration](build-profile-registration.md).
 Related delivery scope: [P11 plan](../phases/P11.md) and
 [P11 handoff](../phases/handoffs/P11.md).
+
+The [criteria-authoring subsystem](criteria-authoring.md) records the approved
+P17.5 manual editor and suggestion-review extension, its local implementation
+status and the separately proposed OpenAI provider boundary. P11 continues to own
+the single draft/publication path described here.

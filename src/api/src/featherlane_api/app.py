@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from featherlane_contracts import CONTRACT_VERSION
@@ -39,6 +40,9 @@ from featherlane_api.modules.runners.http import router as runners_router
 from featherlane_api.modules.runners.persistence import RunnerStore
 from featherlane_api.modules.runs.http import router as runs_router
 from featherlane_api.modules.runs.persistence import RunStore
+from featherlane_api.modules.suites.criteria_config import load_criteria_config
+from featherlane_api.modules.suites.criteria_http import router as criteria_router
+from featherlane_api.modules.suites.criteria_provider import CriteriaSuggestionProvider
 from featherlane_api.modules.suites.draft_http import router as draft_router
 from featherlane_api.modules.suites.draft_store import SuiteDraftStore
 from featherlane_api.modules.suites.http import router as suites_router
@@ -48,7 +52,9 @@ from featherlane_api.openapi.schema import create_schema_app, schema_digest
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: ApiSettings | None = None) -> FastAPI:
+def create_app(
+    settings: ApiSettings | None = None, *, criteria_config_path: Path | None = None
+) -> FastAPI:
     settings = settings if settings is not None else load_settings()
     digest = schema_digest(create_schema_app().openapi())
 
@@ -98,6 +104,12 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.state.google_oidc = GoogleOidc(settings)
     app.state.on_verified_login = lambda session: AccessEnrollment(session).apply
     app.state.settings = settings
+    criteria_path = (
+        criteria_config_path or Path("config/criteria-generation.toml")
+    ).resolve()
+    app.state.criteria_provider = CriteriaSuggestionProvider(
+        load_criteria_config(criteria_path), criteria_path.parent
+    )
     app.state.event_stream_slots = asyncio.BoundedSemaphore(8)
     app.state.artifact_storage = LocalPrivateArtifactStorage(
         settings.artifact_root,
@@ -119,6 +131,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(registration_router)
     app.include_router(suites_router)
     app.include_router(draft_router)
+    app.include_router(criteria_router)
     app.include_router(runs_router)
     app.include_router(events_router)
     app.include_router(leases_router)

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   AlertTitle,
@@ -29,6 +29,8 @@ import {
   type DraftEditorConnection,
 } from "./useSuiteDraftEditor";
 import { useSuiteAuthoringProfiles } from "./useSuiteAuthoringProfiles";
+import { SuiteSuggestionReview } from "./SuiteSuggestionReview";
+import { useSuiteCriteriaSource } from "./useSuiteCriteriaSource";
 export function SuiteDraftEditor({
   draft,
   connection,
@@ -49,12 +51,22 @@ export function SuiteDraftEditor({
   onReload: () => Promise<SuiteDraftView | undefined>;
 }) {
   const editor = useSuiteDraftEditor(connection, draft, onSaved, onPublished);
+  const suggestions = useSuiteCriteriaSource(
+    connection,
+    scope,
+    draft.suiteId,
+    editor.handleError,
+  );
   const profiles = useSuiteAuthoringProfiles(
     connection,
     scope,
     editor.content.integrationProfileId ?? null,
   );
   const summary = useRef<HTMLDivElement>(null);
+  const [criterionFocus, setCriterionFocus] = useState<{
+    field: string;
+    sequence: number;
+  } | null>(null);
   useEffect(() => {
     if (editor.issueAttempt) summary.current?.focus();
   }, [editor.issueAttempt]);
@@ -166,6 +178,13 @@ export function SuiteDraftEditor({
                     href={`#${issue.field}`}
                     onClick={(e) => {
                       e.preventDefault();
+                      if (/^checks\.\d+\./.test(issue.field)) {
+                        setCriterionFocus((previous) => ({
+                          field: issue.field,
+                          sequence: (previous?.sequence ?? 0) + 1,
+                        }));
+                        return;
+                      }
                       (
                         document.getElementById(issue.field) ?? summary.current
                       )?.focus();
@@ -306,12 +325,6 @@ export function SuiteDraftEditor({
               disabled={disabled}
               onChange={editor.change}
             />
-            <SuiteChecksEditor
-              content={content}
-              issues={editor.issues}
-              disabled={disabled}
-              onChange={editor.change}
-            />
           </Stack>
           <Stack spacing={5} sx={{ minWidth: 0 }}>
             <Paper variant="outlined" sx={panel}>
@@ -382,6 +395,33 @@ export function SuiteDraftEditor({
               </Stack>
             </Paper>
           </Stack>
+        </Box>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "minmax(0,1fr)",
+              lg: "minmax(0,1fr) minmax(0,1fr)",
+            },
+            gap: 6,
+            alignItems: "start",
+          }}
+        >
+          <SuiteChecksEditor
+            content={content}
+            issues={editor.issues}
+            disabled={disabled}
+            onChange={editor.change}
+            focusRequest={criterionFocus}
+          />
+          <SuiteSuggestionReview
+            content={content}
+            savedVersion={editor.baselineVersion}
+            editVersion={editor.editVersion}
+            disabled={disabled || editor.conflict}
+            source={suggestions}
+            onChange={editor.change}
+          />
         </Box>
         <SuitePublishedHistory
           client={connection.client}
