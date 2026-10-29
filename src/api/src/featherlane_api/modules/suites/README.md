@@ -1,8 +1,7 @@
 # Published synthetic suites
 
 P10 provides project-authorized catalog and exact revision reads, plus a local
-operator import command. The browser cannot create or edit suites. Draft authoring
-belongs to P11; PX4 runtime qualification and nominal flight belong to P18/P19.
+operator import command. P11 adds browser draft authoring and immutable publication; PX4 runtime qualification and nominal flight belong to P18/P19.
 
 ## Operator workflow
 
@@ -66,3 +65,64 @@ build compatibility and runner eligibility itself.
 P10 uses the actual merged P09 models, registration store and exact-profile lookup.
 Migration `0010_suite_catalog` follows `0009_registration`; fresh database setup
 uses the complete reviewed chain.
+
+## Browser draft and publication boundary (P11)
+
+P11 backend authoring uses the actual merged P10 canonical definitions, validator,
+digest, exact-profile lookup, reference qualifier and immutable store. The approved browser editor uses these routes. Local implementation and verification
+do not imply a deployed service. See the [approved architecture](../../../../../../docs/architecture/suite-authoring.md)
+for approval scope and versioning.
+
+All draft routes include `/api/v1/projects/{projectId}`. `GET/POST /test-suites`
+lists bounded draft summaries or opens a draft. A create body is either `{}` for
+a supported preset with profile selection incomplete or `{ "sourceRevisionId": "..." }` to copy an exact project
+revision. Creation requires an `Idempotency-Key`; the same principal/project/key
+with changed inputs conflicts. Opening a suite with an existing draft returns it
+without overwriting edits. Suite identity and published revision numbers are
+server-owned; a suite ID is not an authorization boundary by itself.
+
+`GET/PATCH /test-suites/{suiteId}/draft` reads or replaces draft content. The PATCH
+body includes `expectedDraftVersion` and canonical-derived incomplete `content`.
+Missing values, unresolved metric thresholds and empty lists can remain in drafts;
+unsupported kinds, unknown fields and out-of-bound supplied values reject. All
+write operations recheck the live session, same-origin CSRF and both memberships
+inside the transaction. Session/membership loss also prevents receipt replay.
+
+`POST .../draft/validate` takes `expectedDraftVersion`, checks the saved content,
+then resolves its exact profile and runs P10's bounded qualifier without writing
+publication records. It returns structured issues and, only on success, the
+canonical definition digest. `POST .../revisions` takes the same saved-version
+precondition, reruns authoritative validation/qualification, and commits the new
+immutable revision, digest-bound qualification, audit and draft publication
+receipt atomically. The draft stays editable. An identical publication retry
+recovers the original revision even after later edits; it never publishes the
+newer draft silently. Concurrent edits produce one winner and a 409
+`SUITE_DRAFT_CONFLICT` for stale writers. A lost PATCH response can produce a
+conflict on retry; clients must load the latest saved draft, not overwrite it.
+
+The reference qualifier currently requires all three fixed built-in check IDs and
+both `OBSERVATIONS` and `REDACTED_PROCESS_LOG`. Structure-valid drafts that remove
+that inventory cannot publish. New revisions run separate qualification bound to
+their own digest; old revision verification is never inherited.
+
+`publication.py` contains the shared policy extracted from the operator importer.
+The operator still resolves its real identity and owns its transaction. The
+browser service still requires its real live principal/CSRF, owns draft locking
+and its transaction, and does not call the operator importer. Shared publication
+rechecks project membership and takes the project lock before revision work; it
+never begins/commits a transaction or establishes a login. No raw store append is
+exposed as an authenticated API. No second published suite store is added.
+
+Migration `0011_suite_drafts` follows merged `0012_run_admission` (which follows `0010_suite_catalog`); mutable
+draft rows coexist with immutable creation/publication receipts and audit events.
+Generated contracts/client output remains ignored. Handwritten validated client
+wrappers and scoped read query options live in `suiteDrafts.ts` and
+`suiteDraftQueries.ts`; the approved application editor uses these wrappers and the same scoped cache policy.
+
+The current saved draft's `publishedRevisionId` distinguishes a committed publication
+from an editable unpublished version; `lastPublishedRevisionId` remains the last
+linked publication after edits. The editor disables redundant publication until
+content changes. Automatic review returns `nextPublishedRevision` and a canonical
+`definitionDigest`; browser publication supplies that digest as
+`expectedDefinitionDigest` to reject intervening publication changes. Receipt
+recovery checks a supplied digest against the original committed definition.

@@ -10,6 +10,7 @@ from featherlane_api.modules.identity import persistence  # noqa: F401
 from featherlane_api.modules.registration import persistence as registration_models  # noqa: F401
 from featherlane_api.modules.runners import persistence as runner_models  # noqa: F401
 from featherlane_api.modules.runs import persistence as run_models  # noqa: F401
+from featherlane_api.modules.suites import draft_store as draft_models  # noqa: F401
 from featherlane_api.modules.suites import persistence as suite_models  # noqa: F401
 from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import create_async_engine

@@ -116,3 +116,15 @@ export {
 // Follow the canonical registration response, including synthetic input builds.
 export type RegisteredBuildView =
   import("./generated/types.gen").BuildEnvelope["data"];
+export {
+  listSuiteDrafts,
+  getSuiteDraft,
+  createSuiteDraft,
+  editSuiteDraft,
+  validateSuiteDraft,
+  publishSuiteDraft,
+} from "./suiteDrafts";
+export {
+  listSuiteDraftsOptions,
+  getSuiteDraftOptions,
+} from "./suiteDraftQueries";

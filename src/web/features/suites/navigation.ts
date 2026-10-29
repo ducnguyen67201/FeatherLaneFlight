@@ -9,3 +9,12 @@ export function suitePath(
     : "/suites";
   return `${path}?${query}`;
 }
+
+export function draftPath(
+  organizationId: string,
+  projectId: string,
+  suiteId?: string,
+): string {
+  const query = new URLSearchParams({ organizationId, projectId });
+  return `/suites/drafts${suiteId ? `/${encodeURIComponent(suiteId)}` : ""}?${query}`;
+}

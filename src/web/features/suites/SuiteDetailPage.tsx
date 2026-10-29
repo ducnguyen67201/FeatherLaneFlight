@@ -1,4 +1,4 @@
-import { useEffect, type MouseEvent } from "react";
+import { useEffect, type MouseEvent, type ReactNode } from "react";
 import {
   Accordion,
   AccordionDetails,
@@ -20,6 +20,7 @@ import { PageLayout } from "../../layouts/PageLayout";
 import { SyntheticSuitePlan } from "./SyntheticSuitePlan";
 
 type Props = {
+  editAction?: ReactNode;
   suite: SuiteRevisionView | undefined;
   projectName: string;
   catalogHref: string;
@@ -54,6 +55,7 @@ function Field({
 }
 export function SuiteDetailPage({
   suite,
+  editAction,
   projectName,
   catalogHref,
   loading,
@@ -84,14 +86,17 @@ export function SuiteDetailPage({
           : undefined
       }
       actions={
-        <Button
-          component="a"
-          href={catalogHref}
-          startIcon={<ArrowBack />}
-          onClick={onBack}
-        >
-          Back to catalog
-        </Button>
+        <Stack direction="row" spacing={3}>
+          {editAction}
+          <Button
+            component="a"
+            href={catalogHref}
+            startIcon={<ArrowBack />}
+            onClick={onBack}
+          >
+            Back to catalog
+          </Button>
+        </Stack>
       }
     >
       {loading ? (

@@ -79,13 +79,18 @@ export function useSuiteCatalog({
       failed.current
     )
       return;
+    accessFailure(
+      error.status === 401 ? 401 : error.status === 403 ? 403 : 404,
+    );
+  }, [error, projectId, queryClient]);
+  function accessFailure(status: 401 | 403 | 404) {
     failed.current = true;
     setBlocked(true);
-    if (error.status === 401) handler.current(401);
+    if (status === 401) handler.current(401);
     void queryClient
       .cancelQueries({ queryKey: prefix })
       .then(() => queryClient.removeQueries({ queryKey: prefix }));
-  }, [error, projectId, queryClient]);
+  }
   function changeFilters(
     change: Partial<Pick<typeof filters, "search" | "requiredCheck">>,
   ) {
@@ -106,6 +111,7 @@ export function useSuiteCatalog({
     list,
     detail,
     blocked,
+    accessFailure,
     changeFilters,
     retry,
     clearFilters: () => changeFilters({ search: "", requiredCheck: null }),

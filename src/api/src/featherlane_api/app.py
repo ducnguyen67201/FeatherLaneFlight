@@ -27,6 +27,8 @@ from featherlane_api.modules.runners.http import router as runners_router
 from featherlane_api.modules.runners.persistence import RunnerStore
 from featherlane_api.modules.runs.http import router as runs_router
 from featherlane_api.modules.runs.persistence import RunStore
+from featherlane_api.modules.suites.draft_http import router as draft_router
+from featherlane_api.modules.suites.draft_store import SuiteDraftStore
 from featherlane_api.modules.suites.http import router as suites_router
 from featherlane_api.modules.suites.persistence import SuiteStore
 from featherlane_api.openapi.schema import create_schema_app, schema_digest
@@ -51,6 +53,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
                     await RegistrationStore(session).check_ready()
                     await RunnerStore(session).check_ready()
                     await SuiteStore(session).check_ready()
+                    await SuiteDraftStore(session).check_ready()
                     await RunStore(session).check_ready()
             except Exception:
                 logger.error("Database startup check failed")
@@ -86,5 +89,6 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(people_router)
     app.include_router(registration_router)
     app.include_router(suites_router)
+    app.include_router(draft_router)
     app.include_router(runs_router)
     return app
