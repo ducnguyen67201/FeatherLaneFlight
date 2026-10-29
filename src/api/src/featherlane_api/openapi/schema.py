@@ -34,6 +34,7 @@ from featherlane_api.http.errors import ERROR_RESPONSES
 from featherlane_api.modules.access.http import router as access_router
 from featherlane_api.modules.access.people_http import router as people_router
 from featherlane_api.modules.identity.http import router as identity_router
+from featherlane_api.modules.registration.http import router as registration_router
 from featherlane_api.modules.runners.http import router as runners_router
 
 
@@ -195,6 +196,7 @@ def create_schema_app() -> FastAPI:
     app.include_router(runners_router)
     app.include_router(access_router)
     app.include_router(people_router)
+    app.include_router(registration_router)
     schema = app.openapi()
     for model in (*STATUS_MODELS, OrganizationView, ProjectView):
         schema["components"]["schemas"][model.__name__] = TypeAdapter(

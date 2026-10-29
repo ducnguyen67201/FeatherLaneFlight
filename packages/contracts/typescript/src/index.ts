@@ -84,3 +84,26 @@ export {
 
 export { listRunners, createRunnerEnrollment, revokeRunner } from "./runners";
 export { listRunnersOptions } from "./runnerQueries";
+export {
+  registerBuild,
+  registerLocalProfile,
+  registerIntegrationProfile,
+  listBuilds,
+  getBuild,
+  listLocalProfiles,
+  getLocalProfile,
+  listIntegrationProfiles,
+  getIntegrationProfile,
+} from "./registration";
+export {
+  listBuildsOptions,
+  getBuildOptions,
+  listLocalProfilesOptions,
+  getLocalProfileOptions,
+  listIntegrationProfilesOptions,
+  getIntegrationProfileOptions,
+} from "./registrationQueries";
+
+// This alias follows the generated discriminated response, including synthetic profiles.
+export type RegisteredIntegrationProfileView =
+  import("./generated/types.gen").IntegrationProfileEnvelope["data"];

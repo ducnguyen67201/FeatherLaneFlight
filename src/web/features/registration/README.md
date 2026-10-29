@@ -1,0 +1,11 @@
+# Registration catalog
+
+The approved read-only catalog is mounted at `/settings/builds` inside the existing authenticated project workspace. It uses the generated contract client/validators, session transport and current project selection. Project changes remount the catalog; cache keys include the authentication scope and project.
+
+`BuildsTable`, `LocalProfilesTable`, `IntegrationProfilesSection` and `CatalogPagination` compose the approved presentation. `useRegistrationCatalog` owns independent bounded cursor queries and access-loss cleanup. `useRegistrationDetail` owns exact detail reads; `RegistrationDetailDialog` presents the validated record. Metadata compatibility and capability qualification remain distinct: local rows display their actual configuration digest, and integration specifications remain declared.
+
+Ordinary refresh failures retain the same project's last loaded snapshot with a warning. Any authentication/access denial takes priority over ordinary request errors, hides protected content and removes its registration cache. Detail reads also recheck server access. No mutation, upload or runner registration workflow is implemented by these components.
+
+Human approval: phase chat `01a18387-04a2-7891-bbbc-f7b46a012442`, turn `01a18577-88b2-7972-b779-f93173768228`, message `01a18577-8951-7463-b798-3abcf88eba92`: “yes this looks consistent now, go ahead and implement the revised table layout”. Approval covers the shown table treatment; hosting-specific registration/onboarding remains separately gated.
+
+Manual browser verification used these actual application components with temporary, explicitly labeled MSW development fixtures. It covered cursor forward/back, all detail variants and opener focus restoration, empty/loading/error/malformed responses, retained stale data after failed refresh, access removal and mixed ordinary/access errors. No authentication/session endpoints were mocked and no application automated tests were authored. The temporary preview application, fixture copies, service worker, build output and owned server were removed after verification. Full authenticated browser/provider composition and P08-backed registration writes remain unverified in this phase.

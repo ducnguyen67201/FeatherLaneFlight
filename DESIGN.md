@@ -211,6 +211,8 @@ The approved P07 Settings UI now lives under `src/web/features/projects/` and is
 
 ## Component reuse
 
+P09's approved registration catalog follows the Runs table composition: a compact section heading and count, rows/header aligned to the containing panel edges, shared density and hover, neutral small Open-arrow actions, and a cursor-navigation footer. Use the existing table-width token and contained keyboard-focusable horizontal scrolling. Build/profile columns carry their own domain metadata; do not infer qualification from a displayed registration. The revised table treatment was approved in P09 message `01a18577-8951-7463-b798-3abcf88eba92`. No new visual tokens were needed.
+
 Use MUI Button, TextField, Select/Autocomplete, Dialog, Tabs, Alert, Skeleton, Chip, Table, and layout components directly with central defaults. Start with ordinary form state; add another form/state library only when the actual workflow warrants it.
 
 Extract repeated product patterns such as RunStatusBadge, a project-aware page header, cursor navigation, or an evidence summary when they become shared. Keep the status map centralized. Build a trace timeline from typed events with simple MUI composition before considering a specialized visualization dependency.
