@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ProjectsWorkspace } from "./ProjectsWorkspace";
 import { useProjectAccess, type ProjectAccessProps } from "./useProjectAccess";
+import { peoplePath } from "../people/navigation";
 
 type AuthenticatedProjectsProps = ProjectAccessProps & { userMenu: ReactNode };
 
@@ -18,6 +19,10 @@ export function AuthenticatedProjects({
       organizationId={access.organizationId}
       projectId={access.projectId}
       state={access.state}
+      canCreate={access.canCreateProject}
+      peopleHref={
+        access.organizationId ? peoplePath(access.organizationId) : undefined
+      }
       userMenu={userMenu}
       onOrganizationChange={access.chooseOrganization}
       onProjectChange={access.chooseProject}

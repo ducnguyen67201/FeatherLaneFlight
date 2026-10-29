@@ -11,6 +11,7 @@ from featherlane_contracts.projects import (
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from featherlane_api.modules.access.domain import CreationConflict
+from featherlane_api.modules.access.people_store import PeopleStore
 from featherlane_api.modules.access.persistence import AccessStore, ProjectRecord
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
@@ -85,7 +86,9 @@ class AccessService:
     ) -> ProjectEnvelope:
         async with self.session.begin():
             await self.identity.require_live(principal, handle, csrf)
-            await self.store.require_organization(principal.user_id, organization_id)
+            await PeopleStore(self.session).require_owner(
+                principal.user_id, organization_id
+            )
             project = await self.store.creation(principal.user_id, organization_id, key)
             if project is not None:
                 project = await self.store.require_project(

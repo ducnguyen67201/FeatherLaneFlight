@@ -30,6 +30,8 @@ type ProjectsWorkspaceProps = {
   userMenu: ReactNode;
   beforeContent?: ReactNode;
   notice?: string;
+  canCreate?: boolean;
+  peopleHref?: string;
   onOrganizationChange: (organizationId: string) => void;
   onProjectChange: (projectId: string) => void;
   onRetry: () => void;
@@ -53,6 +55,8 @@ export function ProjectsWorkspace({
   userMenu,
   beforeContent,
   notice,
+  canCreate = true,
+  peopleHref,
   onOrganizationChange,
   onProjectChange,
   onRetry,
@@ -69,10 +73,14 @@ export function ProjectsWorkspace({
   const visibleProjects = organization
     ? projects.filter((project) => project.organizationId === organization.id)
     : [];
-  const form = useCreateProjectForm(organization?.id ?? null, onCreate);
+  const form = useCreateProjectForm(
+    canCreate ? (organization?.id ?? null) : null,
+    onCreate,
+  );
   const createButtonRef = useRef<HTMLButtonElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   function startCreate() {
+    if (!canCreate) return;
     openerRef.current =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
@@ -115,14 +123,27 @@ export function ProjectsWorkspace({
         description="Manage your organization’s projects. Switch projects from the sidebar."
         actions={
           organization && (
-            <Button
-              ref={createButtonRef}
-              variant="contained"
-              startIcon={<Add />}
-              onClick={startCreate}
+            <Stack
+              direction="row"
+              spacing={3}
+              sx={{ flexWrap: "wrap", gap: 3 }}
             >
-              Create project
-            </Button>
+              {peopleHref && (
+                <Button variant="outlined" href={peopleHref}>
+                  People & access
+                </Button>
+              )}
+              {canCreate && (
+                <Button
+                  ref={createButtonRef}
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={startCreate}
+                >
+                  Create project
+                </Button>
+              )}
+            </Stack>
           )
         }
       >
@@ -169,8 +190,8 @@ export function ProjectsWorkspace({
                   : "You have no organization membership"}
               </AlertTitle>
               {state === "access-removed"
-                ? "Protected project content is hidden. Ask the operator to restore your organization and project membership."
-                : "Ask the operator to add you to an organization and its projects. Organizations are not joined automatically."}
+                ? "Protected project content is hidden. Ask the organization owner to restore the required access."
+                : "Ask an organization owner to add your verified email or domain, then sign in again. Project access is assigned separately."}
             </Alert>
             <Button variant="outlined" sx={{ mt: 5 }} onClick={onRetry}>
               Refresh access
@@ -190,7 +211,7 @@ export function ProjectsWorkspace({
                 projects={visibleProjects}
                 projectId={projectId}
                 onSelect={onProjectChange}
-                onCreate={startCreate}
+                onCreate={canCreate ? startCreate : undefined}
                 onMore={moreProjects}
                 loadingMore={loadingMoreProjects}
               />
@@ -199,7 +220,7 @@ export function ProjectsWorkspace({
         )}
       </PageLayout>
       <CreateProjectDialog
-        open={form.open && !!organization}
+        open={form.open && !!organization && canCreate}
         organizationName={organization?.name ?? ""}
         name={form.name}
         pending={form.pending}

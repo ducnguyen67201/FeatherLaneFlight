@@ -11,6 +11,7 @@ import {
   contractManifest,
   createProject,
   getProjectOptions,
+  getOrganizationAccessOptions,
   listOrganizations,
   listOrganizationsOptions,
   listProjects,
@@ -83,6 +84,18 @@ export function useProjectAccess({
   const organizations =
     organizationsQuery.data?.pages.flatMap((page) => page.data) ?? [];
   const organizationId = organizationChoice ?? organizations[0]?.id ?? null;
+  const organizationAccess = useQuery({
+    ...getOrganizationAccessOptions(
+      { client, headers, path: { orgId: organizationId ?? "unselected" } },
+      [...prefix, organizationId],
+    ),
+    enabled: !!organizationId && !blocked,
+    refetchInterval: 30000,
+  });
+  const canCreateProject =
+    !blocked &&
+    !organizationAccess.error &&
+    organizationAccess.data?.data.owner?.id === userId;
   const projectOptions = listProjectsOptions(
     {
       client,
@@ -138,9 +151,12 @@ export function useProjectAccess({
       : loadedProjects;
   const create = useMutation({ mutationFn: createProject, retry: false });
   const currentScope = useRef(organizationId);
-  currentScope.current = blocked ? null : organizationId;
+  currentScope.current = blocked || !canCreateProject ? null : organizationId;
   const error =
-    organizationsQuery.error ?? projectsQuery.error ?? selectedQuery.error;
+    organizationsQuery.error ??
+    organizationAccess.error ??
+    projectsQuery.error ??
+    selectedQuery.error;
 
   useEffect(() => {
     active.current = true;
@@ -202,6 +218,7 @@ export function useProjectAccess({
   else if (error) state = "error";
   else if (
     organizationsQuery.isPending ||
+    (organizationId && organizationAccess.isPending) ||
     (organizationId && projectsQuery.isPending) ||
     (projectId && selectedQuery.isPending)
   )
@@ -218,6 +235,10 @@ export function useProjectAccess({
     setProjectChoice(id);
   }
   async function submit(id: string, name: string, key: string) {
+    if (!canCreateProject || id !== organizationId)
+      throw new Error(
+        "Only the current organization owner can create projects.",
+      );
     try {
       const response = await create.mutateAsync({
         client,
@@ -256,6 +277,7 @@ export function useProjectAccess({
     projects,
     organizationId,
     projectId,
+    canCreateProject,
     state,
     chooseOrganization,
     chooseProject,

@@ -249,8 +249,8 @@ and `uv.lock` are the only shared dependency changes in P05.
 
 ## P06A authentication API
 
-This backend has no login bypass, membership admission, UI routing or provider-token
-storage. Migrate through `0002_identity` before starting it. The API factory and
+P06A introduced no login bypass, membership admission, UI routing or provider-token
+storage. P07.5 adds bounded admission as described below. Migrate through `0002_identity` before starting it. The API factory and
 existing database/configuration loaders keep their P05 import paths. Identity
 mappings use the shared `Base`; startup verifies their tables and columns before
 serving requests. P07 references `featherlane.users.id` and follows
@@ -281,7 +281,7 @@ matching and consumption. It never uses Starlette's readable signed-cookie sessi
 middleware. The opaque OIDC browser cookie and application session cookie contain
 no profile, CSRF value or provider token. The database stores keyed application
 handle and CSRF digests. User mapping uses exact Google issuer and subject;
-verified email is display/contact data and never links accounts or grants access.
+verified email never links accounts. P07.5 separately applies explicit owner-configured admission rules within the verified-login transaction, as described below.
 
 Successful reauthentication issues a fresh opaque handle and CSRF value, and
 revokes the prior session atomically. Expiry during the provider round trip permits
@@ -365,7 +365,7 @@ projects, exactly two membership tables, and safe access audit events. Organizat
 membership alone grants no project visibility. Project membership has composite
 foreign keys to its organization membership and project/organization pair. Removing
 an organization grant cascades its project grants; rejoining does not restore them.
-There are no roles, permission flags, automatic admission, or browser membership editors.
+P07 introduced no roles or permission flags. P07.5 below adds the explicit owner and bounded admission/people administration without a role hierarchy.
 
 Protected operations are `GET /api/v1/orgs`, `GET /api/v1/orgs/{orgId}/projects`,
 `GET /api/v1/projects/{projectId}`, and `POST /api/v1/orgs/{orgId}/projects`.
@@ -413,3 +413,65 @@ fresh private instance (project featherlane-p07-review, loopback55417, database
 featherlane_p07_review, user flf, absolute directory `.local/p07-review-final/postgres`,
 API8017). This did not recreate, reset, migrate or delete the original P07 data.
 No phase-specific database Compose file is part of the publication packet.
+
+## P07.5 owner and people administration
+
+Migration `0004_owner_admission` adds one explicit nullable owner user ID to each
+organization, plus saved email grants, exact-domain rules and join exclusions.
+The owner is constrained to current organization membership. Existing organizations
+remain unowned; there is no guessed backfill or role hierarchy. New operator
+`bootstrap` calls explicitly name the existing verified user as the owner. To
+backfill an existing organization, use the existing issuer/subject lookup:
+
+```sh
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT assign-owner --organization-id ORGANIZATION_ID
+```
+
+The target must already be a member. Repeating the same assignment is harmless;
+assigning another owner or revoking the owner is rejected. Ownership transfer is
+outside this phase. Project creation now requires the owner, including replay;
+project-resource reads/actions still require the existing two explicit memberships.
+An owner may administer project grants without being admitted to that project's
+resources. `AccessStore.require_project(user_id, project_id)` retains P07's policy
+and signature for downstream consumers such as runner enrollment/revocation.
+
+Owner administration lives under `/api/v1/orgs/{orgId}`:
+
+- `GET /access`: current organization/owner summary, available to current members.
+- `GET /people`, `DELETE /people/{userId}`: joined people and member removal.
+- `GET/POST /email-grants`, `DELETE /email-grants/{ruleId}`: persistent saved emails.
+- `GET/POST /domain-rules`, `DELETE /domain-rules/{ruleId}`: exact-domain rules.
+- `GET /join-exclusions`, `DELETE /join-exclusions/{ruleId}`: exclusions and explicit permission to join automatically again.
+- `GET /managed-projects`: project metadata for owner administration, without granting project-resource access.
+- `GET/PATCH /projects/{projectId}/people`: bounded organization-person pages with explicit project membership, and a batch of at most 100 per-person changes. Changes never replace unseen page rows.
+
+All lists use P07's bounded cursor pattern. All mutations require current session,
+contract header, exact origin and CSRF, with current ownership checked again inside
+the transaction. New rule saves are idempotent by normalized email/domain; project-membership setters are no-ops when already in the requested state. Unknown, removed or foreign deletion/restoration targets return the same non-disclosing 404; reload current state after an uncertain acknowledgement. Audit events
+commit with the mutation and reference rule IDs rather than recording email values.
+Cross-organization resources remain non-disclosing 404s; a current member who lacks
+ownership receives 403 for owner administration.
+
+Email/domain matching accepts conventional ASCII addresses/domains, lowercases and
+trims input, and performs no provider-specific dot/plus rewriting. Domains match
+exactly: no wildcard, URL, suffix or automatic subdomain matching. The composition
+root injects `AccessEnrollment.apply(User)` into the existing verified-login use
+case. Admission and session establishment commit together. No periodic scheduler,
+invitation acceptance, email lookup/account linking or session-read admission is
+introduced. No existing user is admitted until their next verified login.
+
+Removing a person cascades project grants and persists email and stable-user
+exclusions, including protection across a later verified email change. Allowing
+joining again only removes the exclusion; a matching rule and a later verified
+login are still needed. Project grants never return automatically. Removing a
+saved email cancels that future admission and excludes the address; existing
+members with that email retain their current membership until explicitly removed.
+Removing a domain rule likewise preserves current members.
+
+The UI components under `src/web/features/people/` consume canonical generated types
+and explicit callbacks. After the human-authorized integration of merged P06.5,
+the actual authenticated application mounts them at `/settings/orgs/{orgId}/people`
+with epoch-bound validated clients, real queries/mutations, CSRF and cache cleanup.
+Settings uses the owner summary to gate project creation; the API rechecks ownership
+for every creation/replay. Real Google/HTTPS end-to-end verification is not implied
+by the isolated service/HTTP/SDK checks; see the phase handoff for actual results.

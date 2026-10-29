@@ -43,6 +43,7 @@ def get_identity_service(
         SessionSecrets(settings.session_hash_key.get_secret_value()),
         settings.session_ttl_seconds,
         settings.oidc_ttl_seconds,
+        on_verified_login=request.app.state.on_verified_login(session),
     )
 
 

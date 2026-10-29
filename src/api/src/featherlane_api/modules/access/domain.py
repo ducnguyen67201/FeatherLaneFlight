@@ -7,3 +7,11 @@ class AccessNotFound(Exception):
 
 class CreationConflict(Exception):
     pass
+
+
+class OwnerRequired(Exception):
+    pass
+
+
+class MembershipConflict(Exception):
+    pass

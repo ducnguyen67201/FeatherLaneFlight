@@ -5,31 +5,49 @@ import {
 } from "../features/auth/AuthBoundary";
 import { AccountControl } from "../features/auth/AccountControl";
 import { AuthenticatedProjects } from "../features/projects/AuthenticatedProjects";
+import { AuthenticatedPeople } from "../features/people/AuthenticatedPeople";
+import { peopleOrganization } from "../features/people/navigation";
 
-type ProjectWorkspaceProps = Omit<AuthenticatedWorkspaceProps, "authEpoch">;
+type WorkspaceProps = Omit<AuthenticatedWorkspaceProps, "authEpoch">;
 
-function ProjectWorkspace({
+function Workspace({
   session,
   client,
   cacheScope,
   onSignOut,
   onSessionExpired,
-}: ProjectWorkspaceProps) {
+}: WorkspaceProps) {
+  const organizationId = peopleOrganization(window.location.pathname);
   useEffect(() => {
-    // Settings is the current live feature. Run workflows still belong to the explicit demo.
-    if (window.location.pathname !== "/settings")
+    // Live Settings/people routes share auth; run workflows remain in the explicit demo.
+    if (!organizationId && window.location.pathname !== "/settings")
       window.history.replaceState(null, "", "/settings");
-  }, []);
+  }, [organizationId]);
+  const userMenu = <AccountControl user={session.user} onSignOut={onSignOut} />;
+  const onAccessFailure = (status: 401 | 403 | 404) => {
+    if (status === 401) onSessionExpired();
+  };
+  if (organizationId)
+    return (
+      <AuthenticatedPeople
+        key={organizationId}
+        userId={session.user.id}
+        organizationId={organizationId}
+        csrfToken={session.csrfToken}
+        client={client}
+        cacheScope={cacheScope}
+        userMenu={userMenu}
+        onAccessFailure={onAccessFailure}
+      />
+    );
   return (
     <AuthenticatedProjects
       userId={session.user.id}
       csrfToken={session.csrfToken}
       client={client}
       cacheScope={cacheScope}
-      userMenu={<AccountControl user={session.user} onSignOut={onSignOut} />}
-      onAccessFailure={(status) => {
-        if (status === 401) onSessionExpired();
-      }}
+      userMenu={userMenu}
+      onAccessFailure={onAccessFailure}
     />
   );
 }
@@ -38,7 +56,7 @@ export function AuthenticatedApp() {
   return (
     <AuthBoundary>
       {({ session, client, cacheScope, onSignOut, onSessionExpired }) => (
-        <ProjectWorkspace
+        <Workspace
           session={session}
           client={client}
           cacheScope={cacheScope}

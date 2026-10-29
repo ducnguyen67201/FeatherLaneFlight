@@ -19,7 +19,7 @@ from sqlalchemy.exc import (
 from featherlane_api.config import ConfigurationError, load_settings
 from featherlane_api.infrastructure.database import Database
 from featherlane_api.modules.access.administration import AccessAdministration
-from featherlane_api.modules.access.domain import AccessNotFound
+from featherlane_api.modules.access.domain import AccessNotFound, MembershipConflict
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import SessionSecrets
 from featherlane_api.modules.identity.persistence import IdentityStore
@@ -51,6 +51,11 @@ def arguments() -> argparse.Namespace:
         "bootstrap", help="Create an organization and its first grant"
     )
     bootstrap.add_argument("--name", required=True, type=organization_name)
+    owner = commands.add_parser(
+        "assign-owner",
+        help="Assign an existing member to an organization with no owner",
+    )
+    owner.add_argument("--organization-id", required=True, type=identifier)
     organization = commands.add_parser("organization-member")
     organization.add_argument("action", choices=("grant", "revoke"))
     organization.add_argument("--organization-id", required=True, type=identifier)
@@ -85,6 +90,9 @@ async def execute(args: argparse.Namespace) -> str:
                         user, args.organization_id, args.action == "grant"
                     )
                     result = "Organization membership updated."
+                elif args.command == "assign-owner":
+                    await access.assign_owner(user, args.organization_id)
+                    result = "Organization owner assigned."
                 else:
                     await access.project_membership(
                         user, args.project_id, args.action == "grant"
@@ -105,6 +113,12 @@ def main() -> None:
     except AccessNotFound:
         print(
             "Existing active identity or required membership/resource not found.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from None
+    except MembershipConflict:
+        print(
+            "Owner assignment or removal conflicts with the organization owner.",
             file=sys.stderr,
         )
         raise SystemExit(1) from None
