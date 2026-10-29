@@ -3,7 +3,10 @@ import type { createValidatedClient } from "@featherlane/contracts";
 import { SuiteCatalogPage } from "./SuiteCatalogPage";
 import { SuiteDetailPage } from "./SuiteDetailPage";
 import { useSuiteCatalog } from "./useSuiteCatalog";
-import { suitePath } from "./navigation";
+import { suitePath, draftPath } from "./navigation";
+import { SuiteDraftRoute } from "./SuiteDraftRoute";
+import { SuiteDraftListPage } from "./SuiteDraftListPage";
+import { EditSuiteDraftButton } from "./EditSuiteDraftButton";
 
 function selectedRevision(): string | null {
   const match = window.location.pathname.match(
@@ -12,6 +15,7 @@ function selectedRevision(): string | null {
   return match?.[1] ?? null;
 }
 type Props = {
+  csrfToken: string;
   client: ReturnType<typeof createValidatedClient>;
   cacheScope: readonly unknown[];
   organizationId: string;
@@ -20,6 +24,30 @@ type Props = {
   onAccessFailure: (status: 401 | 403 | 404) => void;
 };
 export function SuiteWorkspace(props: Props) {
+  const match = window.location.pathname.match(
+    /^\/suites\/drafts(?:\/([A-Za-z0-9_-]+))?\/?$/,
+  );
+  const backHref = suitePath(props.organizationId, props.projectId);
+  if (match)
+    return match[1] ? (
+      <SuiteDraftRoute
+        connection={props}
+        cacheScope={props.cacheScope}
+        suiteId={match[1]}
+        organizationId={props.organizationId}
+        backHref={backHref}
+      />
+    ) : (
+      <SuiteDraftListPage
+        connection={props}
+        cacheScope={props.cacheScope}
+        organizationId={props.organizationId}
+        backHref={backHref}
+      />
+    );
+  return <PublishedSuiteWorkspace {...props} />;
+}
+function PublishedSuiteWorkspace(props: Props) {
   const [revisionId, setRevisionId] = useState(selectedRevision);
   const lastOpened = useRef<string | null>(null);
   const queries = useSuiteCatalog({ ...props, revisionId });
@@ -67,6 +95,15 @@ export function SuiteWorkspace(props: Props) {
     return (
       <SuiteDetailPage
         projectName={props.projectName}
+        editAction={
+          queries.detail.data && !queries.blocked && !queries.detail.isError ? (
+            <EditSuiteDraftButton
+              connection={{ ...props, onAccessFailure: queries.accessFailure }}
+              organizationId={props.organizationId}
+              revisionId={queries.detail.data.data.id}
+            />
+          ) : undefined
+        }
         catalogHref={catalogHref}
         loading={queries.detail.isPending && !queries.blocked}
         failed={queries.detail.isError || queries.blocked}
@@ -85,6 +122,7 @@ export function SuiteWorkspace(props: Props) {
   return (
     <SuiteCatalogPage
       projectName={props.projectName}
+      draftsHref={draftPath(props.organizationId, props.projectId)}
       revisionHref={revisionHref}
       rows={
         queries.list.isError || queries.blocked

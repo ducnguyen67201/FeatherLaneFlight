@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Suite authoring architecture",
+    "locale": "en",
+    "output": ".local/p11-review/suite-authoring-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "32de9efcaf2708aeac252434afc347968ce7772e",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "editor",
+      "type": "frontend",
+      "label": "Suite editor",
+      "sublabel": "P11 scope \u00b7 approved editor",
+      "pos": [40, 40],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "Browser authorization",
+      "sublabel": "Existing \u00b7 session / CSRF",
+      "pos": [350, 40],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/identity/dependencies.py",
+          "line": 60,
+          "end_line": 83
+        }
+      ]
+    },
+    {
+      "id": "drafts",
+      "type": "backend",
+      "label": "Draft service",
+      "sublabel": "P11 scope \u00b7 draft revision CAS",
+      "pos": [660, 40],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Draft records",
+      "sublabel": "P11 scope \u00b7 draft records",
+      "pos": [970, 40],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    },
+    {
+      "id": "publish",
+      "type": "backend",
+      "label": "Publish orchestration",
+      "sublabel": "P11 scope \u00b7 atomic publication",
+      "pos": [660, 290],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    },
+    {
+      "id": "canonical",
+      "type": "backend",
+      "label": "Canonical validation",
+      "sublabel": "P10 \u00b7 validation + digest",
+      "pos": [350, 290],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "database",
+      "label": "Immutable catalog",
+      "sublabel": "P10 \u00b7 immutable revisions",
+      "pos": [970, 290],
+      "size": [210, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 457,
+          "end_line": 461
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Server trust boundary \u00b7 existing API runtime",
+      "wraps": ["auth", "drafts", "storage", "publish", "catalog", "canonical"],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "from": "editor",
+      "to": "auth",
+      "label": "same-origin",
+      "variant": "security"
+    },
+    {
+      "from": "auth",
+      "to": "drafts",
+      "label": "live member",
+      "variant": "security"
+    },
+    {
+      "from": "drafts",
+      "to": "storage",
+      "label": "save CAS"
+    },
+    {
+      "from": "drafts",
+      "to": "publish",
+      "label": "saved version",
+      "variant": "emphasis"
+    },
+    {
+      "from": "publish",
+      "to": "canonical",
+      "label": "validate"
+    },
+    {
+      "from": "publish",
+      "to": "catalog",
+      "label": "append",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Approved P11 scope",
+      "items": [
+        "Editor and incomplete drafts; validation errors and stale-write rejection.",
+        "Publication locks the saved draft and project; appends a separate revision and audit."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Shared P11 publication policy",
+      "items": [
+        "P11 extracts shared policy from the actual merged P10 importer; the caller owns its transaction.",
+        "Reuse exact canonical validation, profile binding, qualification and immutable storage. The operator identity boundary remains.",
+        "New revision receives fresh digest-bound synthetic qualification; never inherits old verification."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Runtime boundaries",
+      "items": [
+        "No hosting change. P11 runs in the existing API and PostgreSQL.",
+        "No worker job, runner execution or PX4 qualification is added. P11 is implemented locally; no deployment is implied."
+      ]
+    }
+  ]
+}

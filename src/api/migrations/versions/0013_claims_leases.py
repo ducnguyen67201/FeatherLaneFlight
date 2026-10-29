@@ -1,7 +1,7 @@
 """Fenced attempts and durable claim receipts.
 
 Revision ID: 0013_claims_leases
-Revises: 0012_run_admission
+Revises: 0011_suite_drafts
 """
 
 import sqlalchemy as sa
@@ -9,7 +9,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 revision = "0013_claims_leases"
-down_revision = "0012_run_admission"
+down_revision = "0011_suite_drafts"
 branch_labels = None
 depends_on = None
 

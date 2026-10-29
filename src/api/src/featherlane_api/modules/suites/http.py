@@ -48,6 +48,7 @@ async def list_suite_revisions(
         Literal["MISSION_COMPLETION", "LANDING_DISARM", "METRIC_THRESHOLD"] | None,
         Query(alias="requiredCheck"),
     ] = None,
+    suite_id: Annotated[Identifier | None, Query(alias="suiteId")] = None,
 ) -> SuiteCatalogEnvelope:
     return await service.catalog(
         principal,
@@ -57,6 +58,7 @@ async def list_suite_revisions(
         cursor,
         search,
         required_check,
+        suite_id,
     )
 
 

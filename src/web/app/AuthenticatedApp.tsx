@@ -21,7 +21,7 @@ function Workspace({
   onSessionExpired,
 }: WorkspaceProps) {
   const organizationId = peopleOrganization(window.location.pathname);
-  const suitesRoute = /^\/suites(?:\/[A-Za-z0-9_-]+)?\/?$/.test(
+  const suitesRoute = /^\/suites(?:\/[A-Za-z0-9_-]+){0,2}\/?$/.test(
     window.location.pathname,
   );
   const runsRoute = /^\/runs(?:\/[A-Za-z0-9_-]+)?\/?$/.test(
