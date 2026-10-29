@@ -214,6 +214,7 @@ export function createRunDetailDemo(runs: RunsDemo) {
               "x-flf-contract-version": request.headers.get(
                 "x-flf-contract-version",
               ),
+              "x-csrf-token": request.headers.get("x-csrf-token"),
               "idempotency-key": request.headers.get("idempotency-key"),
             });
             if (!headers.success || !zCancelRunPath.safeParse(params).success)

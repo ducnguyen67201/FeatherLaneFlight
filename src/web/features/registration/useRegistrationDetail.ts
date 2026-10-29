@@ -5,7 +5,7 @@ import {
   getBuildOptions,
   getLocalProfileOptions,
   getIntegrationProfileOptions,
-  type BuildView,
+  type RegisteredBuildView,
   type LocalProfileView,
   type RegisteredIntegrationProfileView,
 } from "@featherlane/contracts";
@@ -18,7 +18,7 @@ export type RegistrationSelection = {
   id: string;
 };
 type DetailRecord =
-  | { kind: "build"; value: BuildView }
+  | { kind: "build"; value: RegisteredBuildView }
   | { kind: "local"; value: LocalProfileView }
   | { kind: "integration"; value: RegisteredIntegrationProfileView };
 export function useRegistrationDetail(

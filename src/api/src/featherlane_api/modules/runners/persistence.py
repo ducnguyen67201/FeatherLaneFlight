@@ -48,6 +48,7 @@ class RunnerRecord(Base):
     available_builds: Mapped[list[dict]] = mapped_column(JSONB)
     local_profiles: Mapped[list[dict]] = mapped_column(JSONB)
     diagnostics: Mapped[list[dict]] = mapped_column(JSONB)
+    synthetic_readiness: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class EnrollmentRecord(Base):

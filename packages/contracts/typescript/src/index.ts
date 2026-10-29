@@ -112,3 +112,7 @@ export {
   listSuiteRevisionsOptions,
   getSuiteRevisionOptions,
 } from "./suiteQueries";
+
+// Follow the canonical registration response, including synthetic input builds.
+export type RegisteredBuildView =
+  import("./generated/types.gen").BuildEnvelope["data"];

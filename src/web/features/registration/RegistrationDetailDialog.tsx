@@ -41,15 +41,30 @@ export function RegistrationDetailDialog({
     title = value.label;
     rows = [
       ["ID", value.id],
-      ["Flight stack", `${value.flightStack} ${value.flightStackVersion}`],
+      [
+        "Flight stack",
+        value.flightStack === "PX4"
+          ? `${value.flightStack} ${value.flightStackVersion}`
+          : value.flightStack,
+      ],
       [
         "Target",
         `${value.executionTarget.operatingSystem} · ${value.executionTarget.architecture}`,
       ],
-      ["Base revision", value.baseFlightStackRevision],
+      [
+        "Base revision",
+        value.flightStack === "PX4"
+          ? value.baseFlightStackRevision
+          : "Not applicable",
+      ],
       ["Source revision", value.sourceRevision],
       ["Source digest", value.sourceDigest],
-      ["Patch digest", value.patchDigest ?? "None"],
+      [
+        "Patch digest",
+        value.flightStack === "PX4"
+          ? (value.patchDigest ?? "None")
+          : "Not applicable",
+      ],
       ["Artifact SHA-256", value.artifactSha256],
       ["Configuration digest", value.configurationDigest],
       ["Registered (UTC)", value.createdAt],

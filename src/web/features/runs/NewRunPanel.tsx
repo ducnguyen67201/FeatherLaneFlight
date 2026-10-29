@@ -18,6 +18,8 @@ import Close from "@mui/icons-material/Close";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import { tokens } from "../../design/theme";
+import type { RunSummary } from "@featherlane/contracts";
+import type { RunTransport } from "./queries";
 import { useNewRunWorkflow } from "./useNewRunWorkflow";
 import {
   RunnerStep,
@@ -42,13 +44,15 @@ export function NewRunPanel({
   onExited,
   onCreated,
   onRetryOptions,
+  transport,
 }: {
+  transport?: RunTransport;
   open: boolean;
   session: number;
   revision: number;
   onClose: () => void;
   onExited: () => void;
-  onCreated: (id: string) => void;
+  onCreated: (run: RunSummary) => void;
   onRetryOptions: () => void;
 }) {
   const {
@@ -68,6 +72,7 @@ export function NewRunPanel({
     onClose,
     onCreated,
     onRetryOptions,
+    transport,
   });
   const { pending, failure, unconfirmed } = submission;
   const data = choices.data;
@@ -128,7 +133,7 @@ export function NewRunPanel({
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="caption" color="primary">
-            MOCK SUBMISSION
+            {transport ? "RUN SUBMISSION" : "MOCK SUBMISSION"}
           </Typography>
           <Typography id="new-run-title" component="h2" variant="h2">
             New simulation run
@@ -151,8 +156,9 @@ export function NewRunPanel({
       >
         <Stack spacing={6}>
           <Alert severity="info">
-            Demo workspace · Fake integration only. No PX4 process or live job
-            will start.
+            {transport
+              ? "Submission requests a queued job. The server rechecks compatibility and runner eligibility before accepting it."
+              : "Demo workspace · Fake integration only. No PX4 process or live job will start."}
           </Alert>
           <Stepper
             activeStep={step}
@@ -207,6 +213,7 @@ export function NewRunPanel({
                 <>
                   {step === 0 && (
                     <RunnerStep
+                      live={!!transport}
                       runners={data?.runners ?? []}
                       runnerId={draft.runnerId}
                       attempted={attempted}
@@ -250,6 +257,7 @@ export function NewRunPanel({
                   )}
                   {step === 4 && (
                     <ReviewStep
+                      live={!!transport}
                       runner={selected.runner}
                       build={selected.build}
                       profile={selected.profile}
@@ -277,8 +285,12 @@ export function NewRunPanel({
           <Alert severity="error" sx={{ mb: 4 }}>
             <AlertTitle>
               {unconfirmed
-                ? "Mock submission not confirmed"
-                : "Mock submission rejected"}
+                ? transport
+                  ? "Submission not confirmed"
+                  : "Mock submission not confirmed"
+                : transport
+                  ? "Submission rejected"
+                  : "Mock submission rejected"}
             </AlertTitle>
             {failure}
             {unconfirmed &&
@@ -292,7 +304,7 @@ export function NewRunPanel({
             color="text.secondary"
             sx={{ display: "block", mb: 3 }}
           >
-            Waiting for mock acknowledgment. Closing is available afterward.
+            Waiting for acknowledgment. Closing is available afterward.
           </Typography>
         )}
         <Stack
@@ -340,8 +352,12 @@ export function NewRunPanel({
               {pending
                 ? "Submitting…"
                 : failure
-                  ? "Retry mock submission"
-                  : "Submit mock run"}
+                  ? transport
+                    ? "Retry submission"
+                    : "Retry mock submission"
+                  : transport
+                    ? "Submit run"
+                    : "Submit mock run"}
             </Button>
           )}
         </Stack>

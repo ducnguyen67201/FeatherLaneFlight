@@ -8,6 +8,7 @@ import { AuthenticatedProjects } from "../features/projects/AuthenticatedProject
 import { AuthenticatedPeople } from "../features/people/AuthenticatedPeople";
 import { AuthenticatedRunners } from "../features/runners/AuthenticatedRunners";
 import { AuthenticatedSuites } from "../features/suites/AuthenticatedSuites";
+import { AuthenticatedRuns } from "../features/runs/AuthenticatedRuns";
 import { peopleOrganization } from "../features/people/navigation";
 
 type WorkspaceProps = Omit<AuthenticatedWorkspaceProps, "authEpoch">;
@@ -23,21 +24,36 @@ function Workspace({
   const suitesRoute = /^\/suites(?:\/[A-Za-z0-9_-]+)?\/?$/.test(
     window.location.pathname,
   );
+  const runsRoute = /^\/runs(?:\/[A-Za-z0-9_-]+)?\/?$/.test(
+    window.location.pathname,
+  );
   useEffect(() => {
     // Live Settings, People, Runners and Suites share authentication.
     if (
       !organizationId &&
       !suitesRoute &&
+      !runsRoute &&
       !["/settings", "/settings/builds", "/runners"].includes(
         window.location.pathname,
       )
     )
       window.history.replaceState(null, "", "/settings");
-  }, [organizationId, suitesRoute]);
+  }, [organizationId, suitesRoute, runsRoute]);
   const userMenu = <AccountControl user={session.user} onSignOut={onSignOut} />;
   const onAccessFailure = (status: 401 | 403 | 404) => {
     if (status === 401) onSessionExpired();
   };
+  if (runsRoute)
+    return (
+      <AuthenticatedRuns
+        userId={session.user.id}
+        csrfToken={session.csrfToken}
+        client={client}
+        cacheScope={cacheScope}
+        userMenu={userMenu}
+        onAccessFailure={onAccessFailure}
+      />
+    );
   if (suitesRoute)
     return (
       <AuthenticatedSuites

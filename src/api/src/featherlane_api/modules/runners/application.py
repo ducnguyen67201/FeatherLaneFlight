@@ -6,8 +6,8 @@ from uuid import uuid4
 
 from featherlane_contracts import CursorMeta, RunnerCapacityState
 from featherlane_contracts.registration import (
-    BuildDeclaration,
     LocalProfileDeclaration,
+    RegisteredBuildDeclaration,
     metadata_digest,
 )
 from featherlane_contracts.runners import (
@@ -22,7 +22,9 @@ from featherlane_contracts.runners import (
     RunnerIdentityEnvelope,
     RunnerListEnvelope,
     RunnerSummary,
+    SyntheticReadiness,
 )
+from pydantic import TypeAdapter
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -44,6 +46,7 @@ from featherlane_api.modules.runners.persistence import (
     RunnerRecord,
     RunnerStore,
 )
+from featherlane_api.modules.runners.readiness import validate_readiness
 
 
 def stamp(value: datetime) -> str:
@@ -67,7 +70,8 @@ def summary(record: RunnerRecord, now: datetime) -> RunnerSummary:
         credentialExpiresAt=stamp(record.credential_expires_at),
         revokedAt=stamp(record.revoked_at) if record.revoked_at else None,
         availableBuilds=[
-            BuildDeclaration.model_validate(item) for item in record.available_builds
+            TypeAdapter(RegisteredBuildDeclaration).validate_python(item)
+            for item in record.available_builds
         ],
         localProfiles=[
             LocalProfileDeclaration.model_validate(item)
@@ -77,6 +81,9 @@ def summary(record: RunnerRecord, now: datetime) -> RunnerSummary:
             RunnerDiagnostic.model_validate(item) for item in record.diagnostics
         ],
         capabilitySupport="DECLARED",
+        syntheticReadiness=SyntheticReadiness.model_validate(record.synthetic_readiness)
+        if record.synthetic_readiness is not None
+        else None,
     )
 
 
@@ -275,7 +282,11 @@ class RunnerService:
         self, credential: str, body: RunnerHeartbeat
     ) -> RunnerIdentityEnvelope:
         require_versions(body.contract_version, body.protocol_version)
-        fingerprint = metadata_digest(body)
+        ready = validate_readiness(body)
+        fingerprint = metadata_digest(
+            body,
+            set(body.model_fields) - {"synthetic_readiness"} if ready is None else None,
+        )
         async with self.session.begin():
             record = require_live_record(
                 await self.store.by_credential(
@@ -296,6 +307,9 @@ class RunnerService:
                 and body.capacity_state != "NEEDS_CLEANUP"
             ):
                 raise RunnerUnavailable()
+            record.synthetic_readiness = (
+                ready.model_dump(mode="json") if ready else None
+            )
             record.capacity_state = body.capacity_state
             record.heartbeat_sequence = body.sequence
             record.heartbeat_digest = fingerprint

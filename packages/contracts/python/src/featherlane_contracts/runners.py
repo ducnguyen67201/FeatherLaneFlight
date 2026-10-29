@@ -7,6 +7,7 @@ from pydantic import Field, model_validator
 from featherlane_contracts import (
     ContractVersion,
     CursorMeta,
+    Digest,
     DisplayName,
     Identifier,
     ProtocolVersion,
@@ -16,7 +17,12 @@ from featherlane_contracts import (
     UtcTimestamp,
     WireModel,
 )
-from featherlane_contracts.registration import BuildDeclaration, LocalProfileDeclaration
+from featherlane_contracts.registration import (
+    ExecutionTarget,
+    LocalProfileDeclaration,
+    RegisteredBuildDeclaration,
+    Version,
+)
 
 RUNNER_ENROLLMENTS_PATH = "/api/v1/runner/enrollments"
 RUNNER_IDENTITY_PATH = "/api/v1/runner/me"
@@ -62,14 +68,51 @@ class RunnerDiagnostic(WireModel):
     ]
 
 
+class SyntheticReadiness(WireModel):
+    """Measured local input readiness, without client-supplied qualification."""
+
+    runtime_family: Literal["SYNTHETIC"]
+    runtime_id: Literal["flf-synthetic-protocol-v1"]
+    execution_mode: Literal["NON_EXECUTING"]
+    supported_operations: Annotated[
+        list[Literal["CLAIM", "MANIFEST", "HEARTBEAT"]],
+        Field(min_length=3, max_length=3),
+    ]
+    runner_version: Literal["0.1.0"]
+    python_version: Version
+    execution_target: ExecutionTarget
+    protocol_source_digest: Digest
+    configuration_digest: Digest
+    input_artifact_sha256: Digest
+    build_ids: Annotated[list[Identifier], Field(min_length=1, max_length=100)]
+    local_profile_ids: Annotated[list[Identifier], Field(min_length=1, max_length=100)]
+    allowed_evidence_kinds: Annotated[
+        list[Literal["OBSERVATIONS", "REDACTED_PROCESS_LOG"]],
+        Field(min_length=1, max_length=2),
+    ]
+    maximum_artifact_bytes: Annotated[int, Field(ge=1, le=1_048_576)]
+
+    @model_validator(mode="after")
+    def unique_inventory(self) -> "SyntheticReadiness":
+        for values in (
+            self.build_ids,
+            self.local_profile_ids,
+            self.allowed_evidence_kinds,
+        ):
+            if len(set(values)) != len(values):
+                raise ValueError("Readiness inventory entries must be unique")
+        return self
+
+
 class RunnerHeartbeat(WireModel):
     sequence: Annotated[int, Field(ge=1, le=9_007_199_254_740_991)]
     contract_version: VersionLabel
     protocol_version: VersionLabel
     capacity_state: Literal["AVAILABLE", "NEEDS_CLEANUP", "DISABLED"]
-    available_builds: Annotated[list[BuildDeclaration], Field(max_length=100)]
+    available_builds: Annotated[list[RegisteredBuildDeclaration], Field(max_length=100)]
     local_profiles: Annotated[list[LocalProfileDeclaration], Field(max_length=100)]
     diagnostics: Annotated[list[RunnerDiagnostic], Field(max_length=10)]
+    synthetic_readiness: SyntheticReadiness | None = None
 
     @model_validator(mode="after")
     def unique_declarations(self) -> "RunnerHeartbeat":
@@ -95,10 +138,11 @@ class RunnerSummary(WireModel):
     host_platform: DisplayName
     credential_expires_at: UtcTimestamp
     revoked_at: UtcTimestamp | None
-    available_builds: Annotated[list[BuildDeclaration], Field(max_length=100)]
+    available_builds: Annotated[list[RegisteredBuildDeclaration], Field(max_length=100)]
     local_profiles: Annotated[list[LocalProfileDeclaration], Field(max_length=100)]
     diagnostics: Annotated[list[RunnerDiagnostic], Field(max_length=10)]
     capability_support: Literal["DECLARED"]
+    synthetic_readiness: SyntheticReadiness | None = None
 
 
 class RunnerIdentity(WireModel):

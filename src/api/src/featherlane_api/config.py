@@ -47,6 +47,7 @@ class DatabaseSettings(BaseSettings):
 
 
 class ApiSettings(DatabaseSettings):
+    project_queued_run_limit: int = Field(default=20, ge=1, le=100)
     runner_key_id: str = Field(
         default="identity-v1", min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$"
     )

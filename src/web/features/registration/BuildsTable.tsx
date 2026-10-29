@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import Refresh from "@mui/icons-material/Refresh";
-import type { BuildView } from "@featherlane/contracts";
+import type { RegisteredBuildView } from "@featherlane/contracts";
 import { tokens } from "../../design/theme";
 import {
   CatalogPagination,
@@ -20,7 +20,7 @@ import {
 } from "./CatalogPagination";
 
 type BuildsTableProps = {
-  builds: readonly BuildView[];
+  builds: readonly RegisteredBuildView[];
   pagination: CatalogPaginationProps;
   onRefresh: () => void;
   onOpen: (id: string) => void;
@@ -106,8 +106,11 @@ export function BuildsTable({
                       color="text.secondary"
                       sx={{ display: "block" }}
                     >
-                      {build.flightStack} {build.flightStackVersion} ·{" "}
-                      {build.sourceRevision.slice(0, 8)}
+                      {build.flightStack}{" "}
+                      {build.flightStack === "PX4"
+                        ? build.flightStackVersion
+                        : ""}{" "}
+                      · {build.sourceRevision.slice(0, 8)}
                     </Typography>
                   </TableCell>
                   <TableCell>

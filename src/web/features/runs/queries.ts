@@ -2,6 +2,8 @@ import {
   getRunOptionsOptions,
   listRunsOptions,
   contractManifest,
+  client,
+  type createValidatedClient,
   type GetRunOptionsData,
   type ListRunsData,
 } from "@featherlane/contracts";
@@ -11,54 +13,73 @@ export const demoScope = {
   organizationId: "org_demo",
   projectId: "project_demo",
 };
-export const runsPrefix = [
-  demoScope.epoch,
-  demoScope.organizationId,
-  demoScope.projectId,
+export type RunTransport = {
+  client: ReturnType<typeof createValidatedClient>;
+  cacheScope: readonly unknown[];
+  organizationId: string;
+  projectId: string;
+  csrfToken: string;
+  onAccessFailure: (status: 401 | 403 | 404) => void;
+};
+// Used only by the explicit demo entry; authenticated pages supply their own scope.
+export const demoRunTransport: RunTransport = {
+  client,
+  cacheScope: [demoScope.epoch],
+  organizationId: demoScope.organizationId,
+  projectId: demoScope.projectId,
+  csrfToken: "0".repeat(64),
+  onAccessFailure: () => {},
+};
+export const runScope = (transport: RunTransport) => [
+  ...transport.cacheScope,
+  transport.organizationId,
+  transport.projectId,
+];
+export const runsQueryPrefix = (transport: RunTransport) => [
+  ...runScope(transport),
   "runs",
 ];
-export const optionsPrefix = [
-  demoScope.epoch,
-  demoScope.organizationId,
-  demoScope.projectId,
+export const optionsQueryPrefix = (transport: RunTransport) => [
+  ...runScope(transport),
   "run-options",
 ];
+export const runsPrefix = runsQueryPrefix(demoRunTransport);
+export const optionsPrefix = optionsQueryPrefix(demoRunTransport);
 export const headers = {
   "x-flf-contract-version": contractManifest.contractVersion,
 };
 
-export function runsOptions(query: ListRunsData["query"], revision: number) {
+export function runsOptions(
+  query: ListRunsData["query"],
+  revision: number,
+  transport = demoRunTransport,
+) {
   const options = listRunsOptions(
     {
-      path: { projectId: demoScope.projectId },
+      client: transport.client,
+      path: { projectId: transport.projectId },
       headers,
       query,
     },
-    [...runsPrefix, revision],
+    [...runsQueryPrefix(transport), revision],
   );
-  return {
-    ...options,
-    staleTime: 0,
-    retry: false as const,
-  };
+  return { ...options, staleTime: 0, retry: false as const };
 }
 export function selectionOptions(
   query: GetRunOptionsData["query"],
   revision: number,
+  transport = demoRunTransport,
 ) {
   const options = getRunOptionsOptions(
     {
-      path: { projectId: demoScope.projectId },
+      client: transport.client,
+      path: { projectId: transport.projectId },
       headers,
       query,
     },
-    [...optionsPrefix, revision],
+    [...optionsQueryPrefix(transport), revision],
   );
-  return {
-    ...options,
-    staleTime: 0,
-    retry: false as const,
-  };
+  return { ...options, staleTime: 0, retry: false as const };
 }
 export function errorMessage(error: unknown) {
   return error instanceof Error

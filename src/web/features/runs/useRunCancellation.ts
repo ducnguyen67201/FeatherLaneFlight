@@ -5,10 +5,13 @@ import {
   cancelRunMutation,
   type RunSummary,
 } from "@featherlane/contracts";
-import { headers, runsPrefix } from "./queries";
+import { demoRunTransport, headers, runsQueryPrefix } from "./queries";
 import { detailPrefix } from "./useRunDetail";
 
-export function useRunCancellation(runId: string) {
+export function useRunCancellation(
+  runId: string,
+  transport = demoRunTransport,
+) {
   const client = useQueryClient();
   const mutation = useMutation(cancelRunMutation());
   const key = useRef<string | null>(null);
@@ -25,18 +28,28 @@ export function useRunCancellation(runId: string) {
     key.current ??= crypto.randomUUID();
     try {
       const result = await mutation.mutateAsync({
+        client: transport.client,
         path: { runId },
-        headers: { ...headers, "idempotency-key": key.current },
+        headers: {
+          ...headers,
+          "x-csrf-token": transport.csrfToken,
+          "idempotency-key": key.current,
+        },
         body: { schemaVersion: 1 },
       });
       setReceipt(result.data);
       key.current = null;
       await Promise.all([
-        client.invalidateQueries({ queryKey: detailPrefix(runId) }),
-        client.invalidateQueries({ queryKey: runsPrefix }),
+        client.invalidateQueries({ queryKey: detailPrefix(runId, transport) }),
+        client.invalidateQueries({ queryKey: runsQueryPrefix(transport) }),
       ]);
-    } catch {
-      // The mutation reports failure; retain the same key for an uncertain replay.
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        (error.status === 401 || error.status === 403 || error.status === 404)
+      )
+        transport.onAccessFailure(error.status);
+      // Retain the same key for an uncertain replay.
     } finally {
       inFlight.current = false;
     }
