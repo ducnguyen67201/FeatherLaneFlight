@@ -71,6 +71,7 @@ try {
   );
   // Status schemas and route paths are derived, never maintained beside the DTOs.
   const operations = [];
+  const binaryOperations = [];
   const navigations = [];
   for (const [path, item] of Object.entries(schema.paths)) {
     for (const [method, operation] of Object.entries(item)) {
@@ -87,6 +88,14 @@ try {
           if (status === "204" && response.content === undefined) {
             return `${JSON.stringify(status)}: null`;
           }
+          if (
+            operation["x-flf-transport"] === "binary-download" &&
+            status === "200" &&
+            response.content?.["application/octet-stream"]?.schema?.format ===
+              "binary"
+          ) {
+            return `${JSON.stringify(status)}: null`;
+          }
           const ref = response.content?.["application/json"]?.schema?.$ref;
           if (
             !/^\d{3}$/.test(status) ||
@@ -100,14 +109,17 @@ try {
           return `${JSON.stringify(status)}: validators.z${name}`;
         },
       );
-      operations.push(
+      const destination = operation["x-flf-transport"]?.startsWith("binary-")
+        ? binaryOperations
+        : operations;
+      destination.push(
         `${JSON.stringify(operation.operationId)}: { method: ${JSON.stringify(method.toUpperCase())}, path: ${JSON.stringify(path)}, responses: { ${responses.join(", ")} } }`,
       );
     }
   }
   await writeFile(
     join(generated, "policy.gen.ts"),
-    `// Generated from OpenAPI by scripts/contracts.mjs. Do not edit.\nimport * as validators from './zod.gen';\nexport const contractManifest = ${JSON.stringify(manifest)} as const;\nexport const browserNavigationPolicies = { ${navigations.join(",")} } as const;\nexport const operationPolicies = { ${operations.join(",\n")} } as const;\n`,
+    `// Generated from OpenAPI by scripts/contracts.mjs. Do not edit.\nimport * as validators from './zod.gen';\nexport const contractManifest = ${JSON.stringify(manifest)} as const;\nexport const browserNavigationPolicies = { ${navigations.join(",")} } as const;\nexport const binaryTransportPolicies = { ${binaryOperations.join(",\n")} } as const;\nexport const operationPolicies = { ${operations.join(",\n")} } as const;\n`,
   );
   const generatedFiles = await files(generated);
   run("pnpm", [

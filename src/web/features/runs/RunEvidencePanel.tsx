@@ -1,36 +1,21 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   Box,
   Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
+  CircularProgress,
   Paper,
   Skeleton,
   Stack,
   Typography,
 } from "@mui/material";
 import DescriptionOutlined from "@mui/icons-material/DescriptionOutlined";
-import type { ArtifactView } from "@featherlane/contracts";
+import DownloadOutlined from "@mui/icons-material/DownloadOutlined";
+import { ApiError, type ArtifactView } from "@featherlane/contracts";
 import { tokens } from "../../design/theme";
+import { EvidenceMetadataDialog } from "./EvidenceMetadataDialog";
 
-const sizes = (value: number | null) =>
-  value === null
-    ? "Size unavailable"
-    : value >= 1024 * 1024
-      ? `${(value / (1024 * 1024)).toFixed(1)} MiB`
-      : `${(value / 1024).toFixed(1)} KiB`;
-export function RunEvidencePanel({
-  artifacts,
-  trialId,
-  attemptId,
-  pending,
-  error,
-  refreshing,
-  onRetry,
-}: {
+type Props = {
   artifacts: ArtifactView[];
   trialId: string | undefined;
   attemptId: string | undefined;
@@ -38,159 +23,219 @@ export function RunEvidencePanel({
   error: Error | null;
   refreshing: boolean;
   onRetry: () => void;
-}) {
+  onDownload?: (artifact: ArtifactView) => Promise<void>;
+};
+
+const sizes = (value: number | null) =>
+  value === null
+    ? "Size unavailable"
+    : value < 1024
+      ? `${value} bytes`
+      : value >= 1024 * 1024
+        ? `${(value / (1024 * 1024)).toFixed(1)} MiB`
+        : `${(value / 1024).toFixed(1)} KiB`;
+
+function availability(artifact: ArtifactView) {
+  if (artifact.availability === "LOCAL_ONLY")
+    return "Local only · Not verified";
+  if (
+    artifact.verificationState === "VERIFIED" &&
+    artifact.expiresAt !== null &&
+    Date.parse(artifact.expiresAt) <= Date.now()
+  )
+    return "Expired · Verified";
+  if (artifact.verificationState === "PENDING")
+    return "Upload pending · Not verified";
+  if (artifact.verificationState === "FAILED") return "Verification failed";
+  const labels: Record<ArtifactView["availability"], string> = {
+    AVAILABLE: "Available",
+    MISSING: "Missing",
+    EXPIRED: "Expired",
+    NOT_COLLECTED: "Not collected",
+    LOCAL_ONLY: "Local only",
+  };
+  return `${labels[artifact.availability]} · ${artifact.verificationState === "VERIFIED" ? "Verified" : "Not verified"}`;
+}
+
+function ready(artifact: ArtifactView) {
+  return (
+    artifact.verificationState === "VERIFIED" &&
+    artifact.availability === "AVAILABLE" &&
+    artifact.expiresAt !== null &&
+    Date.parse(artifact.expiresAt) > Date.now()
+  );
+}
+
+export function RunEvidencePanel(props: Props) {
+  if (
+    props.error instanceof ApiError &&
+    [401, 403, 404].includes(props.error.status)
+  )
+    return (
+      <Alert
+        severity="warning"
+        action={<Button onClick={props.onRetry}>Retry</Button>}
+      >
+        Evidence access could not be confirmed. Recorded files are hidden.
+      </Alert>
+    );
+  if (props.pending)
+    return (
+      <Paper sx={{ p: 5 }} role="status" aria-label="Loading evidence metadata">
+        <Typography>Loading recorded evidence…</Typography>
+        <Skeleton height={tokens.component.minTouchTargetPx} />
+        <Skeleton height={tokens.layoutPx.trace.viewportHeight / 2} />
+      </Paper>
+    );
+  return <EvidenceContent {...props} />;
+}
+
+function EvidenceContent(props: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const shown = artifacts.filter(
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const busy = useRef(false);
+  const shown = props.artifacts.filter(
     (item) =>
-      item.attemptId === attemptId &&
-      (item.trialId === null || item.trialId === trialId),
+      item.attemptId === props.attemptId &&
+      (item.trialId === null || item.trialId === props.trialId),
   );
   const selected = shown.find((item) => item.id === selectedId);
-  const expired = shown.some((item) => item.availability === "EXPIRED");
-  const missing = shown.some((item) => item.availability === "MISSING");
+  const canDownload = (artifact: ArtifactView) =>
+    !!props.onDownload &&
+    !props.error &&
+    !props.refreshing &&
+    !downloadingId &&
+    ready(artifact);
+
+  async function download(artifact: ArtifactView) {
+    if (busy.current || !canDownload(artifact) || !props.onDownload) return;
+    busy.current = true;
+    setDownloadingId(artifact.id);
+    setDownloadError(null);
+    try {
+      await props.onDownload(artifact);
+    } catch {
+      setDownloadError(
+        "The file could not be downloaded. Refresh evidence availability and retry.",
+      );
+    } finally {
+      busy.current = false;
+      setDownloadingId(null);
+    }
+  }
+
+  const downloadButton = (artifact: ArtifactView) => (
+    <Button
+      variant={ready(artifact) ? "contained" : "outlined"}
+      disabled={!canDownload(artifact)}
+      startIcon={
+        downloadingId === artifact.id ? (
+          <CircularProgress
+            size={tokens.typography.variant.caption.fontSizePx}
+          />
+        ) : (
+          <DownloadOutlined />
+        )
+      }
+      onClick={() => void download(artifact)}
+      aria-label={`Download ${artifact.displayName}`}
+    >
+      {downloadingId === artifact.id ? "Downloading…" : "Download"}
+    </Button>
+  );
+
   return (
     <Paper sx={{ p: 5, minWidth: 0 }}>
       <Typography component="h2" variant="h2">
-        Evidence and artifacts
+        Private evidence
       </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ my: 3 }}>
-        {trialId ? `${trialId} · ` : ""}Private synthetic metadata · no
-        connected downloads
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 4 }}>
+        Recorded files for this attempt. Only verified, available files can be
+        downloaded.
       </Typography>
-      {pending ? (
-        <Box role="status" aria-label="Loading evidence metadata">
-          <Skeleton height={44} />
-          <Skeleton height={120} />
-        </Box>
-      ) : (
-        <>
-          {error && (
-            <Alert
-              severity="error"
-              sx={{ mb: 4 }}
-              action={<Button onClick={onRetry}>Retry</Button>}
-            >
-              Evidence metadata could not be refreshed. {error.message}
-            </Alert>
-          )}
-          {refreshing && (
-            <Typography role="status" variant="caption">
-              Refreshing evidence metadata…
-            </Typography>
-          )}
-          <Alert
-            severity={missing || expired ? "warning" : "info"}
-            sx={{ mb: 4 }}
-          >
-            {expired
-              ? "Raw evidence expired. Historical summaries remain; inspection is descriptive only."
-              : missing
-                ? "Required evidence is missing or unverified. References alone cannot establish a passing observation."
-                : "Metadata only. No upload, content stream or signed download is connected."}
-          </Alert>
-          {shown.length === 0 ? (
-            <Typography color="text.secondary">
-              No evidence is recorded for the selected trial in this snapshot.
-            </Typography>
-          ) : (
-            <Stack spacing={3}>
-              {shown.map((artifact) => (
-                <Box
-                  key={artifact.id}
-                  sx={{ borderBottom: 1, borderColor: "divider", pb: 3 }}
-                >
-                  <Stack
-                    direction="row"
-                    sx={{
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 3,
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Box sx={{ minWidth: 0 }}>
-                      <Typography
-                        variant="body1"
-                        sx={{ overflowWrap: "anywhere" }}
-                      >
-                        {artifact.displayName}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {artifact.kind} · {sizes(artifact.byteLength)}
-                      </Typography>
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      startIcon={<DescriptionOutlined />}
-                      onClick={() => setSelectedId(artifact.id)}
-                    >
-                      Metadata
-                    </Button>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">
-                    {artifact.availability} · {artifact.verificationState}
-                    {artifact.expiresAt
-                      ? ` · retention ${artifact.expiresAt}`
-                      : " · retention unavailable"}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          )}
-        </>
+      {props.error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 4 }}
+          action={<Button onClick={props.onRetry}>Retry</Button>}
+        >
+          Evidence could not be refreshed. Previous metadata remains visible;
+          downloads are paused.
+        </Alert>
       )}
-      <Dialog
-        open={!!selected}
+      {downloadError && (
+        <Alert
+          severity="error"
+          sx={{ mb: 4 }}
+          action={<Button onClick={props.onRetry}>Refresh evidence</Button>}
+        >
+          {downloadError}
+        </Alert>
+      )}
+      {props.refreshing && (
+        <Typography role="status" variant="caption">
+          Refreshing evidence metadata…
+        </Typography>
+      )}
+      {!shown.length ? (
+        <Alert severity="info">
+          No evidence is recorded for the selected attempt and trial.
+        </Alert>
+      ) : (
+        <Stack spacing={4}>
+          {shown.map((artifact) => (
+            <Stack
+              key={artifact.id}
+              direction={{ xs: "column", sm: "row" }}
+              sx={{
+                alignItems: { sm: "center" },
+                justifyContent: "space-between",
+                gap: 3,
+                borderBottom: 1,
+                borderColor: "divider",
+                pb: 4,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body1" sx={{ overflowWrap: "anywhere" }}>
+                  {artifact.displayName}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 1 }}
+                >
+                  {sizes(artifact.byteLength)} · {availability(artifact)}
+                </Typography>
+              </Box>
+              <Stack
+                direction="row"
+                sx={{ gap: 2, flexShrink: 0, flexWrap: "wrap" }}
+              >
+                <Button
+                  variant="outlined"
+                  startIcon={<DescriptionOutlined />}
+                  onClick={() => setSelectedId(artifact.id)}
+                  aria-label={`Metadata for ${artifact.displayName}`}
+                >
+                  Metadata
+                </Button>
+                {downloadButton(artifact)}
+              </Stack>
+            </Stack>
+          ))}
+        </Stack>
+      )}
+      <EvidenceMetadataDialog
+        artifact={selected}
+        availabilityLabel={selected ? availability(selected) : ""}
+        sizeLabel={selected ? sizes(selected.byteLength) : "Size unavailable"}
+        contentAvailable={!!selected && ready(selected)}
+        error={downloadError}
         onClose={() => setSelectedId(null)}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Evidence metadata</DialogTitle>
-        <DialogContent>
-          {selected && (
-            <>
-              <Typography sx={{ mb: 3 }}>{selected.displayName}</Typography>
-              <Typography variant="body2">
-                {selected.mediaType} · {sizes(selected.byteLength)}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ my: 3, overflowWrap: "anywhere" }}
-              >
-                Scope: {selected.attemptId} /{" "}
-                {selected.trialId ?? "attempt-wide"} · {selected.id}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  overflowWrap: "anywhere",
-                  fontFamily: tokens.typography.fontFamily.mono,
-                }}
-              >
-                {selected.sha256
-                  ? `sha256:${selected.sha256}`
-                  : "Digest unavailable"}
-              </Typography>
-              <Typography variant="body2" sx={{ my: 3 }}>
-                Availability: {selected.availability} · verification:{" "}
-                {selected.verificationState}
-              </Typography>
-              <Typography variant="body2" sx={{ my: 3 }}>
-                Creation: {selected.createdAt ?? "unavailable"} · retention:{" "}
-                {selected.expiresAt ?? "unavailable"}
-              </Typography>
-              <Alert severity="info">
-                Metadata remains inspectable when content is missing or expired.
-                Synthetic files cannot be downloaded. Process-log metadata
-                refers to redacted output.
-              </Alert>
-            </>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSelectedId(null)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+        downloadAction={selected ? downloadButton(selected) : null}
+      />
     </Paper>
   );
 }

@@ -47,6 +47,11 @@ class DatabaseSettings(BaseSettings):
 
 
 class ApiSettings(DatabaseSettings):
+    project_evidence_bytes_limit: int = Field(
+        default=5_242_880_000, ge=1, le=53_687_091_200
+    )
+    artifact_staging_bytes_limit: int = Field(default=524_288_000, ge=1, le=524_288_000)
+    artifact_staging_files_limit: int = Field(default=32, ge=1, le=100)
     project_queued_run_limit: int = Field(default=20, ge=1, le=100)
     runner_key_id: str = Field(
         default="identity-v1", min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$"

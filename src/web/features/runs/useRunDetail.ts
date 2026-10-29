@@ -185,5 +185,6 @@ export function useRunDetail(
     refresh,
     live,
     accessLost,
+    denyAccess,
   };
 }

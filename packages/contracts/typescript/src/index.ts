@@ -136,3 +136,4 @@ export {
   StreamInterrupted,
   type RunStreamOptions,
 } from "./eventStream";
+export { readArtifactContent, type ArtifactDownloadOptions } from "./artifacts";

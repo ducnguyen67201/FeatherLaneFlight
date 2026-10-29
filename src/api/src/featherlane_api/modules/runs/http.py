@@ -43,6 +43,7 @@ def get_service(
         identity,
         request.app.state.settings.project_queued_run_limit,
         EventCursors(request.app.state.settings.session_hash_key.get_secret_value()),
+        request.app.state.artifact_storage,
     )
 
 

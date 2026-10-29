@@ -19,6 +19,12 @@ from featherlane_api.modules.access.people_http import router as people_router
 from featherlane_api.modules.access.persistence import AccessStore
 from featherlane_api.modules.events.http import router as events_router
 from featherlane_api.modules.events.persistence import EventStore
+from featherlane_api.modules.evidence.http import router as evidence_router
+from featherlane_api.modules.evidence.persistence import EvidenceStore
+from featherlane_api.modules.evidence.storage import (
+    ArtifactInvalid,
+    LocalPrivateArtifactStorage,
+)
 from featherlane_api.modules.identity.http import install_identity_errors
 from featherlane_api.modules.identity.http import router as identity_router
 from featherlane_api.modules.identity.oidc import GoogleOidc
@@ -63,10 +69,18 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
                     await RunStore(session).check_ready()
                     await EventStore(session).check_ready()
                     await LeaseStore(session).check_ready()
+                    await EvidenceStore(session).check_ready()
             except Exception:
                 logger.error("Database startup check failed")
                 raise RuntimeError(
                     "Database unavailable or migrations missing; check local setup."
+                ) from None
+            try:
+                app.state.artifact_storage.prepare()
+            except (OSError, ArtifactInvalid):
+                logger.error("Private evidence storage startup check failed")
+                raise RuntimeError(
+                    "Private evidence storage is unavailable; check its local policy."
                 ) from None
             yield
         finally:
@@ -85,6 +99,11 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.state.on_verified_login = lambda session: AccessEnrollment(session).apply
     app.state.settings = settings
     app.state.event_stream_slots = asyncio.BoundedSemaphore(8)
+    app.state.artifact_storage = LocalPrivateArtifactStorage(
+        settings.artifact_root,
+        staging_limit_bytes=settings.artifact_staging_bytes_limit,
+        staging_limit_files=settings.artifact_staging_files_limit,
+    )
     app.state.schema_digest = digest
     app.add_middleware(HttpBoundary, settings=settings)
     install_error_handlers(app)
@@ -103,4 +122,5 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(runs_router)
     app.include_router(events_router)
     app.include_router(leases_router)
+    app.include_router(evidence_router)
     return app

@@ -194,7 +194,9 @@ class ArtifactView(WireModel):
     verification_state: Literal["PENDING", "VERIFIED", "FAILED", "NOT_VERIFIED"]
     created_at: UtcTimestamp | None
     expires_at: UtcTimestamp | None
-    availability: Literal["AVAILABLE", "MISSING", "EXPIRED", "NOT_COLLECTED"]
+    availability: Literal[
+        "AVAILABLE", "MISSING", "EXPIRED", "NOT_COLLECTED", "LOCAL_ONLY"
+    ]
 
 
 class ArtifactSummary(WireModel):

@@ -3,9 +3,11 @@
 import json
 import logging
 import math
+import re
 from uuid import uuid4
 
 from featherlane_contracts import CONTRACT_VERSION, ErrorCode
+from featherlane_contracts.evidence import RUNNER_ARTIFACT_CONTENT_PATH
 from starlette.requests import Request
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -14,6 +16,11 @@ from featherlane_api.http.errors import ApiError, error_response
 
 logger = logging.getLogger(__name__)
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
+BINARY_UPLOAD = re.compile(
+    re.escape(RUNNER_ARTIFACT_CONTENT_PATH).replace(
+        re.escape("{artifactId}"), r"[A-Za-z0-9_-]{1,128}"
+    )
+)
 
 
 def _integer(value: str) -> int:
@@ -116,7 +123,10 @@ class HttpBoundary:
                 bool(request.headers.get("transfer-encoding"))
                 or request.headers.get("content-length", "0") != "0"
             )
-            if is_json_api and has_body and not is_json:
+            binary_upload = request.method == "PUT" and BINARY_UPLOAD.fullmatch(
+                request.url.path
+            )
+            if is_json_api and has_body and not is_json and not binary_upload:
                 raise ApiError(
                     415,
                     ErrorCode.UNSUPPORTED_MEDIA_TYPE,
