@@ -13,7 +13,7 @@ export function BrandMark() {
       sx={{
         display: "block",
         width: tokens.spacing.unitPx * 8,
-        height: tokens.spacing.unitPx * 6,
+        height: tokens.spacing.unitPx * 8,
         objectFit: "contain",
         flexShrink: 0,
       }}
