@@ -68,3 +68,10 @@ not managed execution deployment or a qualified flight/job runtime. The broader 
 review drawing remains a proposal. The separately approved
 [cancellation usage child architecture](runner-cancellation-usage.md) records the
 October 29 P14 usage extension, its implementation status and deferred cost scope.
+
+## Event delivery and live detail child diagram
+
+[Events and live updates](events-live-updates.md) covers the P15 durable event
+spool, authorized ingestion/read paths, signed cursors, SSE and browser snapshot
+recovery. It records the October 29, 2026 design approval and local implementation
+status. It does not extend runtime qualification or deploy additional services.

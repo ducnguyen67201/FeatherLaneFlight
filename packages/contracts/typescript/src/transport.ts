@@ -19,6 +19,7 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly detail: ErrorBody,
+    readonly retryAt: number | null = null,
   ) {
     super(detail.message);
   }
@@ -36,6 +37,11 @@ export type SessionTransportPolicy = {
 
 const sessionChecks = new WeakMap<Client, () => void>();
 
+/** Reuse the same epoch guard for raw stream reads and generated JSON reads. */
+export function requireClientCurrent(client: Client) {
+  sessionChecks.get(client)?.();
+}
+
 /** Validate the final generated result, including the supplied client's auth epoch. */
 export function validateResult<T>(
   schema: ZodType<T>,
@@ -45,7 +51,7 @@ export function validateResult<T>(
 ): T {
   const parsed = schema.safeParse(data);
   // Generated body reads, validation and transforms all finish before this check.
-  sessionChecks.get(client)?.();
+  requireClientCurrent(client);
   if (!parsed.success) {
     const requestId = zErrorBody.shape.requestId.safeParse(
       response.headers.get("X-Request-ID"),
@@ -138,7 +144,18 @@ function installValidation(
     if (!response.ok) {
       const envelope = zErrorEnvelope.safeParse(parsed.data);
       if (!envelope.success) throw invalid();
-      const error = new ApiError(response.status, envelope.data.error);
+      const header = response.headers.get("Retry-After");
+      const seconds = header === null ? NaN : Number(header);
+      const retryAt = Number.isFinite(seconds)
+        ? Date.now() + Math.max(0, seconds) * 1000
+        : header
+          ? Date.parse(header)
+          : NaN;
+      const error = new ApiError(
+        response.status,
+        envelope.data.error,
+        Number.isFinite(retryAt) ? retryAt : null,
+      );
       if (response.status === 401) session?.onUnauthorized(error);
       throw error;
     }

@@ -40,6 +40,12 @@ function eventMessage(record: RunEventRecord, detail: RunDetail) {
         ? `${observation.key}: ${String(observation.value)} ${observation.unit} · ${observation.sampleCount} sample`
         : `Observation reference: ${id} · value unavailable in this snapshot`;
     }
+    case "TRIGGER_OBSERVED":
+      return `Trigger reference: ${event.payload.triggerId}`;
+    case "DISTURBANCE_REQUESTED":
+      return `Disturbance requested: ${event.payload.disturbanceId}`;
+    case "DISTURBANCE_CONFIRMED":
+      return `Disturbance confirmation: ${event.payload.observationId}`;
     case "TRIAL_FINISHED":
       return `Trial execution: ${event.payload.executionState}`;
     case "CLEANUP_FINISHED":
@@ -50,6 +56,7 @@ function elapsed(ms: number) {
   return `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${((ms % 60000) / 1000).toFixed(3).padStart(6, "0")}`;
 }
 export function RunEventLog({
+  live = false,
   page,
   detail,
   trial,
@@ -59,6 +66,7 @@ export function RunEventLog({
   refreshing,
   onRetry,
 }: {
+  live?: boolean;
   page: RunEventPage | undefined;
   detail: RunDetail;
   trial: TrialView | undefined;
@@ -82,7 +90,8 @@ export function RunEventLog({
       <Typography variant="body2" color="text.secondary" sx={{ mt: 2, mb: 4 }}>
         {attemptId ?? "No attempt"} ·{" "}
         {trial ? `repetition ${trial.repetitionIndex}` : "no trial"} ·{" "}
-        {records.length} events · synthetic snapshot
+        {records.length} events ·{" "}
+        {live ? "server-acknowledged observations" : "synthetic snapshot"}
       </Typography>
       {error && (
         <Alert
@@ -130,7 +139,8 @@ export function RunEventLog({
                 $ events.log
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {detail.snapshotAt.slice(0, 10)} UTC · STATIC SNAPSHOT
+                {detail.snapshotAt.slice(0, 10)} UTC ·{" "}
+                {live ? "VALIDATED EVENT PAGE" : "STATIC SNAPSHOT"}
               </Typography>
             </Stack>
             <Box
@@ -192,7 +202,9 @@ export function RunEventLog({
             {page?.meta.nextCursor
               ? "More events exist beyond this bounded page."
               : ""}{" "}
-            No live stream or terminal commands.
+            {live
+              ? "Live events refresh this bounded server page; execution and results come from the run snapshot."
+              : "No live stream or terminal commands."}
           </Typography>
         </>
       )}

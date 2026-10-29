@@ -41,6 +41,7 @@ import { RunDetailStatus } from "./RunDetailStatus";
 import { TrialChecksPanel } from "./TrialChecksPanel";
 import { RunManifestPanel } from "./RunManifestPanel";
 import { RunEvidencePanel } from "./RunEvidencePanel";
+import { RunLiveStatus } from "./RunLiveStatus";
 import { RunEventLog } from "./RunEventLog";
 
 export function RunDetailPage({
@@ -64,12 +65,22 @@ export function RunDetailPage({
   const [trialId, setTrialId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
-  const { detail, events, artifacts, mode, changing, chooseMode, refresh } =
-    useRunDetail(runId, tab, transport);
+  const {
+    detail,
+    events,
+    artifacts,
+    mode,
+    changing,
+    chooseMode,
+    refresh,
+    live,
+    accessLost,
+  } = useRunDetail(runId, tab, transport);
   const cancellation = useRunCancellation(runId, transport);
   const accessDenied =
-    detail.error instanceof ApiError &&
-    [401, 403, 404].includes(detail.error.status);
+    accessLost ||
+    (detail.error instanceof ApiError &&
+      [401, 403, 404].includes(detail.error.status));
   const snapshot =
     !accessDenied &&
     (!transport || detail.data?.data.projectId === transport.projectId)
@@ -166,14 +177,18 @@ export function RunDetailPage({
             <Link key="runs" href={listHref} onClick={onBack}>
               Runs
             </Link>,
-            <Typography key="id">{runId}</Typography>,
+            <Typography key="id">
+              {accessDenied ? "Run unavailable" : runId}
+            </Typography>,
           ]}
           eyebrow={transport ? "RUN DETAIL" : "RUN DETAIL · SYNTHETIC EVIDENCE"}
-          title={runId}
+          title={accessDenied ? "Run unavailable" : runId}
           description={
-            snapshot
-              ? `${snapshot.buildLabel} · ${snapshot.suiteTitle} r${snapshot.suiteRevision} · ${snapshot.runnerDisplayName}`
-              : "Read the run snapshot to inspect its frozen inputs and evidence."
+            accessDenied
+              ? "Choose an accessible project to continue."
+              : snapshot
+                ? `${snapshot.buildLabel} · ${snapshot.suiteTitle} r${snapshot.suiteRevision} · ${snapshot.runnerDisplayName}`
+                : "Read the run snapshot to inspect its frozen inputs and evidence."
           }
           actions={
             <Stack
@@ -192,7 +207,12 @@ export function RunDetailPage({
               <Button
                 variant="outlined"
                 startIcon={<Refresh />}
-                disabled={detail.isFetching || changing || cancellation.pending}
+                disabled={
+                  accessDenied ||
+                  detail.isFetching ||
+                  changing ||
+                  cancellation.pending
+                }
                 onClick={() => void refresh()}
               >
                 Refresh snapshot
@@ -215,7 +235,13 @@ export function RunDetailPage({
             </Stack>
           }
         >
-          {detail.isPending ? (
+          {accessDenied ? (
+            <Alert severity="error">
+              <AlertTitle>Run is no longer available</AlertTitle>Your session or
+              project access changed. Cached run details have been cleared.
+              Return to projects to continue.
+            </Alert>
+          ) : detail.isPending ? (
             <Paper sx={{ p: 6 }} role="status" aria-label="Loading run detail">
               <Typography sx={{ mb: 4 }}>Loading run snapshot…</Typography>
               <Skeleton
@@ -240,13 +266,23 @@ export function RunDetailPage({
             <Stack spacing={5}>
               <RunDetailStatus
                 detail={snapshot}
-                stale={detail.isRefetchError}
-                refreshing={detail.isFetching}
+                stale={!transport && detail.isRefetchError}
+                refreshing={!transport && detail.isFetching}
                 cancellationPending={cancellation.pending}
                 cancellationError={cancellation.error}
                 uncertain={uncertain}
                 receipt={cancellation.receipt}
               />
+              {transport && (
+                <RunLiveStatus
+                  connection={live.connection}
+                  snapshotAt={snapshot.snapshotAt}
+                  validatedAt={detail.dataUpdatedAt}
+                  error={detail.error}
+                  refreshing={detail.isFetching}
+                  onRetry={() => void refresh()}
+                />
+              )}
               <Box>
                 <Tabs
                   value={tab}
@@ -281,6 +317,7 @@ export function RunDetailPage({
                     />
                   ) : tab === 1 ? (
                     <RunEventLog
+                      live={!!transport}
                       page={events.data}
                       detail={snapshot}
                       trial={selectedTrial}
@@ -310,7 +347,7 @@ export function RunDetailPage({
               </Box>
               <Typography variant="caption" color="text.secondary">
                 {transport
-                  ? "Queued work has no execution evidence. Event and evidence transport are supplied by later phases."
+                  ? "Live connection status describes freshness only. Execution, cleanup and evaluation are confirmed by server snapshots."
                   : "Evidence and results are synthetic. Comparison, rerun and baseline actions are deferred."}
               </Typography>
             </Stack>

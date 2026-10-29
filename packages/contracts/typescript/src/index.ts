@@ -8,6 +8,7 @@ export {
   operationPolicies,
   browserNavigationPolicies,
   validateResult,
+  requireClientCurrent,
   type SessionTransportPolicy,
 } from "./transport";
 export * from "./generated/types.gen";
@@ -128,3 +129,10 @@ export {
   listSuiteDraftsOptions,
   getSuiteDraftOptions,
 } from "./suiteDraftQueries";
+
+export {
+  runEventMessages,
+  StreamGap,
+  StreamInterrupted,
+  type RunStreamOptions,
+} from "./eventStream";

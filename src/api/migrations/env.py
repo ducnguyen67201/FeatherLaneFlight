@@ -6,6 +6,7 @@ from alembic import context
 from featherlane_api.config import load_database_settings
 from featherlane_api.infrastructure.database import Base
 from featherlane_api.modules.access import persistence as access_models  # noqa: F401
+from featherlane_api.modules.events import persistence as event_models  # noqa: F401
 from featherlane_api.modules.identity import persistence  # noqa: F401
 from featherlane_api.modules.leases import persistence as lease_models  # noqa: F401
 from featherlane_api.modules.registration import persistence as registration_models  # noqa: F401

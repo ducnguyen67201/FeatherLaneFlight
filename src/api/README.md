@@ -529,3 +529,44 @@ configuration. It did not change Doppler or global credentials, add an auth bypa
 or requalify Google. The runtime UI remains behind the existing authentication
 boundary. Live browser/provider qualification at a new origin requires its own
 configured callback; the local demo is explicitly sample-only.
+
+## Event ingestion and resumable reads (P15 candidate)
+
+The local P15 candidate adds migration `0015_events` after the merged P14
+`0014_cleanup_receipts` from actual main `1588e511`. The reconciled migration chain
+has one head, `0015_events`. Events, per-attempt observation progress and per-run server cursor
+progress extend the existing run/attempt records. They do not introduce another
+queue, broker or deployment service. Startup checks all three event tables.
+
+Machine `POST /api/v1/runner/attempts/{attemptId}/events` uses canonical typed
+batches and the real current P13 credential/lease/fence and accepted-manifest
+checks. It preserves committed P14 expiry/cancellation outcomes, rejects gaps
+with the expected sequence, acknowledges identical duplicates, and rejects changed
+identities/contents. At most 100 events and 256 KiB per request are accepted;
+10,000 events per run is the explicit server limit. Invalid mixed batches roll
+back without advancing acknowledgment or cursor. Receipt time/cursor are server
+owned. Events never publish terminal evaluation or release runner capacity.
+
+Browser `GET /api/v1/runs/{runId}/events` returns a bounded canonical JSON page by
+default. An accepted `text/event-stream` request selects SSE; Last-Event-ID and
+`after` must agree. Current session and both organization/project memberships are
+checked for each read. An event cursor is signed and bound to the run. Detail
+snapshots and their `serverEventCursor` are composed under the same run row lock
+used by ingestion. An invalid/expired cursor returns canonical JSON 410 before a
+stream opens; a retained-history gap after opening sends a canonical
+STREAM_RESET/CURSOR_EXPIRED and closes. The consumer resumes only after a fresh
+snapshot. Retention scheduling/pruning itself remains P23 scope.
+
+Streams carry canonical envelopes and heartbeat comments, never raw telemetry.
+They rotate after 30 seconds, have a process-local eight-connection cap and return
+429/Retry-After when full. No transaction/auth lock is held across sleep or slow
+network delivery. Revoked session/project access closes the stream without more
+resource data; reconnect observes the canonical auth error. Capacity is released
+on normal close, disconnect and response cancellation, even before the generator
+starts reading.
+
+Manual review uses an isolated loopback PostgreSQL18.4/API and seeded protocol
+identities/attempts; it does not add a login, admission or normal-execution bypass.
+The approved live-detail UI validates events before invalidating scoped Query resources.
+Cancellation intent returns 202 while stop confirmation is pending; queued or terminal
+cancellation returns 200. Cleanup and evaluation truth remain server-owned.

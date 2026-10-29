@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Events and live updates architecture",
+    "locale": "en",
+    "output": ".archify/architecture-events-backend-20261029-143000/events-live-updates-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "1588e51124c67d3835e412a55207bfbde3b4c85a"
+    }
+  },
+  "components": [
+    {
+      "id": "spool",
+      "type": "database",
+      "label": "Durable event spool",
+      "sublabel": "SQLite replay / shared ledger",
+      "tag": "P15 approved design / local implementation",
+      "pos": [40, 70],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 719
+        }
+      ]
+    },
+    {
+      "id": "ingest",
+      "type": "backend",
+      "label": "Typed batch ingestion",
+      "sublabel": "Current auth / sequence checks",
+      "tag": "P15 approved design / local implementation",
+      "pos": [470, 70],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 713,
+          "end_line": 719
+        }
+      ]
+    },
+    {
+      "id": "events",
+      "type": "database",
+      "label": "PostgreSQL event log",
+      "sublabel": "Signed cursor / locked snapshot",
+      "tag": "P15 approved design / existing PG",
+      "pos": [900, 70],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 713,
+          "end_line": 721
+        }
+      ]
+    },
+    {
+      "id": "stop",
+      "type": "backend",
+      "label": "Owned stop + cleanup",
+      "sublabel": "P14 merged / actual cleanup authority",
+      "tag": "Existing merged P14 dependency",
+      "pos": [40, 330],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 701,
+          "end_line": 709
+        }
+      ]
+    },
+    {
+      "id": "lease",
+      "type": "security",
+      "label": "Current attempt authority",
+      "sublabel": "Auth / fence / expiry / stop limits",
+      "tag": "Existing merged P13 / P14 authority",
+      "pos": [470, 330],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/leases/application.py",
+          "line": 360,
+          "end_line": 384
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725,
+          "end_line": 727
+        }
+      ]
+    },
+    {
+      "id": "stream",
+      "type": "backend",
+      "label": "Authorized reads + SSE",
+      "sublabel": "Project access / bounded sessions",
+      "tag": "P15 approved design / local implementation",
+      "pos": [900, 330],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 579,
+          "end_line": 594
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 715
+        }
+      ]
+    },
+    {
+      "id": "queries",
+      "type": "frontend",
+      "label": "Existing Query resources",
+      "sublabel": "Validated REST snapshot",
+      "tag": "Existing / P15 cursor integration",
+      "pos": [470, 590],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "src/web/features/runs/useRunDetail.ts",
+          "line": 35,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Validated stream adapter",
+      "sublabel": "Validate / resume / invalidate",
+      "tag": "P15 approved design / local implementation",
+      "pos": [900, 590],
+      "size": [200, 76],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 292,
+          "end_line": 307
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 715
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Customer runner host \u2014 local owned storage/processes",
+      "wraps": ["spool", "stop"],
+      "pad": 24
+    },
+    {
+      "kind": "security-group",
+      "label": "Control plane \u2014 authenticated writes and project reads",
+      "wraps": ["ingest", "events", "lease", "stream"],
+      "pad": 24
+    },
+    {
+      "kind": "region",
+      "label": "Browser session \u2014 auth epoch / no domain state machine",
+      "wraps": ["queries", "browser"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "batch",
+      "from": "spool",
+      "to": "ingest",
+      "label": "HTTPS batch / ACK",
+      "variant": "emphasis"
+    },
+    {
+      "id": "persist",
+      "from": "ingest",
+      "to": "events",
+      "label": "Atomic persistence",
+      "variant": "emphasis"
+    },
+    {
+      "id": "authority",
+      "from": "lease",
+      "to": "ingest",
+      "label": "Authorize before writes",
+      "variant": "security"
+    },
+    {
+      "id": "exhaustion",
+      "from": "spool",
+      "to": "stop",
+      "label": "EVIDENCE_BUFFER_FULL",
+      "variant": "security"
+    },
+    {
+      "id": "retained",
+      "from": "events",
+      "to": "stream",
+      "label": "Retained cursor order"
+    },
+    {
+      "id": "sse",
+      "from": "stream",
+      "to": "browser",
+      "label": "RUN_EVENT / STREAM_RESET",
+      "variant": "emphasis"
+    },
+    {
+      "id": "invalidate",
+      "from": "browser",
+      "to": "queries",
+      "label": "Validate then invalidate",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Status and scope",
+      "items": [
+        "Same architecture and trust boundaries as the first proposal; no hosting change.",
+        "P13 and P14 are merged; this candidate consumes actual main 1588e511, including optional usage reporting.",
+        "P15 backend/transport is implemented locally and checked; design approved October 29, 2026, not deployed.",
+        "Browser adapter/UI is implemented and manually verified locally within the approved scope; not published or deployed."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Bounded storage and delivery",
+      "items": [
+        "One logical 500 MiB managed runner budget: 64 events + 435 evidence + 1 accounting.",
+        "At most 32 reservations / 4 contents each; reserve full copies before bytes, release after removal.",
+        "P14 raw original 128 B stays charged until P14 proves ownership and removes it.",
+        "Identity/process metadata and uncontrolled host files are outside this logical budget.",
+        "Batches 100 events / 256 KiB; server event log at most 10,000 observations per run."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Authority and truthful cleanup",
+      "items": [
+        "Runner writes require current P13 auth, attempt, lease, fence and accepted manifest.",
+        "P14 shared expiry includes cancellation deadlines; expired writes cannot revive an attempt.",
+        "Spool exhaustion calls the real P14 stop interface; child/group/cleanup flags remain explicit.",
+        "Events cannot free capacity, prove cleanup or publish COMPLETED/PASS. P14/P17 own those gates."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Recovery and browser policy",
+      "items": [
+        "Current session and both memberships protect every JSON/SSE read.",
+        "Signed run-scoped cursors, consistent locked snapshots, JSON 410 and open-stream reset.",
+        "At most 8 process-local streams, 30 s rotation; comments carry no domain data.",
+        "Validated framing/reconnect only; no second browser lifecycle machine or raw telemetry.",
+        "No new runtime qualification: NON_EXECUTING stays disabled / declared."
+      ]
+    }
+  ]
+}

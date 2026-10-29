@@ -6,21 +6,22 @@ import {
   getRunDetailOptions,
   getRunEventsOptions,
 } from "@featherlane/contracts";
+import { useRunLiveUpdates } from "./useRunLiveUpdates";
 import { runDetailDemo } from "../../mocks/browser";
 import { detailModes, type DetailMode } from "../../mocks/runDetailDemo";
 import {
   demoRunTransport,
   type RunTransport,
+  detailPrefix,
   runScope,
   headers,
   runsQueryPrefix,
+  permanentReadFailure,
+  optionsQueryPrefix,
+  canRefreshAutomatically,
 } from "./queries";
 
-export const detailPrefix = (runId: string, transport = demoRunTransport) => [
-  ...runScope(transport),
-  "run-detail",
-  runId,
-];
+export { detailPrefix } from "./queries";
 export function useRunDetail(
   runId: string,
   tab: number,
@@ -31,6 +32,7 @@ export function useRunDetail(
   const [mode, setMode] = useState<DetailMode>(() =>
     transport ? "Queued" : runDetailDemo.mode(runId),
   );
+  const [accessLost, setAccessLost] = useState(false);
   const [changing, setChanging] = useState(false);
   const scope = detailPrefix(runId, current);
   const detail = useQuery({
@@ -38,6 +40,16 @@ export function useRunDetail(
       { client: current.client, path: { runId }, headers },
       scope,
     ),
+    enabled: !accessLost,
+    refetchInterval: (query) => {
+      const error = query.state.error;
+      if (!transport || accessLost || permanentReadFailure(error)) return false;
+      const delay =
+        error instanceof ApiError && error.retryAt !== null
+          ? Math.max(10_000, error.retryAt - Date.now())
+          : 10_000;
+      return delay <= 60_000 ? delay : false;
+    },
     refetchOnWindowFocus: false,
   });
   const events = useQuery({
@@ -50,7 +62,7 @@ export function useRunDetail(
       },
       scope,
     ),
-    enabled: !!detail.data && tab === 1,
+    enabled: !accessLost && !!detail.data && tab === 1,
     refetchOnWindowFocus: false,
   });
   const artifacts = useQuery({
@@ -58,18 +70,59 @@ export function useRunDetail(
       { client: current.client, path: { runId }, headers },
       scope,
     ),
-    enabled: !!detail.data && tab === 3,
+    enabled: !accessLost && !!detail.data && tab === 3,
     refetchOnWindowFocus: false,
   });
+  function denyAccess(status: 401 | 403 | 404) {
+    setAccessLost(true);
+    void client.cancelQueries({ queryKey: runScope(current) }).then(() => {
+      client.removeQueries({ queryKey: runScope(current) });
+    });
+    transport?.onAccessFailure(status);
+  }
+  const live = useRunLiveUpdates(
+    runId,
+    transport,
+    accessLost ? undefined : detail.data?.data,
+    denyAccess,
+  );
   useEffect(() => {
-    const error = detail.error;
+    const error = [detail.error, events.error, artifacts.error].find(
+      (item) =>
+        item instanceof ApiError && [401, 403, 404].includes(item.status),
+    );
     if (
       transport &&
+      !accessLost &&
       error instanceof ApiError &&
       (error.status === 401 || error.status === 403 || error.status === 404)
     )
-      transport.onAccessFailure(error.status);
-  }, [detail.error, transport]);
+      denyAccess(error.status);
+  }, [detail.error, events.error, artifacts.error, transport, accessLost]);
+  const observed = detail.data?.data;
+  useEffect(() => {
+    if (!transport || accessLost || !observed) return;
+    // Server-only cancellation/expiry can change a snapshot without an event.
+    for (const prefix of [
+      runsQueryPrefix(transport),
+      optionsQueryPrefix(transport),
+    ])
+      void client.invalidateQueries(
+        {
+          queryKey: prefix,
+          predicate: (query) => canRefreshAutomatically(query.state.error),
+        },
+        { cancelRefetch: false },
+      );
+  }, [
+    client,
+    transport?.client,
+    transport?.projectId,
+    observed?.executionState,
+    observed?.evaluationOutcome,
+    observed?.cancellationRequestedAt,
+    accessLost,
+  ]);
   const invalidate = async () => {
     await Promise.all([
       client.invalidateQueries({ queryKey: scope }),
@@ -112,6 +165,25 @@ export function useRunDetail(
       setMode(runDetailDemo.mode(runId));
     }
     await invalidate();
+    if (
+      client.getQueryState(
+        getRunDetailOptions(
+          { client: current.client, path: { runId }, headers },
+          scope,
+        ).queryKey,
+      )?.status === "success"
+    )
+      live.restart();
   }
-  return { detail, events, artifacts, mode, changing, chooseMode, refresh };
+  return {
+    detail,
+    events,
+    artifacts,
+    mode,
+    changing,
+    chooseMode,
+    refresh,
+    live,
+    accessLost,
+  };
 }
