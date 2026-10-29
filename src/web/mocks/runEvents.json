@@ -1,0 +1,317 @@
+{
+  "data": [
+    {
+      "cursor": "event_1",
+      "receivedAt": "2026-10-28T15:00:01.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_1",
+        "attemptId": "attempt_1",
+        "trialId": null,
+        "sequence": 1,
+        "wallTimeUtc": "2026-10-28T15:00:01.000Z",
+        "monotonicElapsedMs": 0.0,
+        "simulationTimeUs": "0",
+        "type": "ATTEMPT_STARTING",
+        "payload": {
+          "profileId": "profile_fake",
+          "ownedProcess": true
+        }
+      }
+    },
+    {
+      "cursor": "event_2",
+      "receivedAt": "2026-10-28T15:00:02.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_2",
+        "attemptId": "attempt_1",
+        "trialId": "trial_1",
+        "sequence": 2,
+        "wallTimeUtc": "2026-10-28T15:00:02.000Z",
+        "monotonicElapsedMs": 1000.0,
+        "simulationTimeUs": "1000000",
+        "type": "TRIAL_STARTED",
+        "payload": {
+          "scenarioId": "nominal_flight",
+          "repetitionIndex": 1
+        }
+      }
+    },
+    {
+      "cursor": "event_3",
+      "receivedAt": "2026-10-28T15:00:04.150Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_3",
+        "attemptId": "attempt_1",
+        "trialId": "trial_1",
+        "sequence": 3,
+        "wallTimeUtc": "2026-10-28T15:00:04.100Z",
+        "monotonicElapsedMs": 3100.0,
+        "simulationTimeUs": "3100000",
+        "type": "READINESS_OBSERVED",
+        "payload": {
+          "ready": true
+        }
+      }
+    },
+    {
+      "cursor": "event_4",
+      "receivedAt": "2026-10-28T15:00:06.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_4",
+        "attemptId": "attempt_1",
+        "trialId": "trial_1",
+        "sequence": 4,
+        "wallTimeUtc": "2026-10-28T15:00:06.000Z",
+        "monotonicElapsedMs": 5000.0,
+        "simulationTimeUs": "5000000",
+        "type": "MISSION_STARTED",
+        "payload": {
+          "missionId": "synthetic_mission"
+        }
+      }
+    },
+    {
+      "cursor": "event_5",
+      "receivedAt": "2026-10-28T15:01:37.450Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_5",
+        "attemptId": "attempt_1",
+        "trialId": "trial_1",
+        "sequence": 5,
+        "wallTimeUtc": "2026-10-28T15:01:37.400Z",
+        "monotonicElapsedMs": 96400.0,
+        "simulationTimeUs": "96400000",
+        "type": "OBSERVATION_RECORDED",
+        "payload": {
+          "observationId": "trial_1_completion_duration"
+        }
+      }
+    },
+    {
+      "cursor": "event_6",
+      "receivedAt": "2026-10-28T15:01:38.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_6",
+        "attemptId": "attempt_1",
+        "trialId": "trial_1",
+        "sequence": 6,
+        "wallTimeUtc": "2026-10-28T15:01:38.000Z",
+        "monotonicElapsedMs": 97000.0,
+        "simulationTimeUs": "97000000",
+        "type": "TRIAL_FINISHED",
+        "payload": {
+          "executionState": "COMPLETED"
+        }
+      }
+    },
+    {
+      "cursor": "event_7",
+      "receivedAt": "2026-10-28T15:01:42.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_7",
+        "attemptId": "attempt_1",
+        "trialId": "trial_2",
+        "sequence": 7,
+        "wallTimeUtc": "2026-10-28T15:01:42.000Z",
+        "monotonicElapsedMs": 101000.0,
+        "simulationTimeUs": "101000000",
+        "type": "TRIAL_STARTED",
+        "payload": {
+          "scenarioId": "nominal_flight",
+          "repetitionIndex": 2
+        }
+      }
+    },
+    {
+      "cursor": "event_8",
+      "receivedAt": "2026-10-28T15:01:44.150Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_8",
+        "attemptId": "attempt_1",
+        "trialId": "trial_2",
+        "sequence": 8,
+        "wallTimeUtc": "2026-10-28T15:01:44.100Z",
+        "monotonicElapsedMs": 103100.0,
+        "simulationTimeUs": "103100000",
+        "type": "READINESS_OBSERVED",
+        "payload": {
+          "ready": true
+        }
+      }
+    },
+    {
+      "cursor": "event_9",
+      "receivedAt": "2026-10-28T15:01:46.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_9",
+        "attemptId": "attempt_1",
+        "trialId": "trial_2",
+        "sequence": 9,
+        "wallTimeUtc": "2026-10-28T15:01:46.000Z",
+        "monotonicElapsedMs": 105000.0,
+        "simulationTimeUs": "105000000",
+        "type": "MISSION_STARTED",
+        "payload": {
+          "missionId": "synthetic_mission"
+        }
+      }
+    },
+    {
+      "cursor": "event_10",
+      "receivedAt": "2026-10-28T15:03:17.450Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_10",
+        "attemptId": "attempt_1",
+        "trialId": "trial_2",
+        "sequence": 10,
+        "wallTimeUtc": "2026-10-28T15:03:17.400Z",
+        "monotonicElapsedMs": 196400.0,
+        "simulationTimeUs": "196400000",
+        "type": "OBSERVATION_RECORDED",
+        "payload": {
+          "observationId": "trial_2_completion_duration"
+        }
+      }
+    },
+    {
+      "cursor": "event_11",
+      "receivedAt": "2026-10-28T15:03:18.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_11",
+        "attemptId": "attempt_1",
+        "trialId": "trial_2",
+        "sequence": 11,
+        "wallTimeUtc": "2026-10-28T15:03:18.000Z",
+        "monotonicElapsedMs": 197000.0,
+        "simulationTimeUs": "197000000",
+        "type": "TRIAL_FINISHED",
+        "payload": {
+          "executionState": "COMPLETED"
+        }
+      }
+    },
+    {
+      "cursor": "event_12",
+      "receivedAt": "2026-10-28T15:03:22.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_12",
+        "attemptId": "attempt_1",
+        "trialId": "trial_3",
+        "sequence": 12,
+        "wallTimeUtc": "2026-10-28T15:03:22.000Z",
+        "monotonicElapsedMs": 201000.0,
+        "simulationTimeUs": "201000000",
+        "type": "TRIAL_STARTED",
+        "payload": {
+          "scenarioId": "nominal_flight",
+          "repetitionIndex": 3
+        }
+      }
+    },
+    {
+      "cursor": "event_13",
+      "receivedAt": "2026-10-28T15:03:24.150Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_13",
+        "attemptId": "attempt_1",
+        "trialId": "trial_3",
+        "sequence": 13,
+        "wallTimeUtc": "2026-10-28T15:03:24.100Z",
+        "monotonicElapsedMs": 203100.0,
+        "simulationTimeUs": "203100000",
+        "type": "READINESS_OBSERVED",
+        "payload": {
+          "ready": true
+        }
+      }
+    },
+    {
+      "cursor": "event_14",
+      "receivedAt": "2026-10-28T15:03:26.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_14",
+        "attemptId": "attempt_1",
+        "trialId": "trial_3",
+        "sequence": 14,
+        "wallTimeUtc": "2026-10-28T15:03:26.000Z",
+        "monotonicElapsedMs": 205000.0,
+        "simulationTimeUs": "205000000",
+        "type": "MISSION_STARTED",
+        "payload": {
+          "missionId": "synthetic_mission"
+        }
+      }
+    },
+    {
+      "cursor": "event_15",
+      "receivedAt": "2026-10-28T15:04:57.450Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_15",
+        "attemptId": "attempt_1",
+        "trialId": "trial_3",
+        "sequence": 15,
+        "wallTimeUtc": "2026-10-28T15:04:57.400Z",
+        "monotonicElapsedMs": 296400.0,
+        "simulationTimeUs": "296400000",
+        "type": "OBSERVATION_RECORDED",
+        "payload": {
+          "observationId": "trial_3_completion_duration"
+        }
+      }
+    },
+    {
+      "cursor": "event_16",
+      "receivedAt": "2026-10-28T15:04:58.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_16",
+        "attemptId": "attempt_1",
+        "trialId": "trial_3",
+        "sequence": 16,
+        "wallTimeUtc": "2026-10-28T15:04:58.000Z",
+        "monotonicElapsedMs": 297000.0,
+        "simulationTimeUs": "297000000",
+        "type": "TRIAL_FINISHED",
+        "payload": {
+          "executionState": "COMPLETED"
+        }
+      }
+    },
+    {
+      "cursor": "event_17",
+      "receivedAt": "2026-10-28T15:04:59.050Z",
+      "event": {
+        "schemaVersion": 1,
+        "eventId": "event_17",
+        "attemptId": "attempt_1",
+        "trialId": null,
+        "sequence": 17,
+        "wallTimeUtc": "2026-10-28T15:04:59.000Z",
+        "monotonicElapsedMs": 298000.0,
+        "simulationTimeUs": "298000000",
+        "type": "CLEANUP_FINISHED",
+        "payload": {
+          "processExited": true
+        }
+      }
+    }
+  ],
+  "meta": {
+    "nextCursor": null
+  }
+}

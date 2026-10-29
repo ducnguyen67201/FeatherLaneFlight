@@ -8,17 +8,33 @@ export {
   operationPolicies,
 } from "./transport";
 export * from "./generated/types.gen";
-export { getContractMeta, listRuns, getRunOptions, createRun } from "./sdk";
+export {
+  getContractMeta,
+  listRuns,
+  getRunOptions,
+  createRun,
+  getRunDetail,
+  getRunEvents,
+  getRunArtifacts,
+  cancelRun,
+} from "./sdk";
 export {
   getContractMetaQueryKey,
   listRunsQueryKey,
   getRunOptionsQueryKey,
+  getRunDetailQueryKey,
+  getRunEventsQueryKey,
+  getRunArtifactsQueryKey,
 } from "./generated/@tanstack/react-query.gen";
 export {
   getContractMetaOptions,
   listRunsOptions,
   getRunOptionsOptions,
   createRunMutation,
+  getRunDetailOptions,
+  getRunEventsOptions,
+  getRunArtifactsOptions,
+  cancelRunMutation,
 } from "./queries";
 export {
   listOrganizations,

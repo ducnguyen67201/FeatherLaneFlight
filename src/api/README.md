@@ -3,12 +3,15 @@
 P05 provides the runnable FastAPI service, validated process configuration,
 PostgreSQL sessions/migrations, safe HTTP errors and a private storage port.
 P06A adds the authentication endpoints described below alongside `GET /api/v1/meta`.
-P07 implements the protected organization/project operations described at the end.
 Runs and other business declarations in
 `featherlane_api.openapi.schema.create_schema_app()` are for offline client generation;
-they are never mounted in the runtime application. Other business operations, the worker, artifact uploads and storage
-adapters belong to their later phases. Real Google login remains unverified until
-the human configures the provider; an unconfigured provider returns a safe 503.
+they are never mounted in the runtime application. Memberships, business operations, the worker, artifact uploads and storage
+adapters belong to their later phases. A real Google callback and reauthentication
+were verified against the direct local API at `http://127.0.0.1:8008`, including
+actual session read, handle rotation, CSRF rejection and API logout/revocation.
+P06.5 browser controls/proxy wiring, HTTPS deployment and deliberate invalid-token
+negative cases remain outside that qualification. An unconfigured provider returns
+a safe 503.
 
 ## Backend architecture
 
@@ -37,8 +40,8 @@ featherlane_api/
 ```
 
 P06A implements `modules/identity/` with application use cases, internal ORM
-mappings, Authlib adapter, HTTP routes and shared auth dependencies. P06 is UI-only. P07 implements
-`modules/access/` on that authentication dependency. Later phases
+mappings, Authlib adapter, HTTP routes and shared auth dependencies. P06 is UI-only. P07 introduces
+`modules/access/` once its actual authentication dependency is ready. Later phases
 introduce runners, catalog, execution and evaluation modules as their real work
 arrives. Do not create empty feature modules or placeholder business routes.
 
@@ -94,25 +97,40 @@ environment and runs the reviewed revisions; it contains no secret values.
 | `FLF_API_MAX_JSON_BYTES`     | Defaults to `1048576` (1 MiB); may be reduced.                                                                                        |
 | `FLF_API_MAX_JSON_DEPTH`     | Defaults to `32`, maximum `64`.                                                                                                       |
 
-All phases use the single reviewed `infra/compose.database.yaml` (PostgreSQL18.4).
-Supply all six required variables through the process; none has a default:
+`infra/compose.database.yaml` runs one PostgreSQL 18.4 service with loopback-only
+port publication. Supply all six variables in the Compose process; there are no
+shared instance defaults or fixed container names:
 
-| Variable               | Meaning                                                               |
-| ---------------------- | --------------------------------------------------------------------- |
-| `COMPOSE_PROJECT_NAME` | Unique Compose project identity for this database instance.           |
-| `FLF_DB_USER`          | Initial PostgreSQL user.                                              |
-| `FLF_DB_NAME`          | Initial database name.                                                |
-| `FLF_DB_PASSWORD`      | Private initial password; never print resolved Compose configuration. |
-| `FLF_DB_HOST_PORT`     | Dedicated loopback host port.                                         |
-| `FLF_DB_DATA_DIR`      | Existing absolute private host directory for this instance's data.    |
+| Variable               | Meaning                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `COMPOSE_PROJECT_NAME` | Unique Compose project identity, such as `featherlane-p05`.                                       |
+| `FLF_DB_USER`          | PostgreSQL initialization user, such as `flf`.                                                    |
+| `FLF_DB_NAME`          | PostgreSQL initialization database, such as `featherlane_p05`.                                    |
+| `FLF_DB_PASSWORD`      | Private password injected into the process; never save it in a file or put it in a command.       |
+| `FLF_DB_HOST_PORT`     | Unique host port; the host address is fixed to `127.0.0.1`.                                       |
+| `FLF_DB_DATA_DIR`      | Absolute existing private data-directory path, normally inside this worktree's ignored `.local/`. |
 
-Create the private directory deliberately before startup; automatic bind-path
-creation is disabled. Keep each instance's project, port and data directory separate.
-Point `FLF_API_DATABASE_URL` at these same values (percent-encode password characters
-when needed). The earlier table's P05 address is only an example. Initialization
-variables do not rotate credentials in an existing database. Preserve existing data
-and credentials; adopting the template does not migrate or reset them. Hosted
-privileges, TLS termination and trusted proxy deployment remain separate work.
+For the existing P05 instance, select the following non-secret values in this
+terminal, with the password injected by Doppler. Keep the matching
+`FLF_API_DATABASE_URL` in the API/migration process configuration; Compose does
+not derive or change that URL. If the selected secret source uses a different
+password key, map it to `FLF_DB_PASSWORD` only in the child process without
+printing it or changing the stored secret.
+
+```sh
+export COMPOSE_PROJECT_NAME=featherlane-p05
+export FLF_DB_USER=flf FLF_DB_NAME=featherlane_p05 FLF_DB_HOST_PORT=55405
+export FLF_DB_DATA_DIR="$PWD/.local/p05/postgres"
+```
+
+Keep an existing instance's original project name, port, credentials and data
+path when switching filenames. PostgreSQL initialization variables do not
+rename databases/users or rotate credentials in an initialized data directory.
+For a new instance, deliberately prepare a separate private directory first;
+Compose will fail if it does not exist rather than create a store at a mistyped
+path. Never reuse another worktree's project name, port or data directory.
+The role is a local development role; hosted privileges, TLS termination and
+trusted proxy deployment are outside this phase.
 
 ```sh
 doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml config --quiet
@@ -124,6 +142,10 @@ doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane
 `doppler run` injects the selected configuration into the child process. These
 commands disable Doppler's local fallback file and prevent uv/Compose from
 loading a dotenv file. See the [Doppler CLI guide](https://docs.doppler.com/docs/cli).
+Use `config --quiet` for validation; unfiltered `config` output includes the
+resolved database password. Historical P05/P06A handoffs record the retired
+`infra/compose.p05.yaml` and `infra/compose.p06a.yaml` filenames used in those
+checks; current launches use the shared file above.
 
 In a separate terminal:
 
@@ -140,8 +162,8 @@ omit SQL, connection strings, request bodies and exception tracebacks. The CLI
 disables access logs (which can contain sensitive query strings) and forwarded
 proxy headers. Do not enable those in an unreviewed deployment configuration.
 
-Stop the API with Ctrl+C. Stop only your selected database instance using the same Compose command
-with `stop`. Its ignored database data remains available for later review;
+Stop the API with Ctrl+C. Stop only this instance's database using the same
+Compose file and six process variables with `stop`. Its ignored data remains available for later review;
 configuration comes from Doppler. Do not use another phase's database or stop
 its processes.
 
@@ -291,13 +313,18 @@ the P05 CLI still disables forwarded proxy headers. Production cookies use the
 `__Host-` prefix, Secure, HttpOnly, SameSite=Lax and `/` with no Domain. Explicit
 loopback development uses names including the canonical port to isolate phases.
 
-P06A uses the same shared database template with its own six-variable instance
-configuration and matching `FLF_API_DATABASE_URL`. Its historical isolated example
-used port55408/database featherlane_p06a and API8008; choose the instance explicitly
-rather than reusing another phase's data or credentials.
-After selecting the appropriate existing Doppler project/config per process:
+For P06A, use the same shared database file with these distinct non-secret
+settings. Inject its own `FLF_DB_PASSWORD` into the Compose process, point
+`FLF_API_DATABASE_URL` at `127.0.0.1:55408/featherlane_p06a` with the matching
+user/password, and set `FLF_API_PORT=8008`. Do not reuse P05's database. Keep the
+existing project's identity and private data path; the filename change alone
+requires no migration, teardown or container rename. After selecting the
+appropriate existing Doppler project/config per process:
 
 ```sh
+export COMPOSE_PROJECT_NAME=featherlane-p06a
+export FLF_DB_USER=flf FLF_DB_NAME=featherlane_p06a FLF_DB_HOST_PORT=55408
+export FLF_DB_DATA_DIR="$PWD/.local/p06a/postgres"
 doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml config --quiet
 doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml up -d --wait
 doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane alembic -c src/api/alembic.ini upgrade head
