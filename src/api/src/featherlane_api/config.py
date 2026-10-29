@@ -47,6 +47,9 @@ class DatabaseSettings(BaseSettings):
 
 
 class ApiSettings(DatabaseSettings):
+    runner_key_id: str = Field(
+        default="identity-v1", min_length=1, max_length=32, pattern=r"^[A-Za-z0-9_-]+$"
+    )
     session_hash_key: SecretStr
     google_client_id: str | None = Field(default=None, min_length=1, max_length=256)
     google_client_secret: SecretStr | None = None

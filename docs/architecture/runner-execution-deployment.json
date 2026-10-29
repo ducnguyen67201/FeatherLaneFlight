@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Runner execution — proposed deployment",
+    "locale": "en",
+    "output": "docs/architecture/runner-execution-deployment.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "managed-deployment",
+        "label": "Managed infrastructure",
+        "focus": [
+          "ingress",
+          "application",
+          "controller",
+          "guest",
+          "image",
+          "postgres",
+          "storage"
+        ],
+        "note": "Proposed AWS in one region; exact account, sizing and budget require approval."
+      },
+      {
+        "id": "customer-deployment",
+        "label": "Customer-hosted option",
+        "focus": [
+          "customer-runner",
+          "customer-simulator",
+          "ingress",
+          "application"
+        ],
+        "note": "Same website and results; the simulator runs on customer-owned compute."
+      },
+      {
+        "id": "trust-boundaries",
+        "label": "Isolation and cleanup",
+        "focus": [
+          "application",
+          "controller",
+          "guest",
+          "image"
+        ],
+        "note": "Provider and durable runner credentials remain outside the single-attempt guest."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Customer browser",
+      "sublabel": "No simulator installation",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        160,
+        76
+      ]
+    },
+    {
+      "id": "ingress",
+      "type": "security",
+      "label": "HTTPS ingress",
+      "sublabel": "One web / API origin",
+      "pos": [
+        330,
+        80
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "application",
+      "type": "backend",
+      "label": "Trusted app services",
+      "sublabel": "Web / API / maintenance",
+      "pos": [
+        640,
+        80
+      ],
+      "size": [
+        200,
+        76
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "Private PostgreSQL",
+      "sublabel": "Queue, leases, metadata",
+      "pos": [
+        950,
+        80
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "controller",
+      "type": "backend",
+      "label": "Cloud controller",
+      "sublabel": "Runner lease + orphan reaper",
+      "pos": [
+        640,
+        350
+      ],
+      "size": [
+        200,
+        76
+      ]
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Private S3 storage",
+      "sublabel": "Build quarantine + evidence",
+      "pos": [
+        950,
+        350
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "customer-runner",
+      "type": "backend",
+      "label": "Customer runner",
+      "sublabel": "Outbound HTTPS only",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        160,
+        76
+      ],
+      "tag": "OPTIONAL"
+    },
+    {
+      "id": "customer-simulator",
+      "type": "backend",
+      "label": "Local PX4 / SIH",
+      "sublabel": "Local approved build",
+      "pos": [
+        40,
+        650
+      ],
+      "size": [
+        160,
+        76
+      ]
+    },
+    {
+      "id": "guest",
+      "type": "backend",
+      "label": "Disposable job VM",
+      "sublabel": "Scenario + customer build",
+      "pos": [
+        640,
+        650
+      ],
+      "size": [
+        200,
+        76
+      ],
+      "tag": "ONE ATTEMPT"
+    },
+    {
+      "id": "image",
+      "type": "cloud",
+      "label": "Qualified runtime image",
+      "sublabel": "Linux CPU + PX4 / SIH",
+      "pos": [
+        950,
+        650
+      ],
+      "size": [
+        190,
+        76
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Proposed AWS region — selection pending",
+      "wraps": [
+        "ingress",
+        "application",
+        "postgres",
+        "controller",
+        "storage",
+        "guest",
+        "image"
+      ],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "Trusted services — customer code excluded",
+      "wraps": [
+        "application",
+        "controller"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "Isolated execution guest",
+      "wraps": [
+        "guest"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Customer-owned machine",
+      "wraps": [
+        "customer-runner",
+        "customer-simulator"
+      ],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "id": "public-https",
+      "to": "ingress",
+      "variant": "emphasis",
+      "from": "browser",
+      "label": "HTTPS"
+    },
+    {
+      "id": "same-origin-routing",
+      "to": "application",
+      "variant": "emphasis",
+      "from": "ingress",
+      "label": "Web / API"
+    },
+    {
+      "id": "private-database",
+      "to": "postgres",
+      "variant": "security",
+      "from": "application",
+      "label": "SQL"
+    },
+    {
+      "id": "private-objects",
+      "to": "storage",
+      "fromSide": "right",
+      "toSide": "top",
+      "from": "application",
+      "label": "Private objects"
+    },
+    {
+      "id": "leased-assignment",
+      "to": "controller",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "application",
+      "label": "Leased job"
+    },
+    {
+      "id": "vm-lifecycle",
+      "to": "guest",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "controller",
+      "label": "Create / stop"
+    },
+    {
+      "id": "approved-image",
+      "to": "guest",
+      "variant": "emphasis",
+      "from": "image",
+      "label": "Boot image"
+    },
+    {
+      "id": "attempt-evidence",
+      "to": "application",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "left",
+      "from": "guest",
+      "label": "Scoped evidence"
+    },
+    {
+      "id": "customer-poll",
+      "to": "ingress",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [
+        [
+          265,
+          458
+        ],
+        [
+          265,
+          118
+        ]
+      ],
+      "from": "customer-runner",
+      "label": "Poll / reports"
+    },
+    {
+      "id": "customer-mavlink",
+      "to": "customer-simulator",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "customer-runner",
+      "label": "MAVLink"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Delivery order",
+      "items": [
+        "1. Review the architecture and UI, then implement bounded increments locally with fake provisioning.",
+        "2. Qualify the pinned Linux runtime, private build input path and lifecycle/cleanup behavior.",
+        "3. Approve exact staging resources, region, networking and spend ceiling before provisioning.",
+        "4. Exercise both supported paths, then approve a capped private pilot with monitoring and rollback."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Execution boundary",
+      "items": [
+        "One attempt per fresh VM; PX4/SIH and the scenario adapter run inside the guest.",
+        "No database, provider-admin or reusable runner credentials in the guest.",
+        "The trusted controller stops failed guests; a separate reconciler reaps orphan VMs and scratch storage."
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Pilot and rollback",
+      "items": [
+        "Start with one region and bounded concurrency, runtime, storage and usage allowances.",
+        "Paid pricing and billing are separate work; no automatic overage.",
+        "Rollback stops new admission, drains or cancels active attempts and confirms teardown before restoring a compatible app/image.",
+        "Topology is proposed; account, region, instance size and deployment are not approved or provisioned."
+      ]
+    }
+  ]
+}

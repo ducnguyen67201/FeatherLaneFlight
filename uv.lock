@@ -6,6 +6,7 @@ requires-python = "==3.12.*"
 members = [
     "featherlane-contracts",
     "featherlane-control-plane",
+    "featherlane-runner",
     "featherlane-workspace",
 ]
 
@@ -230,6 +231,21 @@ requires-dist = [
     { name = "pydantic-settings", specifier = "==2.16.2" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = "==2.0.55" },
     { name = "uvicorn", specifier = "==0.54.0" },
+]
+
+[[package]]
+name = "featherlane-runner"
+version = "0.1.0"
+source = { editable = "src/runner" }
+dependencies = [
+    { name = "featherlane-contracts" },
+    { name = "httpx2" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "featherlane-contracts", editable = "packages/contracts/python" },
+    { name = "httpx2", specifier = "==2.13.0" },
 ]
 
 [[package]]

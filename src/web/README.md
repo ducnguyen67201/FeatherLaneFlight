@@ -73,3 +73,26 @@ The terminal-style Timeline displays the bounded JSON event page (up to 100 reco
 New queued samples preserve the actual admitted build/profile/suite/repetition snapshot. There is no observed manifest before startup. Queued cancellation returns an explicit immediate mock-server Canceled / Not evaluated receipt without an execution attempt; active cancellation records idempotent intent; a delayed response shows pending, a malformed/network acknowledgment stays uncertain, and retry reuses the same key. Acknowledged changes invalidate lists/details/events/artifacts rather than inventing Running, Canceled or PASS. A terminal run keeps its original evaluation. In-memory replay recovery lasts while that detail page is mounted; leaving the page discards its local replay key. Ordinary in-app navigation keeps mock rows/receipts, while a full reload resets the demo and newly created rows. No real cancellation or durable idempotency guarantee is provided.
 
 P04's isolated worktree server can be started after generation with `pnpm --dir src/web prepare:mocks` and `pnpm --dir src/web exec vite --host 127.0.0.1 --port 4244 --strictPort`. The default 4200 script remains available for the integrated project. The master reconciles shared entry/contract metadata patches with other phase lanes; P04 does not add auth, database or backend run services. See `docs/phases/handoffs/P04.md` for actual verification and approval provenance.
+
+## Runners (P08)
+
+The approved `/runners` screen uses the existing authenticated session/project
+boundary, generated contracts and a session/project-scoped TanStack Query cache.
+It provides paged machine health, one-use enrollment and acknowledged revocation.
+Grant tokens live only in the open dialog; mutation state is reset and tokens are
+not placed in query data or browser persistence. Project/access loss hides protected
+content. The cloud card and New simulation run action explicitly remain unavailable;
+P08 does not provision or execute work.
+
+Run the normal app with the phase's API proxy and assigned port, for example
+`FLF_WEB_API_ORIGIN=http://127.0.0.1:8088 pnpm --filter @featherlane/web exec vite --port 4281`.
+Use the existing provider/session configuration for that canonical origin; the
+new variable only selects the local proxy target and creates no credentials.
+
+For isolated visual review, the existing explicit demo mode includes minimal
+canonical MSW fixtures for `/runners` (ready, empty, loading, failed read and an
+interrupted grant response). `pnpm --filter @featherlane/web prepare:mocks`, then
+`pnpm --filter @featherlane/web exec vite --mode demo --port 4281`.
+The public placeholder grant cannot enroll a real machine. Production startup
+never loads these fixtures. This reuses the implemented feature components, not
+an independent preview application.

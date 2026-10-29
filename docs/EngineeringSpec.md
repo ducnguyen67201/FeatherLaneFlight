@@ -2,7 +2,9 @@
 
 Status: proposed design, documentation only. Updated October 28, 2026.
 
-This document defines the intended first implementation from UI and design tokens through authentication, API contracts, the customer-operated runner, and PX4 integration. No application, credentials, infrastructure, or simulator installation is created by this specification. File trees, commands, routes, and examples below are planned interfaces, not existing functionality.
+This document defines the intended first implementation from UI and design tokens through authentication, API contracts, runner execution, and PX4 integration. No application, credentials, infrastructure, or simulator installation is created by this specification. File trees, commands, routes, and examples below are planned interfaces, not existing functionality.
+
+**Hosting direction updated by the human:** FeatherLane-managed cloud workers are the default; connected customer machines are optional. [Execution hosting design and deployment plan](plans/execution-hosting.md) records the exact source, revised trust boundaries, contract/phase impacts, and deployment gates. Its dual-hosting amendment supersedes customer-only assumptions below. The product choice and shown architecture design are approved (see the plan for the human approval source); revised application UI and new implementation increments remain review-gated. It does not approve managed deployment or purchases.
 
 ## 1. Product boundary and first deliverable
 
@@ -10,14 +12,14 @@ FeatherLaneFlight helps drone engineering teams run repeatable simulation tests,
 
 The first complete deliverable is:
 
-> From the web UI, an authenticated engineer selects a locally available PX4 build and an immutable test suite, assigns an enrolled runner, starts a simulation run, inspects its results and artifacts, and compares it with a compatible baseline.
+> From the web UI, an authenticated engineer chooses a compatible build and immutable test suite, runs on FeatherLane cloud by default or explicitly selects a connected customer machine, inspects evidence/results, and compares compatible runs. Managed execution uses a privately ingested supported SITL build and a qualified disposable execution environment; customer execution resolves locally approved inputs.
 
 Initial limits:
 
 - Simulation only. No serial-device access, real aircraft endpoints, firmware flashing, or physical flight control.
 - One active run per runner and sequential trials within that run.
 - One qualified PX4/SIH quadrotor integration before adding other flight stacks or simulators.
-- Customer-operated execution. The control plane does not receive proprietary source, model weights, or executable uploads for execution.
+- Managed cloud execution by default, with optional customer-operated execution. Managed mode adds a separately scoped private supported-build ingest and isolated execution path; customer mode keeps executables local. No general source/model upload, arbitrary command service or execution inside the control-plane process. The new scopes and approval/qualification gates are defined in the hosting plan.
 - An initial autopilot/mission test exercises PX4 and its configuration. It does not establish vision-AI performance. A customer autonomy application and suitable simulated sensors require a separately qualified integration.
 - Test results support engineering decisions. The UI must not describe them as certification, proof of safety, or automatic permission to deploy.
 
@@ -87,11 +89,13 @@ Do not introduce Redis, a separate message broker, Kubernetes, or independent sc
  +-------------------------------------------------------------------------+
 ```
 
-The browser never opens a direct connection to a runner, simulator, or drone. The runner makes outbound connections to one configured control-plane origin. MAVLink and process control remain local to the execution machine.
+The browser never opens a direct connection to a runner, simulator, or drone. The customer runner makes outbound connections to one configured control-plane origin. MAVLink and process control remain local to the execution machine. The diagram above shows this customer-hosted path. In managed mode, a trusted project-bound controller outside the customer-code guest owns claims, leases and infrastructure cleanup; the disposable guest has only a single-attempt evidence channel. See the dual-hosting architecture for that additional trust boundary. The control-plane maintenance worker remains a separate responsibility from the simulation runner.
 
 The API process and background worker are two entry points into the same application modules and database. The API serves requests; the worker expires leases, finalizes derived summaries, and performs retention work. Tests must not run in either process.
 
 For production, the ingress routes the web and API under one origin. During development, Vite proxies `/api` to FastAPI so browser behavior remains same-origin. Do not solve development convenience by allowing arbitrary CORS origins.
+
+The approved [runner execution subsystem architecture](architecture/runner-execution.md) expands the execution part of this system overview and links its deployment proposal, editable sources, approval evidence and implementation status.
 
 ## 4. Ownership and dependency direction
 
@@ -279,7 +283,7 @@ Required fixtures: no project; no runner; queued; starting; running; passed; ass
 
 The mock transport changes when the API arrives. Page components, field names, status semantics, and action meanings must stay the same. No component-owned timer may manufacture an authoritative run outcome.
 
-The New Run form follows **runner -> approved local profile/build -> eligible published suite -> repetitions -> review**. Populate choices from runner declarations and the API's eligibility response. Digests are read-only evidence, not values a user must type. The API revalidates eligibility at admission, so stale browser choices cannot bypass checks. Suite editing initially configures allowlisted built-in handlers/checks and bounded parameters; there is no custom scenario scripting language.
+The revised New Run form follows **execution location (FeatherLane cloud by default / your machine) -> compatible profile/build -> eligible published suite -> repetitions -> review**. Managed mode resolves a qualified pool/profile and private verified input artifact; customer mode resolves a selected runner's approved declarations. Changing location resets incompatible selections; never silently move a job between modes. Populate choices from canonical inputs and the API's eligibility response. Digests are read-only evidence, not values a user must type. The API revalidates eligibility at admission, so stale browser choices cannot bypass checks. Suite editing initially configures allowlisted built-in handlers/checks and bounded parameters; there is no custom scenario scripting language. Material UI changes require the revised rendered preview approval.
 
 ### 6.5 TanStack Query and live updates
 
@@ -602,7 +606,7 @@ Use a small fetch-based SSE transport that sends the same-origin session cookie,
 
 New attempt-bound writes include the current lease ID and fencing number. They are checked against runner/project identity and current lease ownership. The explicit idempotent terminal-receipt exception in section 10.4 permits no new writes. The machine principal cannot create users, alter a suite, set a baseline, or read another runner's jobs.
 
-No browser or machine API accepts host shell commands, executable file uploads, arbitrary working directories, simulator endpoints, or remote artifact destinations for execution.
+No browser or machine API accepts host shell commands, arbitrary working directories, simulator endpoints, unrestricted executable uploads, or remote artifact destinations for execution. The separately planned managed-build ingest is the sole bounded executable-input exception: supported SITL bundles only, private quarantine/validation/immutable publication, then disposable-guest execution. It is not implemented by runner enrollment or the existing evidence upload routes.
 
 ## 9. Authentication, authorization, and tokens
 
@@ -875,7 +879,7 @@ Mac development machine
 
 Loopback HTTP is a deliberate development exception; hosted/control-plane connections require HTTPS. The runner refuses insecure non-loopback origins. Production uses a configured canonical origin and trusted proxy settings.
 
-Later hosted execution keeps this split: web/API/database/storage on managed infrastructure, customer runner near its local software. A Linux/GPU execution host may be added for separately qualified rendered simulators; do not assume Docker on a Mac satisfies NVIDIA requirements.
+Hosted delivery supports both paths: web/API/database/private storage plus trusted managed controllers and disposable execution guests on our infrastructure by default; customer runners remain near their locally approved software as an explicit option. The first managed target is a proposed pinned Linux CPU PX4/SIH environment, subject to actual qualification. GPU/rendered simulators are separate scope; do not assume Docker on a Mac satisfies NVIDIA requirements. The [deployment proposal](plans/execution-hosting.md#deployment-proposal) defines staged local, staging and capped private-pilot gates; no provisioning is authorized by this specification.
 
 ### 14.2 Future setup sequence
 

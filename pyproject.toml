@@ -5,7 +5,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = []
 
 [tool.uv.workspace]
-members = ["packages/contracts/python", "src/api"]
+members = ["packages/contracts/python", "src/api", "src/runner"]
 
 [dependency-groups]
 dev = ["ruff==0.17.3", "openapi-spec-validator==0.9.0"]

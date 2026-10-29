@@ -8,6 +8,12 @@ Already complete: architecture documentation, [design rules](../DESIGN.md), [des
 
 Each phase now has a small [engineering implementation plan](phases/README.md). The master-owned [registry](phases/registry.json) records its chat, dependencies, approvals, PR, and merge state. Staged chats stay read-only until dispatched; UI previews require explicit human approval before implementation. Completed phases require a separate submission approval before their branch is pushed and PR opened; the user decides merging, which normally gates the next phase.
 
+## Hosting amendment: cloud default and optional customer machines
+
+The human explicitly requested both hosting modes, with FeatherLane cloud workers as default, and design/deployment review before building. The [execution hosting plan](plans/execution-hosting.md) records that decision and the proposed architecture, customer flows, deployment sequence and bounded follow-ups. This replaces the original customer-only execution assumption; completed work and valid unchanged UI approvals remain intact. The shown architecture and revised UI were approved in P08 on October 29, 2026; P08 implements only runner enrollment/health. New Run hosting selection still needs its separately dispatched increment, and unseen or materially changed build/hosting UI retains its preview approval gate.
+
+Keep P08 focused on identity/health and optional enrollment; P09 retains local immutable registration ownership. Propose separate increments for hosting selection/pool policy (P08.5), managed private build ingest (P09.5), qualified disposable images/isolation (P18.5), trusted allocation/controller/reaper (P18.6), and usage limits/accounting (P23.5). Final IDs and dispatch belong to the master. P12–P17 and P19–P24 must exercise the appropriate managed and advertised customer paths; a fake runner or image build is not managed readiness. Paid billing and actual cloud provisioning require separately reviewed scope/actions.
+
 ## Rules for a phase
 
 - **Small:** one narrowly bounded capability or configuration/documentation deliverable. **Medium:** one coherent workflow across the necessary UI/API/runner boundaries. Size describes scope, not a promised duration.
@@ -70,6 +76,6 @@ Pre-publication qualification uses a local operator workflow with owned processe
 
 Apply authorization, input validation, version checks, bounds, redaction, and audit writes in the phase that introduces the relevant capability. P23/P24 assemble operational behavior and evidence; they are not catch-all phases for missing correctness.
 
-This roadmap covers the first simulation-only PX4/SIH workflow in the engineering spec. Additional flight stacks/simulators, GPU perception, customer autonomy-process execution, real aircraft/hardware testing, managed execution, marketplace/data licensing, invitations, and web membership/retention editing belong to later plans.
+This roadmap covers the first simulation-only PX4/SIH workflow in the engineering spec with managed execution as default and optional customer machines, as amended above. Managed build ingestion, isolation/provisioning and usage enforcement are explicit additional increments in the hosting plan, not work silently absorbed into P08. Additional flight stacks/simulators, GPU perception, customer autonomy-process execution, real aircraft/hardware testing, paid billing, and marketplace/data licensing remain separate plans. Existing bounded identity/people follow-ups retain their own scope and approvals.
 
 The declared manual, automated, and real-SITL release checks still determine release readiness. The user owns new automated tests unless they explicitly delegate them. A roadmap milestone, mock success, or one successful simulation does not establish real-world reliability or deployment approval.

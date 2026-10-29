@@ -475,3 +475,57 @@ with epoch-bound validated clients, real queries/mutations, CSRF and cache clean
 Settings uses the owner summary to gate project creation; the API rechecks ownership
 for every creation/replay. Real Google/HTTPS end-to-end verification is not implied
 by the isolated service/HTTP/SDK checks; see the phase handoff for actual results.
+
+## Runner enrollment and health (P08)
+
+Migration `0005_runners` follows merged `0004_owner_admission`. API startup checks
+both runner tables. No maintenance process is introduced for health: connection
+state is derived from the last accepted heartbeat (CONNECTED below 30 seconds,
+STALE at 30 seconds, OFFLINE at 90 seconds). Capacity is separate; enrollment starts
+DISABLED until a machine reports its idle state. Credential expiry/revocation
+forces the browser projection to DISABLED without claiming process termination.
+
+Project members use `GET /api/v1/projects/{projectId}/runners`,
+`POST /api/v1/projects/{projectId}/runner-enrollments` (CSRF and Idempotency-Key),
+and `POST /api/v1/runners/{runnerId}/revoke` (CSRF). Both current memberships are
+checked in the transaction after live session validation. Lists are bounded
+cursor pages. Unknown/ungranted resources share 404. Busy identity changes are
+rejected; active claims/cancellation belong to later phases.
+
+Machine-only `/api/v1/runner/enrollments`, `/me` and `/heartbeat` use the canonical
+paths and Pydantic models in `featherlane_contracts.runners`. Contract and protocol
+versions are checked before consuming a grant. Enrollment requires the one-use
+10-minute grant plus a runner-generated request ID and 256-bit credential; exact
+retries recover the same identity, including after the grant lifetime, only while
+that identity's credential is still live. Changed retries fail. `/me` and idle
+heartbeats require the machine bearer credential and protocol header; a browser
+cookie grants no machine access, and a machine bearer grants no browser access.
+
+The database stores purpose-separated HMAC digests, enrollment fingerprints and
+key identifiers. A grant response is reproducible from its random server ID and
+the injected key, so a lost browser response can be recovered without storing its
+plaintext. Runner secrets are never returned in browser runner records. HMAC uses
+the existing injected `FLF_API_SESSION_HASH_KEY` with separate `runner:*` purposes;
+`FLF_API_RUNNER_KEY_ID` defaults to `identity-v1`. A deliberate key change must
+change that identifier too; prior credentials/grants become unavailable and require
+re-enrollment. This is not a key-ring rotation/refresh service. Credentials last
+30 days; preserving the injected key across restarts is necessary for recovery.
+
+The P09 integration seam is
+`modules.runners.application.require_runner_declarations(session, *, project_id,
+runner_id) -> RunnerSummary`. Authorize the project first and call inside your
+active transaction. It locks the runner through the caller's commit, checks the
+project binding and rejects revoked/expired identities; it never begins/commits a
+transaction. It returns exact canonical build/local-profile declarations plus
+connection/capacity state, not verified capabilities or a guarantee of freshness.
+The consuming use case must enforce any freshness/eligibility it requires.
+Missing/wrong-project identities raise `AccessNotFound`; unavailable identities
+raise `RunnerUnavailable`. P09 must not import runner ORM mappings or duplicate
+identity rules. The reviewed P09 `registration.py` packet is included unchanged;
+its producer remains P09. No P09 application code or migration was imported.
+
+P08's isolated manual review used API 8088/database 55418 and process-only ephemeral
+configuration. It did not change Doppler or global credentials, add an auth bypass,
+or requalify Google. The runtime UI remains behind the existing authentication
+boundary. Live browser/provider qualification at a new origin requires its own
+configured callback; the local demo is explicitly sample-only.
