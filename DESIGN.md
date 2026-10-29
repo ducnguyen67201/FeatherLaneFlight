@@ -69,7 +69,7 @@ than the later K/M variations. No review screenshots are included in the reposit
 
 ## Build from the top down
 
-Every UI task follows **preview -> explicit user approval -> application implementation -> manual verification**. The preview must be rendered and shown to the user. A mockup or isolated browser prototype may contain minimal preview-only code and data; it is kept separate from application implementation and live integrations. After showing it, stop and request approval. Revise the preview when requested. Implement only the approved scope, with another preview required for a materially different direction or expanded scope. Reuse existing approval for the unchanged design.
+Every UI task follows **interactive preview -> explicit user approval -> application implementation -> manual verification**. Show either the running application or a working browser preview using the real React/MUI components, shared theme and tokens intended for implementation. Static mockups, painted SVG/PNG screens and separate visual imitations are not accepted. Carry approved preview component code into the application instead of rebuilding its appearance. Minimal, clearly labeled fixtures and simulated callbacks are allowed in isolated preview entry points; identify unconnected integrations. Screenshots may document running UI, but do not replace the working preview. After showing it, stop and request approval. Revise the preview when requested. Implement only the approved scope, with another preview required for a materially different direction or expanded scope. Reuse existing approval for the unchanged design.
 
 ```text
  Product vocabulary and screen requirements
@@ -78,7 +78,7 @@ Every UI task follows **preview -> explicit user approval -> application impleme
  design-tokens.json: exact visual values
                      |
                      v
- Isolated visual preview shown to the user
+ Interactive component preview shown to the user
                       |
                       v
  Explicit user approval for the shown scope
@@ -107,7 +107,7 @@ Every UI task follows **preview -> explicit user approval -> application impleme
 | 4. Approved first feature | Runs list and New simulation run workflow                                                   | Reuse the approved foundation; manually verify behavior and visual consistency.                                                    |
 | 5. Remaining features     | Detail, comparison, suites, runners, settings                                               | Repeat the preview/approval gate for each UI task, then implement and manually verify its approved scope.                          |
 
-Token tables, code, written descriptions, and ASCII diagrams do not replace a rendered preview. Silence and revision requests are not approval. Use a small isolated artifact or existing preview tooling without introducing a separate preview framework or Storybook setup. These gates do not authorize automated test writing.
+Token tables, code, written descriptions, static images and ASCII diagrams do not replace a working browser preview. Silence and revision requests are not approval. Use the existing Vite tooling and actual shared components without introducing a separate preview framework or Storybook setup. These gates do not authorize automated test writing. The human explicitly required real implemented UI or real interactive previews on October 29, 2026; the P16 static mockup was withdrawn and removed.
 
 ## UI UX Pro Max workflow
 
@@ -237,3 +237,50 @@ The product layouts, dimensions, visual direction, and implementation sequence a
 P04's approved detail view extends the P03 Runs screen through its existing Open action; it preserves the list, filters, columns, pagination and 95dvh New Run modal. Use the same project header, AppShell, PageLayout and separate execution/evaluation badges. Trial/check navigation sits beside the selected evidence above lg and stacks on narrow screens. Requested and observed manifests remain separate immutable snapshots; queued runs have no observed manifest.
 
 Timeline uses a read-only terminal-style log with shared code typography, UTC/monotonic clock labels, ordered event names and indented messages. Wrap narrow lines and bound vertical scrolling; do not add command execution or infer success from empty output. `layoutPx.eventLogMaxHeightVh` and `layoutPx.manifestLabelWidth` own the approved geometry. Artifact metadata states availability, verification and retention explicitly, with missing/expired warnings; retain historical summaries without a regression verdict. Cancellation reports intent and pending/uncertain/rejected acknowledgments separately from confirmed Canceled or Error. UI components display validated outcomes and observations; they do not evaluate checks or optimistically advance execution.
+
+### Compact activity waterfall
+
+The compact offset-duration bar layout was approved in P16 human message
+`01a18948-9a1c-7ef0-9036-8d84e2d3915f` and explicitly approved for implementation
+in message `01a1894c-6244-7840-ba60-ff3f08e76d25` on October 29, 2026. It is now
+implemented locally in the run detail Timeline tab through RunTimeline and
+RunTraceChart. It replaces the terminal-only timeline composition; the existing
+read-only event log remains alongside selected interval details.
+
+Use compact rows and slim bars, with full-height keyboard/pointer targets. Exact
+geometry lives in `layoutPx.trace` in design-tokens.json. Keep activity labels
+fixed during horizontal scrolling and the time header fixed during vertical
+scrolling. Pause view freezes the displayed snapshot while upstream data may
+continue arriving; Jump to latest catches up without stopping execution. Density
+and time-scale controls preserve selection.
+
+Draw intervals only from recorded canonical boundaries on the same attempt clock.
+Missing/conflicting boundaries remain visibly unavailable. Open intervals stop at
+the latest recorded activity and never grow from browser wall time. Current source
+supports attempt/trial intervals; the illustrative nested operations from the
+review prototype are not product data. Evaluation and video remain deferred. This
+UI approval does not approve additional telemetry protocols, hosting or evidence
+transport architecture. P15 retains live-feed, freshness and reconnect ownership.
+
+### Private evidence UI
+
+The human approved the reviewed Evidence panel and private downloads in P16 turn
+`01a1899e-5a6a-7583-b19c-43a953907cc2`, message
+`01a1899e-5a9b-7a23-bb1f-35c19bccec75`, October 29, 2026:
+“ok keep the tabs separate like this. go ahead and finish the evidence UI and
+downloads for P16, leave results and evals to P17”.
+
+Promote the reviewed React/MUI component code into the application. Keep Evidence
+as its own tab; metadata is an explicit per-file dialog. Do not combine observation
+and timeline views or automatically navigate away from a selected criterion.
+P17 owns the future Results/Observations composition; P16 preserves the existing
+Checks, Timeline, Manifest and Evidence application tabs and adds no evaluator.
+
+Only current verified, available and unexpired files have enabled downloads.
+Keep metadata inspectable for pending, failed, missing, expired and local-only
+content. Loading/empty/refresh-error/access-loss states are explicit; refresh
+errors pause downloads, and access loss unmounts protected data/dialogs. Reuse the
+shared theme, tokens, MUI controls and existing scoped Query state. Downloads use
+current authorization and byte/digest verification; integrity failures never
+produce a file. Remove temporary preview entry points and fixture callbacks after
+approved implementation/verification.

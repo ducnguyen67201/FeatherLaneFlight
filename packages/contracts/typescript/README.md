@@ -78,3 +78,24 @@ existing authenticated context. Dispose/abort the iterator on run/context change
 The application adapter and shown freshness/error UI remain unimplemented while
 human preview approval is pending. These transport checks do not establish a
 normally admitted execution or result.
+
+## Private artifact downloads (P16)
+
+`readArtifactContent` is a separate bounded binary operation. It uses the generated
+binary policy path/method and canonical artifact/path validators, the configured
+client's fetch implementation, the application origin, current client/session
+guards and an AbortSignal. JSON SDK interceptors never consume attachment bytes.
+The authenticated application refreshes artifact metadata in its existing scoped
+Query cache before download and aborts on run/project/session disposal.
+
+Only unexpired VERIFIED/AVAILABLE artifacts up to 100 MiB are eligible. Successful
+responses must have an attachment filename, matching media type and exact declared
+length, and nosniff. Full bytes and SHA-256 must match before returning a Blob;
+partial, oversized, malformed and stale-context responses produce no file. Error
+envelopes are separately bounded/validated. A 401/403 invokes the caller's access
+failure handler; content 404 prompts metadata refresh rather than inventing a
+successful download or assuming every missing file is a lost project grant.
+
+The function returns `{ blob, filename }`; the application creates/revokes the
+temporary object URL only after all checks. It neither evaluates evidence nor
+changes run state, and does not provide an arbitrary URL/file browser.

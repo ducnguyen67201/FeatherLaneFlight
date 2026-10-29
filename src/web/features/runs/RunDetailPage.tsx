@@ -42,7 +42,8 @@ import { TrialChecksPanel } from "./TrialChecksPanel";
 import { RunManifestPanel } from "./RunManifestPanel";
 import { RunEvidencePanel } from "./RunEvidencePanel";
 import { RunLiveStatus } from "./RunLiveStatus";
-import { RunEventLog } from "./RunEventLog";
+import { RunTimeline } from "./RunTimeline";
+import { useEvidenceDownloads } from "./useEvidenceDownloads";
 
 export function RunDetailPage({
   runId,
@@ -61,7 +62,12 @@ export function RunDetailPage({
   runId: string;
   onBack: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(() =>
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("view") === "evidence"
+      ? 3
+      : 0,
+  );
   const [trialId, setTrialId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
@@ -75,6 +81,7 @@ export function RunDetailPage({
     refresh,
     live,
     accessLost,
+    denyAccess,
   } = useRunDetail(runId, tab, transport);
   const cancellation = useRunCancellation(runId, transport);
   const accessDenied =
@@ -90,6 +97,14 @@ export function RunDetailPage({
     snapshot?.trials.find((item) => item.id === trialId) ?? snapshot?.trials[0];
   const selectedAttemptId =
     selectedTrial?.attemptId ?? snapshot?.attempts.at(-1)?.id;
+  const evidenceDownloads = useEvidenceDownloads({
+    runId,
+    transport,
+    artifacts: artifacts.data?.data ?? [],
+    accessLost: accessDenied,
+    snapshotVersion: detail.dataUpdatedAt,
+    onAccessFailure: denyAccess,
+  });
   const active =
     snapshot &&
     ["QUEUED", "CLAIMED", "STARTING", "RUNNING", "FINALIZING"].includes(
@@ -316,7 +331,7 @@ export function RunDetailPage({
                       onSelectTrial={setTrialId}
                     />
                   ) : tab === 1 ? (
-                    <RunEventLog
+                    <RunTimeline
                       live={!!transport}
                       page={events.data}
                       detail={snapshot}
@@ -334,6 +349,7 @@ export function RunDetailPage({
                     />
                   ) : (
                     <RunEvidencePanel
+                      key={`${runId}:${selectedAttemptId}:${selectedTrial?.id}`}
                       artifacts={artifacts.data?.data ?? []}
                       trialId={selectedTrial?.id}
                       attemptId={selectedAttemptId}
@@ -341,6 +357,9 @@ export function RunDetailPage({
                       error={artifacts.error}
                       refreshing={artifacts.isFetching && !artifacts.isPending}
                       onRetry={() => void refresh()}
+                      onDownload={
+                        transport ? evidenceDownloads.download : undefined
+                      }
                     />
                   )}
                 </Box>

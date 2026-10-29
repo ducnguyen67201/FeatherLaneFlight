@@ -71,6 +71,30 @@ def validate_origin(value: str) -> str:
     return str(AnyHttpUrl(value)).removesuffix("/")
 
 
+def read_json_response(
+    response: httpx2.Response, *, allow_empty: bool = False, max_bytes: int = 1_048_576
+) -> bytes | None:
+    """One bounded decoder shared by JSON protocol and binary-upload receipts."""
+    raw = bytearray()
+    for chunk in response.iter_bytes():
+        if len(raw) + len(chunk) > max_bytes:
+            raise RunnerTransportError()
+        raw.extend(chunk)
+    if allow_empty and response.status_code == 204:
+        if raw:
+            raise RunnerTransportError(response.status_code)
+        return None
+    if response.headers.get("content-type", "").split(";", 1)[0] != "application/json":
+        raise RunnerTransportError(response.status_code)
+    if response.status_code not in (200, 201):
+        try:
+            error = ErrorEnvelope.model_validate_json(bytes(raw))
+        except ValidationError:
+            raise RunnerTransportError(response.status_code) from None
+        raise RunnerTransportError(response.status_code, error.error.code)
+    return bytes(raw)
+
+
 class RunnerTransport:
     def __init__(self, origin: str):
         self.origin = validate_origin(origin)
@@ -105,29 +129,7 @@ class RunnerTransport:
                 headers={"Authorization": f"Bearer {credential}"} if credential else {},
                 json=body,
             ) as response:
-                raw = bytearray()
-                for chunk in response.iter_bytes():
-                    if len(raw) + len(chunk) > 1_048_576:
-                        raise RunnerTransportError()
-                    raw.extend(chunk)
-                if allow_empty and response.status_code == 204:
-                    if raw:
-                        raise RunnerTransportError(response.status_code)
-                    return None
-                if (
-                    response.headers.get("content-type", "").split(";", 1)[0]
-                    != "application/json"
-                ):
-                    raise RunnerTransportError(response.status_code)
-                if response.status_code not in (200, 201):
-                    try:
-                        error = ErrorEnvelope.model_validate_json(bytes(raw))
-                    except ValidationError:
-                        # Gateways may return non-contract JSON. Preserve the
-                        # HTTP status so heartbeat retry/journal policy still applies.
-                        raise RunnerTransportError(response.status_code) from None
-                    raise RunnerTransportError(response.status_code, error.error.code)
-                return bytes(raw)
+                return read_json_response(response, allow_empty=allow_empty)
         except httpx2.HTTPError:
             raise RunnerTransportError() from None
 

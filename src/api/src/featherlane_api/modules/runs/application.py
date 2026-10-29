@@ -25,6 +25,9 @@ from featherlane_api.http.errors import ApiError
 from featherlane_api.modules.access.persistence import AccessStore
 from featherlane_api.modules.events.domain import EventCursors
 from featherlane_api.modules.events.persistence import EventStore
+from featherlane_api.modules.evidence.application import artifact_summary
+from featherlane_api.modules.evidence.persistence import EvidenceStore
+from featherlane_api.modules.evidence.storage import LocalPrivateArtifactStorage
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
 from featherlane_api.modules.leases.expiry import expire_attempt
@@ -50,12 +53,14 @@ class RunService:
         identity: IdentityService,
         queue_limit: int,
         event_cursors: EventCursors,
+        artifact_storage: LocalPrivateArtifactStorage,
     ):
         self.session = session
         self.identity = identity
         self.store = RunStore(session)
         self.queue_limit = queue_limit
         self.event_cursors = event_cursors
+        self.artifact_storage = artifact_storage
 
     async def authorize(
         self,
@@ -237,7 +242,13 @@ class RunService:
             usage = await usage_summaries(
                 self.session, [attempt.id for attempt in attempts]
             )
-            detail = run_detail(row, datetime.now(UTC), attempts, usage)
+            now = datetime.now(UTC)
+            detail = run_detail(row, now, attempts, usage)
+            detail.artifact_summary = artifact_summary(
+                await EvidenceStore(self.session).for_run(run_id),
+                now,
+                self.artifact_storage,
+            )
             stream = await EventStore(self.session).stream(run_id)
             detail.server_event_cursor = self.event_cursors.encode(
                 run_id, stream.last_position if stream else 0

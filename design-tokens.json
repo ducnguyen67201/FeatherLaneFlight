@@ -166,7 +166,16 @@
         "narrow": 8
       }
     },
-    "runTableMinWidth": 850
+    "runTableMinWidth": 850,
+    "trace": {
+      "rowHeight": 44,
+      "rowHeights": [44, 56, 80],
+      "barHeight": 12,
+      "viewportHeight": 480,
+      "labelWidth": 220,
+      "tickSpacing": 96,
+      "minPlotWidth": 800
+    }
   },
   "component": {
     "controlHeightPx": {
