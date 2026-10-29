@@ -44,6 +44,8 @@ Use pnpm for frontend tooling and uv for Python packages. PX4 runs as a separate
 
 - Preview code is temporary review scaffolding. After the approved UI is implemented and verified, remove its preview-only source files, mock copies, entry points, build output and local preview servers before handoff or PR submission. Keep the application implementation and textual approval/verification evidence; do not retain a second preview application. Preserve product assets and user-supplied files.
 
+- Before handoff or PR creation, remove unused preview scaffolding, temporary review captures, and build output. Commit final approved diagram SVGs, editable JSON sources, and Markdown approval/context only; generated interactive diagram HTML and delivery sidecars stay ignored local output unless the user explicitly requests shipping them. Preserve needed product assets and source files.
+
 ## UI design and reuse
 
 - Follow `DESIGN.md`: establish the central theme/component defaults, shared shell and page layouts, and manually reviewed reference view before feature screens.

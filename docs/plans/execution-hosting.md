@@ -40,7 +40,7 @@ Maintenance is a responsibility, not a new business domain. Keep one small contr
 
 The maintained [runner execution subsystem page](../architecture/runner-execution.md) records approval, scope, responsibilities and implementation status, with links back to the parent system architecture.
 
-[Explore the interactive architecture](../architecture/runner-execution-architecture.html). Cloud execution is the default branch; customer execution is explicitly optional. Yellow markers and P08 sublabels identify this phase’s partial scope: enrollment/health UI, identity/health API, runner/grant records, and runner credentials/idle heartbeats. Simulator installation/execution, cloud provisioning and the local installer belong to later work. Click nodes for their relationships. This is proposed design, not a map of deployed infrastructure.
+[View the architecture diagram](../diagrams/runner-execution-architecture.svg). Cloud execution is the default branch; customer execution is explicitly optional. Yellow markers and P08 sublabels identify this phase’s partial scope: enrollment/health UI, identity/health API, runner/grant records, and runner credentials/idle heartbeats. Simulator installation/execution, cloud provisioning and the local installer belong to later work. This is proposed design, not a map of deployed infrastructure.
 
 ![Approved architecture: cloud workers by default, customer machines optional](../diagrams/runner-execution-architecture.svg)
 
@@ -116,7 +116,7 @@ Paid subscriptions, rates, checkout, invoicing/tax and automatic overage are a s
 
 ## Deployment proposal
 
-[Explore the interactive deployment plan](../architecture/runner-execution-deployment.html). Trusted application services, the disposable execution guest, private data services and customer-owned compute have separate boundaries. The diagram's notes show the local → approved staging → capped pilot sequence and rollback gate.
+[View the deployment diagram](../diagrams/runner-execution-deployment.svg). Trusted application services, the disposable execution guest, private data services and customer-owned compute have separate boundaries. The rollout below describes the local → approved staging → capped pilot sequence and rollback gate.
 
 ![Proposed deployment: trusted cloud services and isolated execution guests](../diagrams/runner-execution-deployment.svg)
 
@@ -153,9 +153,9 @@ Before staging approval, select: provider account/region and data residency; mea
 
 ## Design acceptance and limits
 
-Review the rendered customer experience, architecture and deployment sequence together. Approval of this design authorizes only its named next increment; other expanded UI and external actions keep their own gates. No cloud service is running, no upload/runner backend is implemented in P08, and no provider has been purchased or configured by this planning work.
+Review the rendered customer experience, architecture and deployment sequence together. Approval of this design authorizes only its named next increment; other expanded UI and external actions keep their own gates. P08 implements runner enrollment and health only. Managed upload, simulation execution and cloud provisioning remain later work; this plan does not purchase or configure a provider.
 
-The current P08 preview has fixed sample statuses; it cannot establish simulator qualification, resource cost, production isolation or reliability. Final release requires actual dual-path evidence, reviewed infrastructure isolation and the specified user-owned automated release checks.
+Local UI samples cannot establish simulator qualification, resource cost, production isolation or reliability. Final release requires actual dual-path evidence, reviewed infrastructure isolation and the specified user-owned automated release checks.
 
 ## Primary references checked October 28, 2026
 

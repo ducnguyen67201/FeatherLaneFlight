@@ -8,7 +8,7 @@ suite authoring and comparisons retain their own ownership in that specification
 
 ## Approved architecture
 
-[Explore the rendered architecture](runner-execution-architecture.html) ·
+[View the architecture SVG](../diagrams/runner-execution-architecture.svg) ·
 [Editable Archify source](runner-execution-architecture.json)
 
 ![Approved runner execution architecture, with P08 slices marked yellow](../diagrams/runner-execution-architecture.svg)
@@ -44,7 +44,7 @@ evidence validation or treats worker-reported metadata as verified capability.
 
 ## Deployment child diagram — proposal
 
-[Explore the deployment proposal](runner-execution-deployment.html) ·
+[View the deployment SVG](../diagrams/runner-execution-deployment.svg) ·
 [Editable Archify source](runner-execution-deployment.json)
 
 ![Proposed runner execution deployment](../diagrams/runner-execution-deployment.svg)
@@ -57,5 +57,4 @@ later image/isolation and controller/reaper increments. Those services and resou
 are not provisioned by P08. Deployment execution still needs a concrete account,
 region, resources, cost and action approval.
 
-Keep both rendered diagrams, their editable sources and this status record together.
-Temporary UI review captures and preview code are not these durable design assets.
+Keep the final SVG diagrams, editable JSON sources and this Markdown approval record together. Interactive HTML viewers can be regenerated locally from the JSON when needed; generated HTML and delivery receipts are ignored and must not be committed. Remove temporary review captures, preview code and unused build output before PR submission.
