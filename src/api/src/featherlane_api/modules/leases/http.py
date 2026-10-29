@@ -4,6 +4,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, Header, Path, Request, Response
 from featherlane_contracts import ContractVersion, ErrorCode, Identifier
+from featherlane_contracts.cleanup import (
+    RUNNER_ATTEMPT_CLEANUP_PATH,
+    RUNNER_RECOVERY_PATH,
+    AttemptCleanupEnvelope,
+    AttemptCleanupRequest,
+    RunnerRecoveryEnvelope,
+    RunnerRecoveryRequest,
+)
 from featherlane_contracts.leases import (
     RUNNER_ATTEMPT_HEARTBEAT_PATH,
     RUNNER_ATTEMPT_MANIFEST_PATH,
@@ -22,6 +30,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from featherlane_api.http.dependencies import get_session
 from featherlane_api.http.errors import ERROR_RESPONSES, ApiError, error_response
 from featherlane_api.modules.leases.application import LeaseService
+from featherlane_api.modules.leases.cleanup import CleanupService
 from featherlane_api.modules.leases.domain import (
     LeaseExpired,
     ManifestMismatch,
@@ -100,6 +109,39 @@ async def heartbeat(
     if not isinstance(result, AttemptHeartbeatReceipt):
         raise RuntimeError("Unexpected attempt receipt")
     return AttemptHeartbeatEnvelope(data=result)
+
+
+@router.post(
+    RUNNER_ATTEMPT_CLEANUP_PATH,
+    operation_id="reportRunnerCleanup",
+    response_model=AttemptCleanupEnvelope,
+)
+async def cleanup(
+    attempt_id: AttemptId,
+    body: AttemptCleanupRequest,
+    credential: Credential,
+    service: Service,
+    contract: Contract,
+) -> AttemptCleanupEnvelope:
+    return AttemptCleanupEnvelope(
+        data=await CleanupService(service).report(credential, attempt_id, body)
+    )
+
+
+@router.post(
+    RUNNER_RECOVERY_PATH,
+    operation_id="recoverRunnerCapacity",
+    response_model=RunnerRecoveryEnvelope,
+)
+async def recovery(
+    body: RunnerRecoveryRequest,
+    credential: Credential,
+    service: Service,
+    contract: Contract,
+) -> RunnerRecoveryEnvelope:
+    return RunnerRecoveryEnvelope(
+        data=await CleanupService(service).recover(credential, body)
+    )
 
 
 def install_lease_errors(app: FastAPI) -> None:

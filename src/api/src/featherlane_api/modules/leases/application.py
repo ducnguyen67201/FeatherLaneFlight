@@ -37,6 +37,7 @@ from featherlane_api.modules.leases.domain import (
     require_fence,
     verify_manifest,
 )
+from featherlane_api.modules.leases.expiry import expire_attempt
 from featherlane_api.modules.leases.persistence import (
     AttemptRecord,
     ClaimReceipt,
@@ -304,25 +305,7 @@ class LeaseService:
         attempt: AttemptRecord,
         now: datetime,
     ) -> bool:
-        if (
-            attempt.finished_at is not None
-            or effective_lease_expiry(attempt.created_at, attempt.lease_expires_at)
-            > now
-        ):
-            return False
-        reason = {
-            "code": "LEASE_EXPIRED",
-            "message": "Lease expired; execution and cleanup are unconfirmed.",
-        }
-        attempt.finished_at = now
-        attempt.terminal_reason = reason
-        if run.execution_state in ACTIVE_STATES:
-            run.execution_state = "ERROR"
-            run.evaluation_outcome = "NOT_EVALUATED"
-            run.finished_at = now
-            run.terminal_reason = reason
-        runner.capacity_state = "NEEDS_CLEANUP"
-        return True
+        return expire_attempt(runner, run, attempt, now)
 
     def grant(self, attempt: AttemptRecord, now: datetime) -> LeaseGrant:
         expires_at = effective_lease_expiry(

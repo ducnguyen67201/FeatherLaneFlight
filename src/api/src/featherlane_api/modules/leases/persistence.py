@@ -7,6 +7,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     String,
     UniqueConstraint,
@@ -83,12 +84,62 @@ class ClaimReceipt(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class CleanupReceiptRecord(Base):
+    __tablename__ = "runner_cleanup_receipts"
+    __table_args__ = (CheckConstraint("kind IN ('CLEANUP','RECOVERY')", name="kind"),)
+    runner_id: Mapped[str] = mapped_column(
+        ForeignKey("featherlane.runners.id"), primary_key=True
+    )
+    operation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(ForeignKey("featherlane.run_attempts.id"))
+    kind: Mapped[str] = mapped_column(String(16))
+    request_digest: Mapped[str] = mapped_column(String(64))
+    payload: Mapped[dict] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class UsageReportRecord(Base):
+    __tablename__ = "attempt_usage_reports"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["runner_id", "operation_id"],
+            [
+                "featherlane.runner_cleanup_receipts.runner_id",
+                "featherlane.runner_cleanup_receipts.operation_id",
+            ],
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        CheckConstraint(
+            "observed_elapsed_ms BETWEEN 0 AND 9007199254740991", name="elapsed_range"
+        ),
+        Index("ix_usage_attempt_received", "attempt_id", "received_at"),
+        Index("ix_usage_attempt_elapsed", "attempt_id", "observed_elapsed_ms"),
+    )
+    runner_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    operation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    attempt_id: Mapped[str] = mapped_column(ForeignKey("featherlane.run_attempts.id"))
+    project_id: Mapped[str] = mapped_column(ForeignKey("featherlane.projects.id"))
+    lease_id: Mapped[str] = mapped_column(String(32))
+    fencing_number: Mapped[int] = mapped_column(BigInteger)
+    generation: Mapped[str] = mapped_column(String(128))
+    clock_session_id: Mapped[str | None] = mapped_column(String(128))
+    observed_elapsed_ms: Mapped[int | None] = mapped_column(BigInteger)
+    payload: Mapped[dict] = mapped_column(JSONB)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class LeaseStore:
     def __init__(self, session: AsyncSession):
         self.session = session
 
     async def check_ready(self) -> None:
-        for model in (AttemptRecord, ClaimReceipt):
+        for model in (
+            AttemptRecord,
+            ClaimReceipt,
+            CleanupReceiptRecord,
+            UsageReportRecord,
+        ):
             await self.session.execute(select(model).limit(0))
 
     async def active_for_runner(self, runner_id: str) -> AttemptRecord | None:

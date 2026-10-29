@@ -10,6 +10,14 @@ from featherlane_contracts import (
     ErrorEnvelope,
     Identifier,
 )
+from featherlane_contracts.cleanup import (
+    RUNNER_ATTEMPT_CLEANUP_PATH,
+    RUNNER_RECOVERY_PATH,
+    AttemptCleanupEnvelope,
+    AttemptCleanupRequest,
+    RunnerRecoveryEnvelope,
+    RunnerRecoveryRequest,
+)
 from featherlane_contracts.leases import (
     RUNNER_ATTEMPT_HEARTBEAT_PATH,
     RUNNER_ATTEMPT_MANIFEST_PATH,
@@ -167,6 +175,30 @@ class RunnerTransport:
         if raw is None:
             raise RunnerTransportError()
         return AttemptManifestEnvelope.model_validate_json(raw)
+
+    def attempt_cleanup(
+        self, credential: str, attempt_id: str, body: AttemptCleanupRequest
+    ) -> AttemptCleanupEnvelope:
+        attempt_id = TypeAdapter(Identifier).validate_python(attempt_id)
+        raw = self._send(
+            "POST",
+            RUNNER_ATTEMPT_CLEANUP_PATH.format(attemptId=attempt_id),
+            credential,
+            body.model_dump(mode="json"),
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return AttemptCleanupEnvelope.model_validate_json(raw)
+
+    def recover_execution(
+        self, credential: str, body: RunnerRecoveryRequest
+    ) -> RunnerRecoveryEnvelope:
+        raw = self._send(
+            "POST", RUNNER_RECOVERY_PATH, credential, body.model_dump(mode="json")
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return RunnerRecoveryEnvelope.model_validate_json(raw)
 
     def enroll(self, body: EnrollRunnerRequest) -> RunnerIdentityEnvelope:
         return self._request(

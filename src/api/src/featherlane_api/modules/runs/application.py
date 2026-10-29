@@ -1,6 +1,6 @@
 """Current membership is checked inside every caller-visible queue transaction."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from featherlane_contracts import (
@@ -18,13 +18,16 @@ from featherlane_contracts.registration import (
     metadata_digest,
 )
 from featherlane_contracts.run_detail import RunDetailEnvelope
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from featherlane_api.http.errors import ApiError
 from featherlane_api.modules.access.persistence import AccessStore
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
-from featherlane_api.modules.leases.persistence import LeaseStore
+from featherlane_api.modules.leases.expiry import expire_attempt
+from featherlane_api.modules.leases.persistence import AttemptRecord, LeaseStore
+from featherlane_api.modules.leases.usage_reporting import usage_summaries
 from featherlane_api.modules.registration.application import RegistrationService
 from featherlane_api.modules.registration.domain import (
     validate_build,
@@ -224,7 +227,12 @@ class RunService:
             await self.authorize(principal, handle, lookup.project_id)
             row = await self.store.exact(run_id, lock=True)
             attempts = await LeaseStore(self.session).for_run(run_id)
-            return RunDetailEnvelope(data=run_detail(row, datetime.now(UTC), attempts))
+            usage = await usage_summaries(
+                self.session, [attempt.id for attempt in attempts]
+            )
+            return RunDetailEnvelope(
+                data=run_detail(row, datetime.now(UTC), attempts, usage)
+            )
 
     async def cancel(
         self, principal: Principal, handle: str | None, csrf: str, run_id: str
@@ -234,16 +242,39 @@ class RunService:
             await self.authorize(principal, handle, lookup.project_id, csrf)
             # Same ordering as future claims. Offline/revoked runner health must
             # never prevent a user from canceling its unclaimed work.
-            await RunnerStore(self.session).by_id(lookup.runner_id, lock=True)
+            runner = await RunnerStore(self.session).by_id(lookup.runner_id, lock=True)
             row = await self.store.exact(run_id, lock=True)
             if row.execution_state in {"COMPLETED", "CANCELED", "ERROR"}:
                 return RunEnvelope(data=run_summary(row))
             if row.execution_state != "QUEUED":
-                raise ApiError(
-                    409,
-                    ErrorCode.RUNNER_UNAVAILABLE,
-                    "Active cancellation is not available yet.",
+                if runner is None:
+                    raise RuntimeError("Active run runner is missing")
+                attempt = await self.session.scalar(
+                    select(AttemptRecord)
+                    .where(
+                        AttemptRecord.run_id == row.id,
+                        AttemptRecord.finished_at.is_(None),
+                    )
+                    .with_for_update()
+                    .execution_options(populate_existing=True)
                 )
+                if attempt is None:
+                    raise RuntimeError("Active run attempt is missing")
+                now = await self.session.scalar(select(func.clock_timestamp()))
+                if now is None:
+                    raise RuntimeError("Database clock unavailable")
+                if not expire_attempt(runner, row, attempt, now):
+                    if row.cancellation_requested_at is None:
+                        row.cancellation_requested_at = now
+                        row.cancellation_deadline_at = now + timedelta(seconds=30)
+                        attempt.lease_expires_at = min(
+                            attempt.lease_expires_at, row.cancellation_deadline_at
+                        )
+                        self.store.audit(
+                            row, principal.user_id, "CANCELLATION_REQUESTED", now
+                        )
+                await self.session.flush()
+                return RunEnvelope(data=run_summary(row))
             now = datetime.now(UTC)
             row.execution_state = "CANCELED"
             row.cancellation_requested_at = now
