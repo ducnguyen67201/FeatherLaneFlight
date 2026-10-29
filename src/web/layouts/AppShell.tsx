@@ -13,7 +13,6 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import Close from "@mui/icons-material/Close";
 import CompareArrows from "@mui/icons-material/CompareArrows";
-import FlightOutlined from "@mui/icons-material/FlightOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
 import PlayArrowOutlined from "@mui/icons-material/PlayArrowOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
@@ -21,6 +20,7 @@ import StorageOutlined from "@mui/icons-material/StorageOutlined";
 import ViewListOutlined from "@mui/icons-material/ViewListOutlined";
 import WidgetsOutlined from "@mui/icons-material/WidgetsOutlined";
 import { tokens } from "../design/theme";
+import { BrandMark } from "../components/BrandMark";
 
 export const navigation = [
   { label: "Runs", path: "/runs", icon: PlayArrowOutlined },
@@ -60,7 +60,7 @@ export function AppShell({
           borderColor: "divider",
         }}
       >
-        {!narrow && <FlightOutlined sx={{ color: "primary.main" }} />}
+        {!narrow && <BrandMark />}
         <Box sx={{ minWidth: 0, flex: 1, overflowWrap: "anywhere" }}>
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
             FeatherLane

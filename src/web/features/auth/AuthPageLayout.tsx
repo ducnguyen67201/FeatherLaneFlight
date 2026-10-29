@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { Box, Paper, Stack, Typography } from "@mui/material";
-import FlightOutlined from "@mui/icons-material/FlightOutlined";
 import LockOutlined from "@mui/icons-material/LockOutlined";
 import { tokens } from "../../design/theme";
+import { BrandMark } from "../../components/BrandMark";
 
 type AuthPageLayoutProps = {
   title: string;
@@ -29,7 +29,7 @@ export function AuthPageLayout({
           borderColor: "divider",
         }}
       >
-        <FlightOutlined color="primary" />
+        <BrandMark />
         <Typography variant="body1" sx={{ fontWeight: 700 }}>
           FeatherLane
           <Typography component="span" color="primary" sx={{ fontWeight: 700 }}>

@@ -50,7 +50,6 @@ import ChevronRight from "@mui/icons-material/ChevronRight";
 import Close from "@mui/icons-material/Close";
 import CompareArrows from "@mui/icons-material/CompareArrows";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import FlightOutlined from "@mui/icons-material/FlightOutlined";
 import MenuIcon from "@mui/icons-material/Menu";
 import PlayArrowOutlined from "@mui/icons-material/PlayArrowOutlined";
 import SettingsOutlined from "@mui/icons-material/SettingsOutlined";
@@ -62,6 +61,7 @@ import "@fontsource/hanken-grotesk/latin-500.css";
 import "@fontsource/hanken-grotesk/latin-600.css";
 import "@fontsource/hanken-grotesk/latin-700.css";
 import { theme, tokens } from "./theme";
+import { BrandMark } from "../../src/web/components/BrandMark";
 import {
   capacity,
   connection,
@@ -148,7 +148,7 @@ function Preview() {
           borderColor: "divider",
         }}
       >
-        {!narrow && <FlightOutlined sx={{ color: "primary.main" }} />}
+        {!narrow && <BrandMark />}
         <Box sx={{ minWidth: 0, flex: 1, overflowWrap: "anywhere" }}>
           <Typography variant="body1" sx={{ fontWeight: 700 }}>
             FeatherLane

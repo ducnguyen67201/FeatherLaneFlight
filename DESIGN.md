@@ -47,6 +47,20 @@ Run execution state, evaluation outcome, connection health, and cleanup state re
 
 Update values in design-tokens.json when foundation review warrants a change. Introduce another color scheme only when the entire reference view works consistently with it.
 
+## Brand mark
+
+Use the approved three-stroke flight mark in `src/web/assets/brand/mark.svg` for
+all product branding and browser icons. `BrandMark` provides its shared header
+presentation; keep the adjacent product name as readable text and treat the mark
+as decorative there. Preserve the transparent background and original proportions.
+Do not substitute the generic airplane icon or the later four-propeller variant.
+
+The user approved this exact smooth three-stroke version on October 28, 2026,
+by attaching the selected image and instructing: “THIS IGS OOG, replace all logo
+with this”. The SVG traces the original artwork's three contours; it is a product
+asset, not a temporary review capture. The center trajectory represents mission
+behavior and the outer strokes represent evaluation boundaries.
+
 ## Build from the top down
 
 Every UI task follows **preview -> explicit user approval -> application implementation -> manual verification**. The preview must be rendered and shown to the user. A mockup or isolated browser prototype may contain minimal preview-only code and data; it is kept separate from application implementation and live integrations. After showing it, stop and request approval. Revise the preview when requested. Implement only the approved scope, with another preview required for a materially different direction or expanded scope. Reuse existing approval for the unchanged design.
