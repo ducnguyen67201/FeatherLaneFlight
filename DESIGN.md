@@ -47,6 +47,20 @@ Run execution state, evaluation outcome, connection health, and cleanup state re
 
 Update values in design-tokens.json when foundation review warrants a change. Introduce another color scheme only when the entire reference view works consistently with it.
 
+## Brand mark
+
+Use the approved three-stroke flight mark in `src/web/assets/brand/mark.svg` for
+all product branding and browser icons. `BrandMark` provides its shared header
+presentation; keep the adjacent product name as readable text and treat the mark
+as decorative there. Preserve the transparent background and original proportions.
+Do not substitute the generic airplane icon or the later four-propeller variant.
+
+The user approved this exact smooth three-stroke version on October 28, 2026,
+by attaching the selected image and instructing: “THIS IGS OOG, replace all logo
+with this”. The SVG traces the original artwork's three contours; it is a product
+asset, not a temporary review capture. The center trajectory represents mission
+behavior and the outer strokes represent evaluation boundaries.
+
 ## Build from the top down
 
 Every UI task follows **preview -> explicit user approval -> application implementation -> manual verification**. The preview must be rendered and shown to the user. A mockup or isolated browser prototype may contain minimal preview-only code and data; it is kept separate from application implementation and live integrations. After showing it, stop and request approval. Revise the preview when requested. Implement only the approved scope, with another preview required for a materially different direction or expanded scope. Reuse existing approval for the unchanged design.
@@ -159,8 +173,8 @@ Validation errors use the failure role and a field-level message. Warnings use o
 
 ```text
  +------------------+------------------------------------------------+
- | FeatherLane      | Organization / Project               User menu|
- |                  +------------------------------------------------+
+ | FeatherLane      | Current section                      User menu|
+ | Project selector +------------------------------------------------+
  | Runs             | Breadcrumbs                                    |
  | Compare          | Page title + description       Primary action  |
  | Test suites      +------------------------------------------------+
@@ -169,6 +183,8 @@ Validation errors use the failure role and a field-level message. Warnings use o
  |                  | Page content                                   |
  +------------------+------------------------------------------------+
 ```
+
+The P07 revised layout was explicitly approved in phase chat `01a18488-97df-7171-8c7d-17e7ff0eeed3`, turn `01a184a0-57f0-7a40-a0da-047ab7537134`, message `01a184a0-585f-7c41-a14e-8e3c86b10580`. Project selection belongs above the left navigation and inside the temporary navigation drawer on narrow screens. Organization selection belongs inside Settings; the top bar contains the current section and user controls. The approved Settings scope is organization and project create/select, with no role/permission matrix or member editor. Project visibility follows explicit organization and project membership; organization membership does not grant every project. Keep the sidebar selector, organization setting and loaded project content synchronized, and clear protected content before switching scopes.
 
 `src/web/layouts/AppShell.tsx` owns navigation and the layout of supplied identity/project context. `src/web/layouts/PageLayout.tsx` owns the repeated title/action/filter/content alignment. Build them from MUI Drawer, AppBar/Toolbar, Box, Stack, and related primitives. Share navigation configuration so route labels and active states remain consistent.
 
@@ -184,6 +200,8 @@ A layout owns visual composition, not fetching or domain decisions. Feature quer
 The approved P03 Runs workflow is implemented at `/runs`. New simulation run opens an inset modal Drawer from the right over the list. Its height and side insets live in `layoutPx.runPanel`, its desktop width reuses `formMaxWidth`, and its table width uses `runTableMinWidth`. Apply this geometry to that panel only; the shared navigation drawer keeps its own dimensions. The panel has a persistent title/close area and footer, with internal content scrolling. Preserve focus containment, idle Escape/backdrop dismissal, pending-close protection, normal opener restoration and the fallback when the empty-state opener disappears after acknowledgment. Run details remain unavailable in this mock workflow.
 
 The approved P02 reference is implemented at `src/web/app/FoundationReference.tsx`. Run `pnpm dev` from the root and open <http://127.0.0.1:4200/>. The user approved the rendered foundation in phase chat `01a18386-034b-7453-8834-10d3a5e9f8c0` ("yes apply that for implement"); the exact source and manual evidence are recorded in `docs/phases/handoffs/P02.md`. No token changes were needed. Feature workflows and live identity/project data remain assigned to their later phases.
+
+The approved P07 Settings UI now lives under `src/web/features/projects/` and is mounted at `/settings` with a clearly labeled local sample adapter. `ProjectSelector`, `OrganizationSettings`, `ProjectsTable` and `CreateProjectDialog` compose the shared layouts; `useCreateProjectForm` owns local form state. Empty/loading/error/access-loss presentations hide project content appropriately for each sample state. Dialog focus returns to its opener, with the persistent Create project button as fallback when an empty-state opener disappears. Backend identity/membership enforcement and API/query wiring remain pending P05/P06A integration.
 
 ## Component reuse
 
@@ -205,3 +223,9 @@ Use a consistent Material Icons set. Give icon-only buttons accessible labels. M
 - [UI UX Pro Max setup](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill#installation), [Codex platform template](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/src/ui-ux-pro-max/templates/platforms/codex.json), and [skill workflow](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill/blob/main/.claude/skills/ui-ux-pro-max/SKILL.md) support the optional development-time workflow above.
 
 The product layouts, dimensions, visual direction, and implementation sequence above are proposed FeatherLaneFlight decisions.
+
+## Run detail and evidence presentation
+
+P04's approved detail view extends the P03 Runs screen through its existing Open action; it preserves the list, filters, columns, pagination and 95dvh New Run modal. Use the same project header, AppShell, PageLayout and separate execution/evaluation badges. Trial/check navigation sits beside the selected evidence above lg and stacks on narrow screens. Requested and observed manifests remain separate immutable snapshots; queued runs have no observed manifest.
+
+Timeline uses a read-only terminal-style log with shared code typography, UTC/monotonic clock labels, ordered event names and indented messages. Wrap narrow lines and bound vertical scrolling; do not add command execution or infer success from empty output. `layoutPx.eventLogMaxHeightVh` and `layoutPx.manifestLabelWidth` own the approved geometry. Artifact metadata states availability, verification and retention explicitly, with missing/expired warnings; retain historical summaries without a regression verdict. Cancellation reports intent and pending/uncertain/rejected acknowledgments separately from confirmed Canceled or Error. UI components display validated outcomes and observations; they do not evaluate checks or optimistically advance execution.

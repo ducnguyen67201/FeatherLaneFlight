@@ -6,8 +6,12 @@ P06A adds the authentication endpoints described below alongside `GET /api/v1/me
 Runs and other business declarations in
 `featherlane_api.openapi.schema.create_schema_app()` are for offline client generation;
 they are never mounted in the runtime application. Memberships, business operations, the worker, artifact uploads and storage
-adapters belong to their later phases. Real Google login remains unverified until
-the human configures the provider; an unconfigured provider returns a safe 503.
+adapters belong to their later phases. A real Google callback and reauthentication
+were verified against the direct local API at `http://127.0.0.1:8008`, including
+actual session read, handle rotation, CSRF rejection and API logout/revocation.
+P06.5 browser controls/proxy wiring, HTTPS deployment and deliberate invalid-token
+negative cases remain outside that qualification. An unconfigured provider returns
+a safe 503.
 
 ## Backend architecture
 
@@ -67,7 +71,7 @@ Offline generation uses `python -m featherlane_api.openapi.export`; the workspac
 generation script invokes this entry point. Retired flat modules are removed,
 so downstream phases must use the concrete import paths below.
 
-## Local P05 setup
+## Local database and API setup
 
 Run commands from this worktree's root. Use its own `.venv`, `node_modules`,
 database and ports. Install with `pnpm install --frozen-lockfile` and
@@ -84,7 +88,6 @@ environment and runs the reviewed revisions; it contains no secret values.
 
 | Variable                     | Meaning                                                                                                                               |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `FLF_P05_DB_PASSWORD`        | Private local password consumed only by Docker Compose.                                                                               |
 | `FLF_API_DATABASE_URL`       | `postgresql+asyncpg://flf:<password>@127.0.0.1:55405/featherlane_p05`; percent-encode password characters when necessary.             |
 | `FLF_API_CANONICAL_ORIGIN`   | Browser-facing origin; use `http://127.0.0.1:8005` for direct local API inspection. HTTP is permitted only on loopback.               |
 | `FLF_API_ARTIFACT_ROOT`      | Absolute private artifact-directory path within this worktree's ignored `.local/p05/`. No storage adapter or public mount is created. |
@@ -94,13 +97,44 @@ environment and runs the reviewed revisions; it contains no secret values.
 | `FLF_API_MAX_JSON_BYTES`     | Defaults to `1048576` (1 MiB); may be reduced.                                                                                        |
 | `FLF_API_MAX_JSON_DEPTH`     | Defaults to `32`, maximum `64`.                                                                                                       |
 
-The Compose file runs PostgreSQL 18.4 on loopback port `55405`, database
-`featherlane_p05`, with data under ignored `.local/p05/postgres`. It creates only
-P05's container/network. The role is a local development role; hosted privileges,
-TLS termination and trusted proxy deployment are outside this phase.
+`infra/compose.database.yaml` runs one PostgreSQL 18.4 service with loopback-only
+port publication. Supply all six variables in the Compose process; there are no
+shared instance defaults or fixed container names:
+
+| Variable               | Meaning                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `COMPOSE_PROJECT_NAME` | Unique Compose project identity, such as `featherlane-p05`.                                       |
+| `FLF_DB_USER`          | PostgreSQL initialization user, such as `flf`.                                                    |
+| `FLF_DB_NAME`          | PostgreSQL initialization database, such as `featherlane_p05`.                                    |
+| `FLF_DB_PASSWORD`      | Private password injected into the process; never save it in a file or put it in a command.       |
+| `FLF_DB_HOST_PORT`     | Unique host port; the host address is fixed to `127.0.0.1`.                                       |
+| `FLF_DB_DATA_DIR`      | Absolute existing private data-directory path, normally inside this worktree's ignored `.local/`. |
+
+For the existing P05 instance, select the following non-secret values in this
+terminal, with the password injected by Doppler. Keep the matching
+`FLF_API_DATABASE_URL` in the API/migration process configuration; Compose does
+not derive or change that URL. If the selected secret source uses a different
+password key, map it to `FLF_DB_PASSWORD` only in the child process without
+printing it or changing the stored secret.
 
 ```sh
-doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.p05.yaml up -d --wait
+export COMPOSE_PROJECT_NAME=featherlane-p05
+export FLF_DB_USER=flf FLF_DB_NAME=featherlane_p05 FLF_DB_HOST_PORT=55405
+export FLF_DB_DATA_DIR="$PWD/.local/p05/postgres"
+```
+
+Keep an existing instance's original project name, port, credentials and data
+path when switching filenames. PostgreSQL initialization variables do not
+rename databases/users or rotate credentials in an initialized data directory.
+For a new instance, deliberately prepare a separate private directory first;
+Compose will fail if it does not exist rather than create a store at a mistyped
+path. Never reuse another worktree's project name, port or data directory.
+The role is a local development role; hosted privileges, TLS termination and
+trusted proxy deployment are outside this phase.
+
+```sh
+doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml config --quiet
+doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml up -d --wait
 doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane alembic -c src/api/alembic.ini upgrade head
 doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane flf-api
 ```
@@ -108,6 +142,10 @@ doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane
 `doppler run` injects the selected configuration into the child process. These
 commands disable Doppler's local fallback file and prevent uv/Compose from
 loading a dotenv file. See the [Doppler CLI guide](https://docs.doppler.com/docs/cli).
+Use `config --quiet` for validation; unfiltered `config` output includes the
+resolved database password. Historical P05/P06A handoffs record the retired
+`infra/compose.p05.yaml` and `infra/compose.p06a.yaml` filenames used in those
+checks; current launches use the shared file above.
 
 In a separate terminal:
 
@@ -124,8 +162,8 @@ omit SQL, connection strings, request bodies and exception tracebacks. The CLI
 disables access logs (which can contain sensitive query strings) and forwarded
 proxy headers. Do not enable those in an unreviewed deployment configuration.
 
-Stop the API with Ctrl+C. Stop only P05's database using the same Compose command
-with `stop`. Its ignored database data remains available for later review;
+Stop the API with Ctrl+C. Stop only this instance's database using the same
+Compose file and six process variables with `stop`. Its ignored data remains available for later review;
 configuration comes from Doppler. Do not use another phase's database or stop
 its processes.
 
@@ -275,14 +313,20 @@ the P05 CLI still disables forwarded proxy headers. Production cookies use the
 `__Host-` prefix, Secure, HttpOnly, SameSite=Lax and `/` with no Domain. Explicit
 loopback development uses names including the canonical port to isolate phases.
 
-`infra/compose.p06a.yaml` runs only P06A's PostgreSQL on `127.0.0.1:55408`, database
-`featherlane_p06a`, with ignored runtime data under `.local/p06a/postgres`.
-`FLF_P06A_DB_PASSWORD` supplies its password; point `FLF_API_DATABASE_URL` at that
-database and set `FLF_API_PORT=8008` for this phase. Do not reuse P05's database.
-After selecting the appropriate existing Doppler project/config per process:
+For P06A, use the same shared database file with these distinct non-secret
+settings. Inject its own `FLF_DB_PASSWORD` into the Compose process, point
+`FLF_API_DATABASE_URL` at `127.0.0.1:55408/featherlane_p06a` with the matching
+user/password, and set `FLF_API_PORT=8008`. Do not reuse P05's database. Keep the
+existing project's identity and private data path; the filename change alone
+requires no migration, teardown or container rename. After selecting the
+appropriate existing Doppler project/config per process:
 
 ```sh
-doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.p06a.yaml up -d --wait
+export COMPOSE_PROJECT_NAME=featherlane-p06a
+export FLF_DB_USER=flf FLF_DB_NAME=featherlane_p06a FLF_DB_HOST_PORT=55408
+export FLF_DB_DATA_DIR="$PWD/.local/p06a/postgres"
+doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml config --quiet
+doppler run --no-fallback -- docker compose --env-file /dev/null -f infra/compose.database.yaml up -d --wait
 doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane alembic -c src/api/alembic.ini upgrade head
 doppler run --no-fallback -- uv run --no-env-file --frozen --package featherlane-control-plane flf-api
 ```
@@ -313,3 +357,59 @@ CSRF in that transaction when needed; the HTTP `require_csrf` dependency remains
 mandatory. Commit before returning a successful response. P07 owns both explicit
 membership checks within that same transaction and must not import identity ORM
 rows or infer membership from this principal.
+
+## Organization and project access (P07)
+
+Migration `0003_access` follows `0002_identity`. `modules/access/` owns organizations,
+projects, exactly two membership tables, and safe access audit events. Organization
+membership alone grants no project visibility. Project membership has composite
+foreign keys to its organization membership and project/organization pair. Removing
+an organization grant cascades its project grants; rejoining does not restore them.
+There are no roles, permission flags, automatic admission, or browser membership editors.
+
+Protected operations are `GET /api/v1/orgs`, `GET /api/v1/orgs/{orgId}/projects`,
+`GET /api/v1/projects/{projectId}`, and `POST /api/v1/orgs/{orgId}/projects`.
+Lists use `limit` (1–100) and `cursor`, returning `meta.nextCursor`. Requests require
+the contract-version header. Creation additionally requires same-origin/CSRF and an
+`Idempotency-Key` identifier. An unchanged retry returns the same project; changed
+inputs with the same key return 409. First creation and replay both return201 with
+`Location: /api/v1/projects/{projectId}`. Creation, the creator's explicit project grant,
+and its audit event commit together. Other organization members receive no grant.
+
+`AccessStore.require_organization` and `require_project` are the shared consumer
+authorization helpers. Call them inside the consumer's explicit transaction after
+`IdentityService.require_live`. Both memberships are checked for project resources;
+lock the organization membership before reading the current project grant. Unknown,
+cross-organization and ungranted resources return the same non-disclosing 404.
+Future project resources must reuse this boundary; an ID in a DTO is not authority.
+
+Membership provisioning is an operator command against an existing active identity,
+matched by its exact verified issuer/subject. The identity lookup uses `lock=True`
+inside the same transaction before membership changes. It neither creates users nor
+matches email. Supply process configuration through the project's authorized Doppler
+run; do not store credentials in files. For example, inside that configured process:
+
+```sh
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT bootstrap --name "Organization name"
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT organization-member grant --organization-id ORGANIZATION_ID
+uv run --no-env-file --frozen --package featherlane-control-plane python -m featherlane_api.modules.access.cli --issuer https://accounts.google.com --subject VERIFIED_SUBJECT project-member grant --project-id PROJECT_ID
+```
+
+Use `revoke` in place of `grant` to remove membership. Project grants require an
+existing organization grant. Repeated grant/revoke operations are no-ops when already
+in the requested state; bootstrap deliberately creates a new organization each time.
+Commands print success only after commit. Configuration, socket/timeout/pool and
+known PostgreSQL connection/authentication/resource failures have a sanitized error
+boundary. Programming errors (for example SQL syntax/missing columns) still surface.
+An operational failure may occur after a commit whose acknowledgment was lost:
+inspect current state before retrying, especially non-idempotent bootstrap. No raw
+exception, SQL parameter, connection URL or credential is printed by this boundary.
+
+P07 now uses only `infra/compose.database.yaml` and the six variables above. The
+stopped original data directory `.local/p07/postgres` is preserved; its ephemeral
+password was not retained, so changing initialization variables cannot make that
+existing database reusable. The final manual review deliberately used a separate
+fresh private instance (project featherlane-p07-review, loopback55417, database
+featherlane_p07_review, user flf, absolute directory `.local/p07-review-final/postgres`,
+API8017). This did not recreate, reset, migrate or delete the original P07 data.
+No phase-specific database Compose file is part of the publication packet.

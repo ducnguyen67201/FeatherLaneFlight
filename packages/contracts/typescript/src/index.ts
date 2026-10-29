@@ -6,9 +6,6 @@ export {
   ContractValidationError,
   contractManifest,
   operationPolicies,
-  browserNavigationPolicies,
-  type SessionTransportPolicy,
-  validateResult,
 } from "./transport";
 export * from "./generated/types.gen";
 export {
@@ -16,20 +13,37 @@ export {
   listRuns,
   getRunOptions,
   createRun,
-  getSession,
-  logout,
+  getRunDetail,
+  getRunEvents,
+  getRunArtifacts,
+  cancelRun,
 } from "./sdk";
 export {
   getContractMetaQueryKey,
   listRunsQueryKey,
   getRunOptionsQueryKey,
-  getSessionQueryKey,
+  getRunDetailQueryKey,
+  getRunEventsQueryKey,
+  getRunArtifactsQueryKey,
 } from "./generated/@tanstack/react-query.gen";
 export {
   getContractMetaOptions,
   listRunsOptions,
   getRunOptionsOptions,
   createRunMutation,
-  getSessionOptions,
-  logoutMutation,
+  getRunDetailOptions,
+  getRunEventsOptions,
+  getRunArtifactsOptions,
+  cancelRunMutation,
 } from "./queries";
+export {
+  listOrganizations,
+  listProjects,
+  getProject,
+  createProject,
+} from "./projects";
+export {
+  listOrganizationsOptions,
+  listProjectsOptions,
+  getProjectOptions,
+} from "./projectQueries";

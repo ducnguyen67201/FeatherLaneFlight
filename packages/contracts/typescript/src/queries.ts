@@ -3,23 +3,26 @@ import {
   getContractMetaQueryKey,
   listRunsQueryKey,
   getRunOptionsQueryKey,
+  getRunDetailQueryKey,
+  getRunEventsQueryKey,
+  getRunArtifactsQueryKey,
   createRunMutation as generatedCreateRunMutation,
-  getSessionQueryKey,
-  logoutMutation as generatedLogoutMutation,
+  cancelRunMutation as generatedCancelRunMutation,
 } from "./generated/@tanstack/react-query.gen";
 import type {
   GetContractMetaResponse,
   ListRunsResponse,
   GetRunOptionsResponse,
-  GetSessionResponse,
 } from "./generated/types.gen";
 import {
   getContractMeta,
   listRuns,
   getRunOptions,
   createRun,
-  getSession,
-  logout,
+  getRunDetail,
+  getRunEvents,
+  getRunArtifacts,
+  cancelRun,
 } from "./sdk";
 
 // Later feature modules add authenticated scope and freshness policy.
@@ -86,30 +89,45 @@ export function getRunOptionsOptions(
   });
 }
 
-export function getSessionOptions(
-  options: Parameters<typeof getSession>[0],
+export function getRunDetailOptions(
+  options: Parameters<typeof getRunDetail>[0],
   scope: readonly unknown[] = [],
 ) {
-  const queryKey = [...scope, ...getSessionQueryKey(options)];
-  return queryOptions<
-    GetSessionResponse,
-    Error,
-    GetSessionResponse,
-    typeof queryKey
-  >({
+  const queryKey = [...scope, ...getRunDetailQueryKey(options)];
+  return queryOptions({
     queryKey,
-    queryFn: ({ signal }) => getSession({ ...options, signal }),
-    staleTime: 0,
+    queryFn: ({ signal }) => getRunDetail({ ...options, signal }),
     retry: false,
   });
 }
 
-export function logoutMutation() {
-  const generated = generatedLogoutMutation();
-  const options = {
-    mutationFn: logout,
-    retry: false as const,
-  };
+export function getRunEventsOptions(
+  options: Parameters<typeof getRunEvents>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getRunEventsQueryKey(options)];
+  return queryOptions({
+    queryKey,
+    queryFn: ({ signal }) => getRunEvents({ ...options, signal }),
+    retry: false,
+  });
+}
+
+export function getRunArtifactsOptions(
+  options: Parameters<typeof getRunArtifacts>[0],
+  scope: readonly unknown[] = [],
+) {
+  const queryKey = [...scope, ...getRunArtifactsQueryKey(options)];
+  return queryOptions({
+    queryKey,
+    queryFn: ({ signal }) => getRunArtifacts({ ...options, signal }),
+    retry: false,
+  });
+}
+
+export function cancelRunMutation() {
+  const generated = generatedCancelRunMutation();
+  const options = { mutationFn: cancelRun, retry: false as const };
   return generated.mutationKey
     ? mutationOptions({ ...options, mutationKey: generated.mutationKey })
     : mutationOptions(options);

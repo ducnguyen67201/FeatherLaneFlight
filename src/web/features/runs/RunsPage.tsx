@@ -1,4 +1,11 @@
-import { useRef, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type MouseEvent,
+  type SetStateAction,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
@@ -41,19 +48,40 @@ const readModes: { value: DemoReadMode; label: string }[] = [
   { value: "error", label: "Request error" },
   { value: "invalid", label: "Invalid response" },
 ];
-export function RunsPage() {
+export type RunsListContext = {
+  search: string;
+  executionState: NonNullable<ListRunsData["query"]>["executionState"];
+  evaluationOutcome: NonNullable<ListRunsData["query"]>["evaluationOutcome"];
+  cursors: (string | null)[];
+  page: number;
+};
+export function initialRunsListContext(): RunsListContext {
+  return {
+    search: "",
+    executionState: null,
+    evaluationOutcome: null,
+    cursors: [null],
+    page: 0,
+  };
+}
+export function RunsPage({
+  onOpen,
+  returnFocusRunId,
+  listContext,
+  setListContext,
+}: {
+  onOpen: (event: MouseEvent<HTMLAnchorElement>, runId: string) => void;
+  returnFocusRunId?: string | null;
+  listContext: RunsListContext;
+  setListContext: Dispatch<SetStateAction<RunsListContext>>;
+}) {
   const [runsMode, setRunsMode] = useState<DemoReadMode>("ready");
   const [optionsMode, setOptionsMode] = useState<DemoReadMode>("ready");
   const [submissionMode, setSubmissionMode] = useState("accept");
   const [runsRevision, setRunsRevision] = useState(0);
   const [optionsRevision, setOptionsRevision] = useState(0);
-  const [search, setSearch] = useState("");
-  const [executionState, setExecutionState] =
-    useState<NonNullable<ListRunsData["query"]>["executionState"]>(null);
-  const [evaluationOutcome, setEvaluationOutcome] =
-    useState<NonNullable<ListRunsData["query"]>["evaluationOutcome"]>(null);
-  const [cursors, setCursors] = useState<(string | null)[]>([null]);
-  const [page, setPage] = useState(0);
+  const { search, executionState, evaluationOutcome, cursors, page } =
+    listContext;
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(0);
   const [notice, setNotice] = useState("");
@@ -71,17 +99,44 @@ export function RunsPage() {
       runsRevision,
     ),
   );
+  const restoredFocus = useRef(false);
+  useEffect(() => {
+    if (
+      !returnFocusRunId ||
+      restoredFocus.current ||
+      query.isPending ||
+      query.isFetching
+    )
+      return;
+    const link = document.querySelector<HTMLAnchorElement>(
+      `a[href="/runs/${encodeURIComponent(returnFocusRunId)}"]`,
+    );
+    (link ?? newRunButtonRef.current)?.focus();
+    restoredFocus.current = true;
+  }, [returnFocusRunId, query.data, query.isFetching, query.isPending]);
   const rows = query.data?.data ?? [];
   const filtered = Boolean(search || executionState || evaluationOutcome);
   function resetPages() {
-    setCursors([null]);
-    setPage(0);
+    setListContext((context) => ({ ...context, cursors: [null], page: 0 }));
+  }
+  function changeFilters(
+    change: Partial<
+      Pick<RunsListContext, "search" | "executionState" | "evaluationOutcome">
+    >,
+  ) {
+    setListContext((context) => ({
+      ...context,
+      ...change,
+      cursors: [null],
+      page: 0,
+    }));
   }
   function clearFilters() {
-    setSearch("");
-    setExecutionState(null);
-    setEvaluationOutcome(null);
-    resetPages();
+    changeFilters({
+      search: "",
+      executionState: null,
+      evaluationOutcome: null,
+    });
   }
   function start(event: MouseEvent<HTMLButtonElement>) {
     openerRef.current = event.currentTarget;
@@ -112,8 +167,7 @@ export function RunsPage() {
         value={search}
         slotProps={{ htmlInput: { maxLength: 128 } }}
         onChange={(e) => {
-          setSearch(e.target.value);
-          resetPages();
+          changeFilters({ search: e.target.value });
         }}
         sx={{ flex: 2, minWidth: { sm: 220 } }}
       />
@@ -127,8 +181,7 @@ export function RunsPage() {
           const key = Object.keys(execution).find(
             (key): key is keyof typeof execution => key === e.target.value,
           );
-          setExecutionState(key ?? null);
-          resetPages();
+          changeFilters({ executionState: key ?? null });
         }}
       >
         <MenuItem value="">All execution states</MenuItem>
@@ -148,8 +201,7 @@ export function RunsPage() {
           const key = Object.keys(evaluation).find(
             (key): key is keyof typeof evaluation => key === e.target.value,
           );
-          setEvaluationOutcome(key ?? null);
-          resetPages();
+          changeFilters({ evaluationOutcome: key ?? null });
         }}
       >
         <MenuItem value="">All outcomes</MenuItem>
@@ -168,7 +220,12 @@ export function RunsPage() {
     <AppShell
       activePath="/runs"
       projectSelector={
-        <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          useFlexGap
+          sx={{ alignItems: "center", flexWrap: "wrap" }}
+        >
           <Typography variant="body2" color="text.secondary">
             FeatherLane /
           </Typography>
@@ -389,12 +446,12 @@ export function RunsPage() {
                   mock dataset
                 </Typography>
                 <Typography
-                  id="details-unavailable"
+                  id="details-available"
                   variant="caption"
                   color="text.secondary"
                   sx={{ display: "block", mt: 2 }}
                 >
-                  Run details are not available in this preview.
+                  Open a run to inspect its frozen inputs, trials and evidence.
                 </Typography>
                 {query.isFetching && (
                   <Typography
@@ -460,8 +517,11 @@ export function RunsPage() {
                           <Button
                             size="small"
                             color="secondary"
-                            disabled
-                            aria-describedby="details-unavailable"
+                            component="a"
+                            href={`/runs/${encodeURIComponent(run.id)}`}
+                            onClick={(event) => onOpen(event, run.id)}
+                            aria-label={`Open ${run.id}`}
+                            aria-describedby="details-available"
                           >
                             Open{" "}
                             <ArrowForward fontSize="small" sx={{ ml: 1 }} />
@@ -492,7 +552,12 @@ export function RunsPage() {
                   <Button
                     disabled={page === 0 || query.isFetching}
                     variant="outlined"
-                    onClick={() => setPage((value) => value - 1)}
+                    onClick={() =>
+                      setListContext((context) => ({
+                        ...context,
+                        page: context.page - 1,
+                      }))
+                    }
                   >
                     Previous
                   </Button>
@@ -502,8 +567,14 @@ export function RunsPage() {
                     onClick={() => {
                       const cursor = query.data?.meta.nextCursor;
                       if (cursor) {
-                        setCursors([...cursors.slice(0, page + 1), cursor]);
-                        setPage((value) => value + 1);
+                        setListContext((context) => ({
+                          ...context,
+                          cursors: [
+                            ...context.cursors.slice(0, context.page + 1),
+                            cursor,
+                          ],
+                          page: context.page + 1,
+                        }));
                       }
                     }}
                   >

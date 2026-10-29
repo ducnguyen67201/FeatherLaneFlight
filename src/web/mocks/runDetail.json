@@ -1,0 +1,464 @@
+{
+  "data": {
+    "id": "run_181",
+    "projectId": "project_demo",
+    "buildId": "build_demo",
+    "suiteRevisionId": "suite_revision_demo",
+    "runnerId": "runner_demo",
+    "executionState": "COMPLETED",
+    "evaluationOutcome": "FAIL",
+    "cancellationRequestedAt": null,
+    "cancellationDeadlineAt": null,
+    "createdAt": "2026-10-28T15:00:00Z",
+    "startedAt": "2026-10-28T15:00:01.000Z",
+    "finishedAt": "2026-10-28T15:05:00.000Z",
+    "buildLabel": "PX4 candidate",
+    "suiteTitle": "Nominal flight",
+    "suiteRevision": 3,
+    "runnerDisplayName": "Demo runner",
+    "requestedManifest": {
+      "contractVersion": "0.1.0",
+      "protocolVersion": "1",
+      "buildId": "build_demo",
+      "buildDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "configurationDigest": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "suiteRevisionId": "suite_revision_demo",
+      "suiteRevision": 3,
+      "suiteDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "integrationProfileId": "fake_v1",
+      "integrationProfileDigest": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "localProfileId": "profile_fake",
+      "localProfileDigest": "4b62f33c1049a96c5f76e253bdca72e03665e903fe2e4f186694ddff1e6b413a",
+      "runnerVersion": "demo-1",
+      "pythonVersion": "3.12",
+      "mavsdkVersion": "4.1",
+      "px4Version": "synthetic",
+      "simulator": "Synthetic fixture",
+      "vehicleConfiguration": "Quadrotor sample",
+      "operatingSystem": "Linux",
+      "architecture": "x86_64",
+      "clockPolicy": "MONOTONIC_AND_SIMULATION",
+      "speedFactor": 1.0,
+      "randomizationPolicy": "FIXED_SEED",
+      "randomSeed": 42,
+      "repetitions": 3,
+      "checks": [
+        {
+          "id": "mission_completion",
+          "version": 1,
+          "title": "Mission completion",
+          "kind": "MISSION_COMPLETION",
+          "expected": "Mission completion observed",
+          "unit": "boolean",
+          "threshold": null,
+          "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+          "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+        },
+        {
+          "id": "landing_disarm",
+          "version": 1,
+          "title": "Landing and disarm",
+          "kind": "LANDING_DISARM",
+          "expected": "Landed and disarmed observed",
+          "unit": "boolean",
+          "threshold": null,
+          "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+          "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+        },
+        {
+          "id": "completion_duration",
+          "version": 1,
+          "title": "Completion time",
+          "kind": "METRIC_THRESHOLD",
+          "expected": "Mission duration \u2264 90.0 s",
+          "unit": "s",
+          "threshold": 90.0,
+          "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+          "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+        }
+      ],
+      "evidencePolicy": ["PX4_ULOG", "OBSERVATIONS", "REDACTED_PROCESS_LOG"],
+      "evaluatorVersion": "nominal-v1"
+    },
+    "attempts": [
+      {
+        "id": "attempt_1",
+        "observedManifest": {
+          "contractVersion": "0.1.0",
+          "protocolVersion": "1",
+          "buildId": "build_demo",
+          "buildDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "configurationDigest": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+          "suiteRevisionId": "suite_revision_demo",
+          "suiteRevision": 3,
+          "suiteDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "integrationProfileId": "fake_v1",
+          "integrationProfileDigest": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+          "localProfileId": "profile_fake",
+          "localProfileDigest": "4b62f33c1049a96c5f76e253bdca72e03665e903fe2e4f186694ddff1e6b413a",
+          "runnerVersion": "demo-1",
+          "pythonVersion": "3.12",
+          "mavsdkVersion": "4.1",
+          "px4Version": "synthetic",
+          "simulator": "Synthetic fixture",
+          "vehicleConfiguration": "Quadrotor sample",
+          "operatingSystem": "Linux",
+          "architecture": "x86_64",
+          "clockPolicy": "MONOTONIC_AND_SIMULATION",
+          "speedFactor": 1.0,
+          "randomizationPolicy": "FIXED_SEED",
+          "randomSeed": 42,
+          "repetitions": 3,
+          "checks": [
+            {
+              "id": "mission_completion",
+              "version": 1,
+              "title": "Mission completion",
+              "kind": "MISSION_COMPLETION",
+              "expected": "Mission completion observed",
+              "unit": "boolean",
+              "threshold": null,
+              "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+              "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+            },
+            {
+              "id": "landing_disarm",
+              "version": 1,
+              "title": "Landing and disarm",
+              "kind": "LANDING_DISARM",
+              "expected": "Landed and disarmed observed",
+              "unit": "boolean",
+              "threshold": null,
+              "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+              "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+            },
+            {
+              "id": "completion_duration",
+              "version": 1,
+              "title": "Completion time",
+              "kind": "METRIC_THRESHOLD",
+              "expected": "Mission duration \u2264 90.0 s",
+              "unit": "s",
+              "threshold": 90.0,
+              "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+              "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+            }
+          ],
+          "evidencePolicy": [
+            "PX4_ULOG",
+            "OBSERVATIONS",
+            "REDACTED_PROCESS_LOG"
+          ],
+          "evaluatorVersion": "nominal-v1"
+        },
+        "startedAt": "2026-10-28T15:00:01.000Z",
+        "finishedAt": "2026-10-28T15:05:00.000Z",
+        "terminalReason": null
+      }
+    ],
+    "trials": [
+      {
+        "id": "trial_1",
+        "attemptId": "attempt_1",
+        "scenarioId": "nominal_flight",
+        "scenarioTitle": "Nominal flight",
+        "repetitionIndex": 1,
+        "executionState": "COMPLETED",
+        "evaluationOutcome": "FAIL",
+        "startedAt": "2026-10-28T15:00:02.000Z",
+        "finishedAt": "2026-10-28T15:01:38.000Z",
+        "disturbanceVerification": "NOT_REQUESTED",
+        "observationSummary": [
+          {
+            "id": "trial_1_mission_completion",
+            "checkId": "mission_completion",
+            "checkVersion": 1,
+            "key": "mission_completion",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 96400.0,
+            "simulationTimeUs": "96400000",
+            "artifactIds": ["ulog_1", "observations_1"]
+          },
+          {
+            "id": "trial_1_landing_disarm",
+            "checkId": "landing_disarm",
+            "checkVersion": 1,
+            "key": "landing_disarm",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 96400.0,
+            "simulationTimeUs": "96400000",
+            "artifactIds": ["ulog_1", "observations_1"]
+          },
+          {
+            "id": "trial_1_completion_duration",
+            "checkId": "completion_duration",
+            "checkVersion": 1,
+            "key": "completion_duration",
+            "value": 91.4,
+            "unit": "s",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "LOWER_IS_BETTER",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 96400.0,
+            "simulationTimeUs": "96400000",
+            "artifactIds": ["ulog_1", "observations_1"]
+          }
+        ],
+        "checkResults": [
+          {
+            "checkId": "mission_completion",
+            "outcome": "PASS",
+            "observationId": "trial_1_mission_completion",
+            "artifactIds": ["ulog_1", "observations_1"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "landing_disarm",
+            "outcome": "PASS",
+            "observationId": "trial_1_landing_disarm",
+            "artifactIds": ["ulog_1", "observations_1"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "completion_duration",
+            "outcome": "FAIL",
+            "observationId": "trial_1_completion_duration",
+            "artifactIds": ["ulog_1", "observations_1"],
+            "summary": "Observed 91.4 s exceeds the frozen 90.0 s limit by 1.4 s."
+          }
+        ],
+        "terminalReason": null
+      },
+      {
+        "id": "trial_2",
+        "attemptId": "attempt_1",
+        "scenarioId": "nominal_flight",
+        "scenarioTitle": "Nominal flight",
+        "repetitionIndex": 2,
+        "executionState": "COMPLETED",
+        "evaluationOutcome": "FAIL",
+        "startedAt": "2026-10-28T15:01:42.000Z",
+        "finishedAt": "2026-10-28T15:03:18.000Z",
+        "disturbanceVerification": "NOT_REQUESTED",
+        "observationSummary": [
+          {
+            "id": "trial_2_mission_completion",
+            "checkId": "mission_completion",
+            "checkVersion": 1,
+            "key": "mission_completion",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 196400.0,
+            "simulationTimeUs": "196400000",
+            "artifactIds": ["ulog_2", "observations_2"]
+          },
+          {
+            "id": "trial_2_landing_disarm",
+            "checkId": "landing_disarm",
+            "checkVersion": 1,
+            "key": "landing_disarm",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 196400.0,
+            "simulationTimeUs": "196400000",
+            "artifactIds": ["ulog_2", "observations_2"]
+          },
+          {
+            "id": "trial_2_completion_duration",
+            "checkId": "completion_duration",
+            "checkVersion": 1,
+            "key": "completion_duration",
+            "value": 91.4,
+            "unit": "s",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "LOWER_IS_BETTER",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 196400.0,
+            "simulationTimeUs": "196400000",
+            "artifactIds": ["ulog_2", "observations_2"]
+          }
+        ],
+        "checkResults": [
+          {
+            "checkId": "mission_completion",
+            "outcome": "PASS",
+            "observationId": "trial_2_mission_completion",
+            "artifactIds": ["ulog_2", "observations_2"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "landing_disarm",
+            "outcome": "PASS",
+            "observationId": "trial_2_landing_disarm",
+            "artifactIds": ["ulog_2", "observations_2"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "completion_duration",
+            "outcome": "FAIL",
+            "observationId": "trial_2_completion_duration",
+            "artifactIds": ["ulog_2", "observations_2"],
+            "summary": "Observed 91.4 s exceeds the frozen 90.0 s limit by 1.4 s."
+          }
+        ],
+        "terminalReason": null
+      },
+      {
+        "id": "trial_3",
+        "attemptId": "attempt_1",
+        "scenarioId": "nominal_flight",
+        "scenarioTitle": "Nominal flight",
+        "repetitionIndex": 3,
+        "executionState": "COMPLETED",
+        "evaluationOutcome": "FAIL",
+        "startedAt": "2026-10-28T15:03:22.000Z",
+        "finishedAt": "2026-10-28T15:04:58.000Z",
+        "disturbanceVerification": "NOT_REQUESTED",
+        "observationSummary": [
+          {
+            "id": "trial_3_mission_completion",
+            "checkId": "mission_completion",
+            "checkVersion": 1,
+            "key": "mission_completion",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 296400.0,
+            "simulationTimeUs": "296400000",
+            "artifactIds": ["ulog_3", "observations_3"]
+          },
+          {
+            "id": "trial_3_landing_disarm",
+            "checkId": "landing_disarm",
+            "checkVersion": 1,
+            "key": "landing_disarm",
+            "value": true,
+            "unit": "boolean",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "EXPECTED_TRUE",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 296400.0,
+            "simulationTimeUs": "296400000",
+            "artifactIds": ["ulog_3", "observations_3"]
+          },
+          {
+            "id": "trial_3_completion_duration",
+            "checkId": "completion_duration",
+            "checkVersion": 1,
+            "key": "completion_duration",
+            "value": 91.4,
+            "unit": "s",
+            "aggregation": "SINGLE_SAMPLE",
+            "comparisonDirection": "LOWER_IS_BETTER",
+            "sampleCount": 1,
+            "sourceClock": "SIMULATION",
+            "monotonicElapsedMs": 296400.0,
+            "simulationTimeUs": "296400000",
+            "artifactIds": ["ulog_3", "observations_3"]
+          }
+        ],
+        "checkResults": [
+          {
+            "checkId": "mission_completion",
+            "outcome": "PASS",
+            "observationId": "trial_3_mission_completion",
+            "artifactIds": ["ulog_3", "observations_3"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "landing_disarm",
+            "outcome": "PASS",
+            "observationId": "trial_3_landing_disarm",
+            "artifactIds": ["ulog_3", "observations_3"],
+            "summary": "Required synthetic observation is recorded and supported by the referenced verified sample evidence."
+          },
+          {
+            "checkId": "completion_duration",
+            "outcome": "FAIL",
+            "observationId": "trial_3_completion_duration",
+            "artifactIds": ["ulog_3", "observations_3"],
+            "summary": "Observed 91.4 s exceeds the frozen 90.0 s limit by 1.4 s."
+          }
+        ],
+        "terminalReason": null
+      }
+    ],
+    "checks": [
+      {
+        "id": "mission_completion",
+        "version": 1,
+        "title": "Mission completion",
+        "kind": "MISSION_COMPLETION",
+        "expected": "Mission completion observed",
+        "unit": "boolean",
+        "threshold": null,
+        "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+        "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+      },
+      {
+        "id": "landing_disarm",
+        "version": 1,
+        "title": "Landing and disarm",
+        "kind": "LANDING_DISARM",
+        "expected": "Landed and disarmed observed",
+        "unit": "boolean",
+        "threshold": null,
+        "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+        "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+      },
+      {
+        "id": "completion_duration",
+        "version": 1,
+        "title": "Completion time",
+        "kind": "METRIC_THRESHOLD",
+        "expected": "Mission duration \u2264 90.0 s",
+        "unit": "s",
+        "threshold": 90.0,
+        "requiredEvidenceKinds": ["OBSERVATIONS", "PX4_ULOG"],
+        "inconclusiveWhen": "Required timestamped observations or verified evidence are unavailable."
+      }
+    ],
+    "artifactSummary": {
+      "totalCount": 9,
+      "availableVerifiedCount": 9,
+      "missingCount": 0,
+      "expiredCount": 0
+    },
+    "trialCounts": {
+      "scheduled": 3,
+      "completed": 3,
+      "failedCheck": 3,
+      "inconclusive": 0,
+      "canceled": 0,
+      "infrastructureError": 0,
+      "skipped": 0
+    },
+    "terminalReason": null,
+    "serverEventCursor": "event_17",
+    "snapshotAt": "2026-10-28T15:05:01.000Z"
+  }
+}

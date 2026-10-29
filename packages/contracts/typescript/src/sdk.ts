@@ -1,5 +1,9 @@
 import type {
   CreateRunData,
+  GetRunDetailData,
+  GetRunEventsData,
+  GetRunArtifactsData,
+  CancelRunData,
   GetRunOptionsData,
   GetContractMetaData,
   ListRunsData,
@@ -13,6 +17,10 @@ import {
   createRun as generatedCreateRun,
   getSession as generatedGetSession,
   logout as generatedLogout,
+  getRunDetail as generatedDetail,
+  getRunEvents as generatedEvents,
+  getRunArtifacts as generatedArtifacts,
+  cancelRun as generatedCancel,
   type Options,
 } from "./generated/sdk.gen";
 import type { TDataShape } from "./generated/client";
@@ -23,6 +31,10 @@ import {
   zCreateRunResponse,
   zGetSessionResponse,
   zLogoutResponse,
+  zGetRunDetailResponse,
+  zGetRunEventsResponse,
+  zGetRunArtifactsResponse,
+  zCancelRunResponse,
 } from "./generated/zod.gen";
 import { validateResult } from "./transport";
 
@@ -135,6 +147,72 @@ export async function logout(options: ReadOptions<LogoutData>) {
   });
   return validateResult(
     zLogoutResponse,
+    response.data,
+    response.response,
+    client,
+  );
+}
+
+export async function getRunDetail(options: ReadOptions<GetRunDetailData>) {
+  const client = options.client;
+  const response = await generatedDetail({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunDetailResponse,
+    response.data,
+    response.response,
+    client,
+  );
+}
+
+export async function getRunEvents(options: ReadOptions<GetRunEventsData>) {
+  const client = options.client;
+  const response = await generatedEvents({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunEventsResponse,
+    response.data,
+    response.response,
+    client,
+  );
+}
+
+export async function getRunArtifacts(
+  options: ReadOptions<GetRunArtifactsData>,
+) {
+  const client = options.client;
+  const response = await generatedArtifacts({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zGetRunArtifactsResponse,
+    response.data,
+    response.response,
+    client,
+  );
+}
+
+export async function cancelRun(options: ReadOptions<CancelRunData>) {
+  const client = options.client;
+  const response = await generatedCancel({
+    ...options,
+    throwOnError: true,
+    responseStyle: "fields",
+    parseAs: "json",
+  });
+  return validateResult(
+    zCancelRunResponse,
     response.data,
     response.response,
     client,

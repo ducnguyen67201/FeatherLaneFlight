@@ -9,7 +9,8 @@ import "@fontsource/hanken-grotesk/latin-600.css";
 import "@fontsource/hanken-grotesk/latin-700.css";
 import { theme } from "./design/theme";
 import { FoundationReference } from "./app/FoundationReference";
-import { RunsPage } from "./features/runs/RunsPage";
+import { RunsWorkspace } from "./features/runs/RunsWorkspace";
+import { ProjectsDemo } from "./mocks/ProjectsDemo";
 import { startRunsDemo } from "./mocks/browser";
 
 const root = document.getElementById("root");
@@ -21,14 +22,17 @@ const queryClient = new QueryClient({
 });
 async function start() {
   try {
-    await startRunsDemo();
+    const settings = window.location.pathname === "/settings";
+    if (!settings) await startRunsDemo();
     appRoot.render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {window.location.pathname === "/" ||
-          window.location.pathname === "/runs" ? (
-            <RunsPage />
+          {settings ? (
+            <ProjectsDemo />
+          ) : window.location.pathname === "/" ||
+            /^\/runs(?:\/|$)/.test(window.location.pathname) ? (
+            <RunsWorkspace />
           ) : (
             <FoundationReference />
           )}

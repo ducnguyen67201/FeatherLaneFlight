@@ -1,6 +1,6 @@
 # Phase coordination
 
-The user requested 24 separate implementation chats, with this master chat coordinating dispatch and handoffs. All phase chats use **gpt-6.1-sol / high** in the FeatherLaneFlight local project. They share one local checkout, so only one phase may write implementation at a time. Git setup and PR publication follow the explicit submission gates below.
+The user requested 24 delivery phases, subsequently split with additional bounded implementation chats, with this master chat coordinating dispatch and handoffs. All phase chats use **gpt-6.1-sol / high**. Normally there is one active phase. The user separately authorized P04–P07 to progress concurrently in isolated worktrees for later individual review and PRs; follow [the parallel-wave plan](P04-P07-parallel.md). There is one implementation writer per checkout, and publication retains its explicit gates below.
 
 ## Authoritative documents
 
@@ -14,7 +14,7 @@ The user requested 24 separate implementation chats, with this master chat coord
 
 Staged chats read their assigned plan and return a short readiness brief only. They do not edit files, install dependencies, or start implementation. The master dispatches one phase after reviewing its dependencies. A new human instruction can steer the work; report any dependency conflict before touching shared files.
 
-Each phase owns only its planned scope and its own handoff file. Only the master updates registry.json or accepts a phase as COMPLETE after its user-controlled merge. Workers report READY_FOR_REVIEW rather than declaring successor readiness themselves. Shared contracts/lockfiles can change only for the active phase's actual requirement. Do not overwrite unrelated user work or planning files. The master handles Git setup and branch changes without racing an active writer; do not create worktrees solely for this coordination.
+Each phase owns only its planned scope and its own handoff file in its assigned checkout. Only the master updates the authoritative registry or accepts a phase as COMPLETE after its user-controlled merge. Workers report READY_FOR_REVIEW rather than declaring successor readiness themselves. Shared contracts/lockfiles can change only for a dispatched phase's actual requirement; the master reconciles overlapping changes in integration order. Do not overwrite unrelated user work or planning files. The master handles Git setup and branch changes without racing a writer. P04–P07 worktrees are explicitly user-requested; other worktrees still need a concrete task reason.
 
 UI tasks first produce a rendered isolated preview and then report AWAITING_UI_APPROVAL. Show it in the phase chat and wait for explicit human approval there, or approval relayed by the master with its trusted human-message source. This is not COMPLETE. Existing approval covers its unchanged shown scope. Do not infer approval from a master activation, roadmap approval, silence, or a revision request.
 
@@ -24,7 +24,7 @@ New application automated tests remain user-owned. Run applicable existing check
 
 ## Submission and merge gates
 
-Repository: [ducnguyen67201/FeatherLaneFlight](https://github.com/ducnguyen67201/FeatherLaneFlight). Use phase branches `codex/phase-01` through `codex/phase-24` and the verified repository base branch.
+Repository: [ducnguyen67201/FeatherLaneFlight](https://github.com/ducnguyen67201/FeatherLaneFlight). Use phase branches `codex/phase-01` through `codex/phase-24`, with `codex/phase-06a` for the auth backend and `codex/phase-06-5` for UI/API wiring and the verified repository base branch.
 
 ```text
 STAGED -> RUNNING -> READY_FOR_REVIEW -> AWAITING_PHASE_APPROVAL
@@ -49,6 +49,8 @@ The master prepares a concrete phase summary, diff/file scope, verification resu
 The repository was empty when this rule was added. The first PR needs a base commit/branch. Preparing that local bootstrap is permitted, but pushing even an empty initial commit to the default branch requires a distinct, explicit bootstrap approval included in the first concrete submission request. No repository contents were pushed by recording this workflow.
 
 Default progression waits for the user to merge the predecessor PR. Verify the merged state through GitHub, fetch, and safely update the local base before dispatching the successor. A closed unmerged PR does not unblock dependent work. Use stacked PRs only when the user explicitly authorizes that sequence and its base branches. Do not switch branches while a worker is writing or discard local changes.
+
+The P04–P07 parallel wave is an exception to the default local dispatch order. It permits independent preparation and implementation in isolated worktrees, with reviewed local dependency checkpoints. It does not approve stacked PRs, publication, unseen UI, new tests, or integrated-completion claims before dependencies are available and verified. See the parallel plan for P05 → P06A → P07 runtime checkpoints. P06 is UI only. P06.5 is staged until P05 and P06 are verified merged and actual auth endpoints are ready; it publishes against merged backend dependencies.
 
 ## Completion handoff
 
@@ -77,8 +79,10 @@ A thread heartbeat checks for meaningful handoffs and resumes this same coordina
 - [P03 — Runs workflow with mock data](P03.md)
 - [P04 — Run detail and evidence presentation](P04.md)
 - [P05 — FastAPI and database foundation](P05.md)
-- [P06 — Sign-in and browser sessions](P06.md)
-- [P07 — Organization and project access](P07.md)
+- [P06 — Sign-in UI](P06.md)
+- [P06A — Authentication API](P06A.md)
+- [P06.5 — Connect sign-in UI to API](P06.5.md)
+- [P07 — Organization and project membership](P07.md)
 - [P08 — Runner enrollment and health](P08.md)
 - [P09 — Build and profile registration](P09.md)
 - [P10 — Published suite catalog](P10.md)
@@ -96,3 +100,7 @@ A thread heartbeat checks for meaningful handoffs and resumes this same coordina
 - [P22 — Baseline and release comparison](P22.md)
 - [P23 — Retention and operational cleanup](P23.md)
 - [P24 — Private pilot release candidate](P24.md)
+
+## Authentication phase split
+
+The human confirmed P06 is UI only in master message `01a1849a-421d-7332-9c84-d23f80552434`, and selected a separate auth-backend task in message `01a18499-c6d8-7213-8564-6102b1004bc4`. [P06A](P06A.md) supplies backend authentication; [P06.5](P06.5.md) wires the approved UI after verified P05 and P06 merges and working auth endpoints. Do not infer that P05 provides login/session endpoints. P06 can be reviewed and merged independently; missing OAuth configuration is a provider-verification constraint for P06A/P06.5, not a UI acceptance blocker.
