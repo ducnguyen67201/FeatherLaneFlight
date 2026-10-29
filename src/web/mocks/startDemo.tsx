@@ -11,6 +11,7 @@ import { theme } from "../design/theme";
 import { FoundationReference } from "../app/FoundationReference";
 import { RunsWorkspace } from "../features/runs/RunsWorkspace";
 import { ProjectsDemo } from "./ProjectsDemo";
+import { RunnersDemo, startRunnersDemo } from "./runnersDemo";
 import { startRunsDemo } from "./browser";
 
 const queryClient = new QueryClient({
@@ -19,12 +20,16 @@ const queryClient = new QueryClient({
 export async function startDemo(appRoot: Root) {
   try {
     const settings = window.location.pathname === "/settings";
-    if (!settings) await startRunsDemo();
+    const runners = window.location.pathname === "/runners";
+    if (runners) await startRunnersDemo();
+    else if (!settings) await startRunsDemo();
     appRoot.render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {settings ? (
+          {runners ? (
+            <RunnersDemo />
+          ) : settings ? (
             <ProjectsDemo />
           ) : window.location.pathname === "/" ||
             /^\/runs(?:\/|$)/.test(window.location.pathname) ? (

@@ -81,3 +81,6 @@ export {
   listManagedProjectsOptions,
   listProjectPeopleOptions,
 } from "./peopleQueries";
+
+export { listRunners, createRunnerEnrollment, revokeRunner } from "./runners";
+export { listRunnersOptions } from "./runnerQueries";

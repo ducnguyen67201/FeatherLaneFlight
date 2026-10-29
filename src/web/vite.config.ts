@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
 
+const apiOrigin = process.env.FLF_WEB_API_ORIGIN ?? "http://127.0.0.1:8009";
 const proxy = {
-  "/api": { target: "http://127.0.0.1:8009", changeOrigin: false, xfwd: false },
+  "/api": { target: apiOrigin, changeOrigin: false, xfwd: false },
   "/auth": {
-    target: "http://127.0.0.1:8009",
+    target: apiOrigin,
     changeOrigin: false,
     xfwd: false,
   },

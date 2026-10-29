@@ -1,0 +1,3 @@
+*.html
+*.delivery*.json
+.archify-delivery-lock.json

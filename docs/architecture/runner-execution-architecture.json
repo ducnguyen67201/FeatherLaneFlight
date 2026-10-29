@@ -1,0 +1,407 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Runner execution — approved architecture",
+    "locale": "en",
+    "output": "docs/architecture/runner-execution-architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "cloud-path",
+        "label": "Cloud · default",
+        "focus": [
+          "browser",
+          "api",
+          "controller",
+          "sandbox",
+          "intake",
+          "evaluation",
+          "results"
+        ],
+        "note": "We supply compute and the simulator; the customer uses the website."
+      },
+      {
+        "id": "local-path",
+        "label": "Your machine · optional",
+        "focus": [
+          "browser",
+          "api",
+          "local-runner",
+          "local-sim",
+          "intake",
+          "evaluation",
+          "results"
+        ],
+        "note": "Build stays local; only metadata and allowed evidence return."
+      },
+      {
+        "id": "evidence-path",
+        "label": "Evidence and results",
+        "focus": [
+          "intake",
+          "objects",
+          "evaluation",
+          "results"
+        ],
+        "note": "The backend evaluates required evidence; a worker cannot declare its own PASS."
+      }
+    ],
+    "subtitle": "Approved design · 🟡 P08 identity, enrollment and health slices are implemented for review. Cloud provisioning and simulation execution remain later work."
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "🟡 Customer browser",
+      "sublabel": "P08: enrollment + health UI",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        160,
+        76
+      ],
+      "tag": "P08 UI"
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "🟡 Project API",
+      "sublabel": "P08: identity + health API",
+      "pos": [
+        340,
+        80
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "tag": "P08 API"
+    },
+    {
+      "id": "controller",
+      "type": "backend",
+      "label": "Cloud runner controller",
+      "sublabel": "Allocate, lease, stop, reap",
+      "pos": [
+        640,
+        80
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "tag": "DEFAULT"
+    },
+    {
+      "id": "sandbox",
+      "type": "backend",
+      "label": "PX4 / SIH sandbox",
+      "sublabel": "Scenario + MAVSDK inside",
+      "pos": [
+        640,
+        290
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "tag": "ONE ATTEMPT"
+    },
+    {
+      "id": "maintenance",
+      "type": "backend",
+      "label": "Maintenance worker",
+      "sublabel": "Expire leases / retention",
+      "pos": [
+        40,
+        530
+      ],
+      "size": [
+        160,
+        76
+      ]
+    },
+    {
+      "id": "state",
+      "type": "database",
+      "label": "🟡 PostgreSQL",
+      "sublabel": "P08: runner / grant records",
+      "pos": [
+        40,
+        290
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "tag": "P08 DATA"
+    },
+    {
+      "id": "local-runner",
+      "type": "backend",
+      "label": "🟡 Customer runner",
+      "sublabel": "P08: credentials + heartbeat",
+      "pos": [
+        340,
+        530
+      ],
+      "size": [
+        190,
+        76
+      ],
+      "tag": "P08 AGENT"
+    },
+    {
+      "id": "local-sim",
+      "type": "backend",
+      "label": "Local PX4 / SIH",
+      "sublabel": "Virtual aircraft + physics",
+      "pos": [
+        640,
+        530
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "results",
+      "type": "frontend",
+      "label": "Results in browser",
+      "sublabel": "Inspect / compare / cancel",
+      "pos": [
+        40,
+        790
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "evaluation",
+      "type": "backend",
+      "label": "Server evaluation",
+      "sublabel": "Versioned evidence checks",
+      "pos": [
+        340,
+        790
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "intake",
+      "type": "security",
+      "label": "Evidence intake",
+      "sublabel": "Sequence, lease, hash checks",
+      "pos": [
+        640,
+        790
+      ],
+      "size": [
+        190,
+        76
+      ]
+    },
+    {
+      "id": "objects",
+      "type": "database",
+      "label": "Private object store",
+      "sublabel": "Builds + verified evidence",
+      "pos": [
+        640,
+        1000
+      ],
+      "size": [
+        190,
+        76
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Managed cloud — default (proposed)",
+      "wraps": [
+        "controller",
+        "sandbox"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Disposable guest — no durable credentials",
+      "wraps": [
+        "sandbox"
+      ],
+      "pad": 12
+    },
+    {
+      "kind": "region",
+      "label": "Customer execution machine — optional",
+      "wraps": [
+        "local-runner",
+        "local-sim"
+      ],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-request",
+      "to": "api",
+      "variant": "emphasis",
+      "from": "browser",
+      "label": "HTTPS"
+    },
+    {
+      "id": "managed-default",
+      "to": "controller",
+      "variant": "emphasis",
+      "from": "api",
+      "label": "Default cloud"
+    },
+    {
+      "id": "sandbox-control",
+      "to": "sandbox",
+      "variant": "security",
+      "from": "controller",
+      "label": "Job + build",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "state-write",
+      "to": "state",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "api",
+      "label": "Persist"
+    },
+    {
+      "id": "maintenance-state",
+      "to": "state",
+      "from": "maintenance",
+      "label": "Expiry / cleanup"
+    },
+    {
+      "id": "customer-selection",
+      "to": "local-runner",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "api",
+      "label": "Local choice"
+    },
+    {
+      "id": "local-control",
+      "to": "local-sim",
+      "variant": "emphasis",
+      "from": "local-runner",
+      "label": "MAVLink"
+    },
+    {
+      "id": "cloud-evidence",
+      "to": "intake",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [
+        [
+          910,
+          328
+        ],
+        [
+          910,
+          828
+        ]
+      ],
+      "from": "sandbox",
+      "label": "Scoped evidence"
+    },
+    {
+      "id": "local-evidence",
+      "to": "intake",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "local-sim",
+      "label": "HTTPS evidence"
+    },
+    {
+      "id": "verified-intake",
+      "to": "evaluation",
+      "variant": "emphasis",
+      "from": "intake",
+      "label": "Evaluate"
+    },
+    {
+      "id": "results-read",
+      "to": "results",
+      "variant": "emphasis",
+      "from": "evaluation",
+      "label": "Outcome"
+    },
+    {
+      "id": "evidence-store",
+      "to": "objects",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "from": "intake",
+      "label": "Verify + store"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "🟡 Phase 08 — implemented for review",
+      "items": [
+        "UI slice: optional machine enrollment, health/connectivity/capacity and revocation.",
+        "API/data slice: one-use grants, project-bound runner credentials, response-loss recovery, version checks and revocation.",
+        "Agent slice: secure local identity, idle heartbeats and references to available builds/profiles. Detailed registrations belong to P09.",
+        "Yellow markers identify only the P08 slices. Architecture and shown UI were approved October 29, 2026; phase submission is separately gated."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Cloud path · default",
+      "items": [
+        "The website admits one project-scoped job with an immutable supported build and suite.",
+        "The trusted controller holds runner identity outside the guest and controls VM termination.",
+        "Each attempt gets a fresh simulation guest and expiring evidence-only access."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Customer machine · optional",
+      "items": [
+        "Install and qualify the local runtime, then enroll using a one-use project grant.",
+        "The runner polls outbound HTTPS; approved local settings launch PX4 and MAVSDK.",
+        "Executables stay on the machine; metadata and policy-permitted evidence return."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Trust and scope",
+      "items": [
+        "Both execution paths converge on the same evidence validation, evaluation and results.",
+        "Worker observations are untrusted inputs, not safety certification or an authoritative PASS.",
+        "Architecture approved October 29, 2026; this execution subsystem includes future services that are not implemented or deployed. See docs/architecture/runner-execution.md."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Later phases — context only",
+      "items": [
+        "Cloud allocation, VM startup and teardown, local installer, simulator installation and actual PX4 test execution are outside P08.",
+        "Claims/leases, test events/evidence, evaluation and managed build upload are later scoped work.",
+        "The cloud controller remains unhighlighted: P08 common identity rules do not implement the controller or provision cloud machines."
+      ]
+    }
+  ]
+}
