@@ -17,6 +17,7 @@ from featherlane_contracts.run_detail import (
     TrialCounts,
     TrialView,
 )
+from featherlane_contracts.usage import AttemptUsageSummary
 
 from featherlane_api.modules.leases.persistence import AttemptRecord
 from featherlane_api.modules.runs.persistence import RunRecord
@@ -59,7 +60,10 @@ def run_entry(row: RunRecord) -> RunListEntry:
 
 
 def run_detail(
-    row: RunRecord, now: datetime, attempts: list[AttemptRecord] | None = None
+    row: RunRecord,
+    now: datetime,
+    attempts: list[AttemptRecord] | None = None,
+    usage: dict[str, AttemptUsageSummary] | None = None,
 ) -> RunDetail:
     attempts = attempts or []
     if not attempts and (
@@ -109,6 +113,9 @@ def run_detail(
                         "startedAt": timestamp(attempt.manifest_accepted_at),
                         "finishedAt": timestamp(attempt.finished_at),
                         "terminalReason": attempt.terminal_reason,
+                        "usage": usage[attempt.id].model_dump(mode="json")
+                        if usage and attempt.id in usage
+                        else None,
                     }
                 ).model_dump()
                 for attempt in attempts

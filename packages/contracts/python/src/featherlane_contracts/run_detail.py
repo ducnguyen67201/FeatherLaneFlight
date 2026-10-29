@@ -21,6 +21,7 @@ from . import (
     WireModel,
     _reject_boolean_constant,
 )
+from .usage import AttemptUsageSummary
 
 Description = Annotated[str, Field(min_length=1, max_length=512)]
 Count = Annotated[int, Field(ge=0, le=10000)]
@@ -122,6 +123,7 @@ class RunAttempt(WireModel):
     started_at: UtcTimestamp | None
     finished_at: UtcTimestamp | None
     terminal_reason: TerminalReason | None
+    usage: AttemptUsageSummary | None = None
 
 
 class ObservationBase(WireModel):

@@ -58,3 +58,13 @@ are not provisioned by P08. Deployment execution still needs a concrete account,
 region, resources, cost and action approval.
 
 Keep the final SVG diagrams, editable JSON sources and this Markdown approval record together. Interactive HTML viewers can be regenerated locally from the JSON when needed; generated HTML and delivery receipts are ignored and must not be committed. Remove temporary review captures, preview code and unused build output before PR submission.
+
+## P14 local supervision increment
+
+[Local stand-in supervision](../../src/runner/SUPERVISION.md) documents the P14
+guardian, conservative watchdog, precise process ownership, explicit cleanup and
+shared raw-output accounting. This is a local implementation for phase review,
+not managed execution deployment or a qualified flight/job runtime. The broader supervision
+review drawing remains a proposal. The separately approved
+[cancellation usage child architecture](runner-cancellation-usage.md) records the
+October 29 P14 usage extension, its implementation status and deferred cost scope.

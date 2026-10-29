@@ -2,8 +2,10 @@
 
 from uuid import uuid4
 
+from featherlane_contracts.cleanup import RunnerRecoveryReceipt
 from featherlane_contracts.leases import AttemptHeartbeat, ClaimRequest, LeaseGrant
 
+from featherlane_runner.process_record import ExecutionStore
 from featherlane_runner.storage import (
     AttemptJournalEntry,
     LocalStateError,
@@ -36,6 +38,9 @@ class ProtocolJournal:
         self.state = state
 
     def claim_request(self) -> ClaimRequest:
+        execution = ExecutionStore(self.store.directory).read_record()
+        if execution is not None and not execution.cleanup_confirmed:
+            raise LocalStateError("Local orphan cleanup must precede a claim")
         attempt = self.state.attempt
         if attempt is not None and attempt.terminal:
             # P14 owns explicit cleanup/recovery. Never auto-claim after loss.
@@ -109,6 +114,26 @@ class ProtocolJournal:
         if attempt is not None:
             attempt.terminal = True
             attempt.pending_heartbeat = None
+        self.store.save(self.state)
+
+    def record_recovery(self, receipt: RunnerRecoveryReceipt) -> None:
+        """Explicit server receipt plus local exit, never an automatic retry."""
+        execution = ExecutionStore(self.store.directory).read_record()
+        if (
+            receipt.runner_id != self.state.runner_id
+            or execution is None
+            or execution.attempt_id != receipt.attempt_id
+            or not execution.cleanup_confirmed
+        ):
+            raise LocalStateError("Recovery lacks matching local cleanup evidence")
+        attempt = self.state.attempt
+        if attempt is None:
+            # A late receipt replay must not discard a later uncertain claim ID.
+            return
+        if attempt is not None and attempt.lease.attempt_id != receipt.attempt_id:
+            raise LocalStateError("Recovery does not match the current journal")
+        self.state.attempt = None
+        self.state.pending_claim_id = None
         self.store.save(self.state)
 
     def _active(self) -> AttemptJournalEntry:

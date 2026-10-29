@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Runner cancellation and usage architecture",
+    "locale": "en",
+    "output": ".archify/architecture-p14-cancellation-usage-20261029-153817/runner-cancellation-usage-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "3affd222da3be8d3604a2201e473a296b94e47a6"
+    }
+  },
+  "components": [
+    {
+      "id": "supervisor",
+      "type": "security",
+      "label": "P14 guardian / stop proof",
+      "sublabel": "Observed local process interval",
+      "pos": [40, 50],
+      "size": [220, 78],
+      "tag": "CURRENT LOCAL CANDIDATE",
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 703,
+          "end_line": 709
+        }
+      ]
+    },
+    {
+      "id": "observation",
+      "type": "backend",
+      "label": "Usage observation sidecar",
+      "sublabel": "Elapsed interval / provenance",
+      "pos": [400, 50],
+      "size": [220, 78],
+      "tag": "P14 LOCAL REVIEW",
+      "sources": [
+        {
+          "path": "docs/plans/execution-hosting.md",
+          "line": 148,
+          "end_line": 152
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "security",
+      "label": "Cleanup report API",
+      "sublabel": "Existing auth / optional usage",
+      "pos": [760, 50],
+      "size": [220, 78],
+      "tag": "P14 LOCAL REVIEW",
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725,
+          "end_line": 735
+        }
+      ]
+    },
+    {
+      "id": "reports",
+      "type": "database",
+      "label": "Append-only usage reports",
+      "sublabel": "Same attempt + operation ID",
+      "pos": [1120, 50],
+      "size": [220, 78],
+      "tag": "P14 LOCAL REVIEW",
+      "sources": [
+        {
+          "path": "docs/plans/execution-hosting.md",
+          "line": 148,
+          "end_line": 152
+        }
+      ]
+    },
+    {
+      "id": "disk",
+      "type": "database",
+      "label": "Shared logical disk ledger",
+      "sublabel": "Reserved bytes at observation",
+      "pos": [400, 310],
+      "size": [220, 78],
+      "tag": "COMMON V2 UNCHANGED",
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 858,
+          "end_line": 860
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "type": "backend",
+      "label": "Authorized run detail API",
+      "sublabel": "Usage summary / cost unknown",
+      "pos": [1120, 310],
+      "size": [220, 78],
+      "tag": "P14 LOCAL REVIEW",
+      "sources": [
+        {
+          "path": "docs/plans/execution-hosting.md",
+          "line": 148,
+          "end_line": 152
+        }
+      ]
+    },
+    {
+      "id": "future",
+      "type": "backend",
+      "label": "P23.5 usage / cost accounting",
+      "sublabel": "Rates / resources / reconciliation",
+      "pos": [1120, 570],
+      "size": [220, 78],
+      "tag": "FUTURE / OUTSIDE P14",
+      "sources": [
+        {
+          "path": "docs/plans/execution-hosting.md",
+          "line": 110,
+          "end_line": 115
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local trusted runner \u2014 source-labeled observations, not provider attestation",
+      "wraps": ["supervisor", "observation", "disk"],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Server runner/project/lease/fence validation; membership-protected reads",
+      "wraps": ["api", "reports", "read"],
+      "pad": 22
+    }
+  ],
+  "connections": [
+    {
+      "id": "interval",
+      "from": "supervisor",
+      "to": "observation",
+      "label": "observed interval"
+    },
+    {
+      "id": "bytes",
+      "from": "disk",
+      "to": "observation",
+      "label": "byte snapshot"
+    },
+    {
+      "id": "report",
+      "from": "observation",
+      "to": "api",
+      "label": "same op + usage"
+    },
+    {
+      "id": "save",
+      "from": "api",
+      "to": "reports",
+      "label": "atomic report"
+    },
+    {
+      "id": "read",
+      "from": "reports",
+      "to": "read",
+      "label": "derived summary"
+    },
+    {
+      "id": "future-input",
+      "from": "read",
+      "to": "future",
+      "label": "future facts input",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Scope and status",
+      "items": [
+        "Usage extension approved October 29, 2026. P14 implementation is local and awaiting phase review; publication and deployment are not approved.",
+        "P14 supervision/common budget and additive usage sidecar/API fields form this subsystem. Shared common-v2 budget bytes stay unchanged.",
+        "Citations pin base requirements; local P14 code is uncommitted. Logical subsystem map, no hosting changes."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Precise measurements",
+      "items": [
+        "Observe supervised process elapsed time; distinguish queue/assignment/lease and provider VM time.",
+        "Confirmed exit can close a continuous same-clock interval. Unknown orphan gaps remain incomplete or unavailable.",
+        "Snapshot logical reserved bytes and measured retained P14-owned output bytes; neither is a monetary charge or whole-host physical usage."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Authority and cancellation history",
+      "items": [
+        "Cleanup operation ID + attempt/fence + request digest; identical retry returns original result, changed payload conflicts.",
+        "Append-only observations preserve cancel/recovery history; do not sum repeated cumulative intervals or snapshots.",
+        "Late cleanup-only observations never revive terminal outcomes, renew leases or grant artifact/event writes."
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Approved P14 surface",
+      "items": [
+        "Canonical optional cleanup usage DTOs and optional RunAttempt usage in existing RunDetail; no new UI screen.",
+        "Unpublished 0014 sidecar table; observation and cleanup receipt persist in the same transaction.",
+        "Additive local usage_snapshot(); frozen StopResult/ClosedOutput/DiskBudget signatures remain unchanged."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "What remains future work",
+      "items": [
+        "Cost status UNAVAILABLE, amount absent/null; unknown never means zero or free.",
+        "Actual resource metering, versioned rates, spend limits and provider reconciliation stay with P23.5.",
+        "Invoices, credits/refunds and billable policy need separate scope. P17 evaluation and P23 retention keep their ownership."
+      ]
+    }
+  ]
+}
