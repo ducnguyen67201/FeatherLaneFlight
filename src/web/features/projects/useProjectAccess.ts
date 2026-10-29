@@ -37,16 +37,23 @@ export function useProjectAccess({
   client,
   cacheScope,
   onAccessFailure,
-}: ProjectAccessProps) {
+  initialOrganizationId = null,
+  initialProjectId = null,
+}: ProjectAccessProps & {
+  initialOrganizationId?: string | null;
+  initialProjectId?: string | null;
+}) {
   const queryClient = useQueryClient();
   const prefix = [...cacheScope, userId, "project-access"];
   const headers = {
     "x-flf-contract-version": contractManifest.contractVersion,
   };
   const [organizationChoice, setOrganizationChoice] = useState<string | null>(
-    null,
+    initialOrganizationId,
   );
-  const [projectChoice, setProjectChoice] = useState<string | null>(null);
+  const [projectChoice, setProjectChoice] = useState<string | null>(
+    initialProjectId,
+  );
   const [blocked, setBlocked] = useState(false);
   const [recoveryFailed, setRecoveryFailed] = useState(false);
   const active = useRef(true);
@@ -268,8 +275,8 @@ export function useProjectAccess({
     failed.current = false;
     setBlocked(false);
     setRecoveryFailed(false);
-    setOrganizationChoice(null);
-    setProjectChoice(null);
+    setOrganizationChoice(initialOrganizationId);
+    setProjectChoice(initialProjectId);
     void queryClient.invalidateQueries({ queryKey: prefix });
   }
   return {
