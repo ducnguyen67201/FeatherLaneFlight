@@ -12,9 +12,17 @@ pnpm setup:workspace
 pnpm dev
 ```
 
-Open <http://127.0.0.1:4200/runs>. Dev binds only to loopback. The current entry starts the local MSW demo before rendering; failed mock startup produces an error instead of falling through to a live API. New submissions create in-memory queued samples only. Reload resets the demo. After regenerating contracts while the dev server/browser are open, reload the page before further evaluation.
+Open <http://127.0.0.1:4248/>. The normal entry checks the real session before rendering authenticated content. Anonymous/expired sessions show the approved sign-in page at `/sign-in`; authenticated sessions open the organization/project workspace at `/settings`. Settings is the current live feature; other application paths resolve to it until their live feature wiring exists. Run workflows remain in the explicit development demo below.
 
-`pnpm build` regenerates contracts and the ignored browser MSW asset and emits `src/web/dist/`. Stop the dev server before `pnpm --filter @featherlane/web preview` on the same port. The narrower web typecheck assumes generated contracts exist; root typecheck/build generate them explicitly. This is a local mock artifact, not a deployment candidate.
+Start the API and shared database using `src/api/README.md`, with this worktree's own database and `FLF_API_PORT=8009`, `FLF_API_CANONICAL_ORIGIN=http://127.0.0.1:4248`, and explicit loopback authentication. Use Doppler process injection for configuration; no dotenv files. Vite proxies both `/auth` and `/api` to loopback API8009 with `changeOrigin:false` and no forwarded-header trust. Google must register exactly `http://127.0.0.1:4248/auth/google/callback`. Deployment HTTPS/reverse-proxy configuration is separate from this loopback development setup.
+
+`features/auth/AuthBoundary.tsx` owns session bootstrap and the identity-specific QueryClientProvider. Each auth epoch supplies a validated HTTP client, canonical session and cache prefix to `AuthenticatedProjects`. A 401 retires the identity; P07 handles 403/404 access changes. The approved header account control invokes CSRF-protected logout. Pending and uncertain logout hide project content, and retry obtains current CSRF before trying again. Cookies remain HttpOnly; no credential or cache persistence is introduced.
+
+`pnpm build` regenerates contracts and emits the live app to `src/web/dist/`. It does not start or initialize MSW. `pnpm --filter @featherlane/web preview` serves that build on 4248 with the same development API proxy; stop the dev server first. The narrower web typecheck assumes generated contracts exist; root typecheck/build generate them explicitly. A successful build does not establish provider or HTTPS deployment verification.
+
+## Explicit mock workspace
+
+Run `pnpm --filter @featherlane/web dev:demo` and open <http://127.0.0.1:4200/runs> or <http://127.0.0.1:4200/settings>. Only development mode named `demo` loads `mocks/startDemo.tsx` and MSW. The normal entry and production build always use the authenticated application. Demo requests stay on their separate origin and do not proxy to the API. New submissions create in-memory queued samples only; reload resets them. Failed mock startup reports an error instead of falling through to a live API. After regenerating contracts while a browser is open, reload before further evaluation.
 
 ## Runs workflow
 
@@ -24,7 +32,7 @@ Open <http://127.0.0.1:4200/runs>. Dev binds only to loopback. The current entry
 
 `queries.ts` composes generated operation keys/validated SDK options with the demo epoch, organization/project and response-changing parameters. Runtime validation completes before Query resolves. Reads and mutations do not automatically retry; there is no persisted cache or offline mutation queue. New submissions refetch eligibility and retain their idempotency key when retrying an unchanged payload after a known rejection. Changed inputs receive a new key. Unconfirmed recovery uses its original request independently of current eligibility. The MSW handler also rechecks admission; components cannot manufacture execution or outcomes.
 
-The context is an explicitly fixed demo organization/project, not sign-in or authorization. Real sessions, identity-change cache cleanup, API integration and live updates remain their assigned later phases. See [mock transport notes](mocks/README.md).
+Runs uses an explicitly fixed demo organization/project. It does not consume real project membership or authorize live execution. Real session and identity-cache lifecycle are implemented by the normal auth entry; Runs API/stream integration remains later work. See [mock transport notes](mocks/README.md).
 
 ## Organization and projects UI
 
@@ -32,7 +40,7 @@ Open `/settings` for the approved P07 organization/project UI. Organization sele
 
 The clearly labeled `ProjectsDemo` adapter supplies local samples, loading/empty/error/access-loss states and accepted/rejected creation. It makes no API calls and changes reset on reload. Display data is parsed through canonical generated OrganizationView/ProjectView validators. The reusable feature components and creation hook are under `features/projects/`; sample behavior is confined to `mocks/ProjectsDemo.tsx` and `mocks/projects.json`. `/settings` does not start the Runs mock worker. The existing `/runs` demo remains independently scoped.
 
-`AuthenticatedProjects` supplies the same workspace from the real P05/P06A-backed discovery and creation operations. P06.5 owns its final application mount and provides `userId`, `csrfToken`, `userMenu`, `client`, `cacheScope`, and `onAccessFailure`. Mount it inside the identity-owned QueryClientProvider, keyed by the auth epoch, using that epoch's validated client and query prefix. P07 does not create another auth controller or client. The current `/settings` entry remains the labeled sample until that composition lands.
+`AuthenticatedProjects` supplies the same workspace from the real P05/P06A-backed discovery and creation operations. P06.5 mounts it and provides `userId`, `csrfToken`, `userMenu`, `client`, `cacheScope`, and `onAccessFailure`. Mount it inside the identity-owned QueryClientProvider, keyed by the auth epoch, using that epoch's validated client and query prefix. P07 does not create another auth controller or client. The normal `/settings` entry mounts this real component; the labeled sample remains available only in explicit demo mode.
 
 The feature uses bounded cursor pages, validates every result before caching, scopes queries by identity/organization/project, and hides/cancels/removes its protected state on 401/403/404. A 401 delegates identity retirement to P06.5. A 403/404 refreshes actual organization discovery and requires an explicit access refresh before showing protected content again; failed recovery is an error, not a false empty membership. Discovery/selected project rechecks every 30 seconds. There are no project streams yet. Creation preserves the operation key and submitted name when an acknowledgment is
 uncertain (network, malformed response, server failure or idempotency conflict).

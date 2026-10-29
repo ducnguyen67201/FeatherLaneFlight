@@ -6,6 +6,9 @@ export {
   ContractValidationError,
   contractManifest,
   operationPolicies,
+  browserNavigationPolicies,
+  validateResult,
+  type SessionTransportPolicy,
 } from "./transport";
 export * from "./generated/types.gen";
 export {
@@ -17,6 +20,8 @@ export {
   getRunEvents,
   getRunArtifacts,
   cancelRun,
+  getSession,
+  logout,
 } from "./sdk";
 export {
   getContractMetaQueryKey,
@@ -25,6 +30,7 @@ export {
   getRunDetailQueryKey,
   getRunEventsQueryKey,
   getRunArtifactsQueryKey,
+  getSessionQueryKey,
 } from "./generated/@tanstack/react-query.gen";
 export {
   getContractMetaOptions,
@@ -35,6 +41,8 @@ export {
   getRunEventsOptions,
   getRunArtifactsOptions,
   cancelRunMutation,
+  getSessionOptions,
+  logoutMutation,
 } from "./queries";
 export {
   listOrganizations,

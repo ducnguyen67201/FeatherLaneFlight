@@ -19,11 +19,12 @@
     "react-dom": "19.3.1"
   },
   "scripts": {
-    "dev": "pnpm prepare:mocks && vite --host 127.0.0.1 --port 4200 --strictPort",
+    "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "pnpm prepare:mocks && vite build",
-    "preview": "vite preview --host 127.0.0.1 --port 4200 --strictPort",
-    "prepare:mocks": "msw init public --no-save"
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare:mocks": "msw init public --no-save",
+    "dev:demo": "pnpm prepare:mocks && vite --mode demo"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
