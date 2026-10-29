@@ -2,6 +2,7 @@
 
 import hmac
 import secrets
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -40,11 +41,17 @@ class IdentityService:
         secrets: SessionSecrets,
         session_ttl: int,
         login_ttl: int,
+        on_verified_login: Callable[[User], Awaitable[None]] | None = None,
     ):
         self.store = store
         self.secrets = secrets
         self.session_ttl = session_ttl
         self.login_ttl = login_ttl
+        self.on_verified_login = on_verified_login
+
+    async def users(self, user_ids: list[str]) -> dict[str, User]:
+        """Display-only lookup inside an authorized consumer transaction."""
+        return await self.store.users(user_ids)
 
     async def lookup_user(
         self, issuer: str, subject: str, *, lock: bool = False
@@ -130,6 +137,8 @@ class IdentityService:
                 if rotation_session_id:
                     await self.store.rotate_previous(rotation_session_id, now)
                 user = await self.store.resolve_user(identity, uuid4().hex, uuid4().hex)
+                if self.on_verified_login is not None:
+                    await self.on_verified_login(user)
                 await self.store.add_session(
                     session_id=session_id,
                     handle_digest=self.secrets.digest(handle, "session"),

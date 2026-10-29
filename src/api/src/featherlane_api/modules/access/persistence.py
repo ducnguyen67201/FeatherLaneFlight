@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -24,9 +25,21 @@ class OrganizationRecord(Base):
     __tablename__ = "organizations"
     __table_args__ = (
         CheckConstraint("char_length(name) BETWEEN 1 AND 128", name="name_length"),
+        ForeignKeyConstraint(
+            ["id", "owner_user_id"],
+            [
+                "featherlane.organization_memberships.organization_id",
+                "featherlane.organization_memberships.user_id",
+            ],
+            name="fk_organizations_owner_membership",
+            deferrable=True,
+            initially="DEFERRED",
+            use_alter=True,
+        ),
     )
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
     name: Mapped[str] = mapped_column(String(128))
+    owner_user_id: Mapped[str | None] = mapped_column(String(32))
 
 
 class OrganizationMembershipRecord(Base):
@@ -37,6 +50,44 @@ class OrganizationMembershipRecord(Base):
     user_id: Mapped[str] = mapped_column(
         ForeignKey("featherlane.users.id"), primary_key=True
     )
+    source: Mapped[str] = mapped_column(String(16), server_default="OPERATOR")
+    admission_email: Mapped[str | None] = mapped_column(String(320))
+
+
+class OrganizationEmailGrantRecord(Base):
+    __tablename__ = "organization_email_grants"
+    __table_args__ = (UniqueConstraint("organization_id", "email"),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("featherlane.organizations.id", ondelete="CASCADE"), index=True
+    )
+    email: Mapped[str] = mapped_column(String(320))
+    claimed: Mapped[bool] = mapped_column(Boolean, server_default="false")
+
+
+class OrganizationDomainRuleRecord(Base):
+    __tablename__ = "organization_domain_rules"
+    __table_args__ = (UniqueConstraint("organization_id", "domain"),)
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("featherlane.organizations.id", ondelete="CASCADE"), index=True
+    )
+    domain: Mapped[str] = mapped_column(String(253))
+
+
+class OrganizationJoinExclusionRecord(Base):
+    __tablename__ = "organization_join_exclusions"
+    __table_args__ = (
+        UniqueConstraint("organization_id", "kind", "value"),
+        CheckConstraint("kind IN ('email', 'user')", name="kind"),
+    )
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(
+        ForeignKey("featherlane.organizations.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(8))
+    value: Mapped[str] = mapped_column(String(320))
+    email: Mapped[str] = mapped_column(String(320))
 
 
 class ProjectRecord(Base):
@@ -87,6 +138,7 @@ class AccessAuditRecord(Base):
     action: Mapped[str] = mapped_column(String(64))
     organization_id: Mapped[str] = mapped_column(String(32), index=True)
     project_id: Mapped[str | None] = mapped_column(String(32))
+    rule_id: Mapped[str | None] = mapped_column(String(32))
     actor: Mapped[str] = mapped_column(String(32))
     user_id: Mapped[str] = mapped_column(String(32))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -103,6 +155,9 @@ class AccessStore:
             ProjectRecord,
             ProjectMembershipRecord,
             AccessAuditRecord,
+            OrganizationEmailGrantRecord,
+            OrganizationDomainRuleRecord,
+            OrganizationJoinExclusionRecord,
         ):
             await self.session.execute(select(record).limit(0))
 
@@ -169,7 +224,10 @@ class AccessStore:
     ) -> list[OrganizationRecord]:
         query = (
             select(OrganizationRecord)
-            .join(OrganizationMembershipRecord)
+            .join(
+                OrganizationMembershipRecord,
+                OrganizationMembershipRecord.organization_id == OrganizationRecord.id,
+            )
             .where(OrganizationMembershipRecord.user_id == user_id)
         )
         if cursor:
@@ -251,6 +309,8 @@ class AccessStore:
         actor: str,
         user_id: str,
         project_id: str | None = None,
+        *,
+        rule_id: str | None = None,
     ) -> None:
         self.session.add(
             AccessAuditRecord(
@@ -260,6 +320,7 @@ class AccessStore:
                 actor=actor,
                 user_id=user_id,
                 project_id=project_id,
+                rule_id=rule_id,
                 created_at=datetime.now(UTC),
             )
         )

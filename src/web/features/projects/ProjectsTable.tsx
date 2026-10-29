@@ -20,7 +20,7 @@ type ProjectsTableProps = {
   projects: readonly ProjectView[];
   projectId: string | null;
   onSelect: (projectId: string) => void;
-  onCreate: () => void;
+  onCreate?: () => void;
   onMore?: () => void;
   loadingMore?: boolean;
 };
@@ -42,16 +42,20 @@ export function ProjectsTable({
         <Box sx={{ py: 5 }}>
           <Typography>No projects available</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Create a project, or ask the operator to add you to an existing one.
+            {onCreate
+              ? "Create a project, or ask the owner to add you to an existing one."
+              : "Ask the organization owner to assign you to a project."}
           </Typography>
-          <Button
-            startIcon={<Add />}
-            variant="outlined"
-            sx={{ mt: 4 }}
-            onClick={onCreate}
-          >
-            Create first project
-          </Button>
+          {onCreate && (
+            <Button
+              startIcon={<Add />}
+              variant="outlined"
+              sx={{ mt: 4 }}
+              onClick={onCreate}
+            >
+              Create first project
+            </Button>
+          )}
         </Box>
       ) : (
         <TableContainer

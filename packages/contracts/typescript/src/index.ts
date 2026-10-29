@@ -55,3 +55,29 @@ export {
   listProjectsOptions,
   getProjectOptions,
 } from "./projectQueries";
+
+export {
+  getOrganizationAccess,
+  listOrganizationPeople,
+  listEmailGrants,
+  saveEmailGrant,
+  removeEmailGrant,
+  listDomainRules,
+  saveDomainRule,
+  removeDomainRule,
+  listJoinExclusions,
+  allowAutomaticJoining,
+  removeOrganizationPerson,
+  listManagedProjects,
+  listProjectPeople,
+  changeProjectPeople,
+} from "./people";
+export {
+  getOrganizationAccessOptions,
+  listOrganizationPeopleOptions,
+  listEmailGrantsOptions,
+  listDomainRulesOptions,
+  listJoinExclusionsOptions,
+  listManagedProjectsOptions,
+  listProjectPeopleOptions,
+} from "./peopleQueries";

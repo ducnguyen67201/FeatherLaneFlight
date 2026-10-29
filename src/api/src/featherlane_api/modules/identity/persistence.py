@@ -104,6 +104,18 @@ class IdentityStore:
         user = await self.session.scalar(query)
         return User(user.id, user.display_name, user.email) if user else None
 
+    async def users(self, user_ids: list[str]) -> dict[str, User]:
+        """Bounded display lookup; callers own their current authorization."""
+        self.require_transaction()
+        if len(user_ids) > 100:
+            raise ValueError("User display lookup is limited to one page")
+        rows = await self.session.scalars(
+            select(UserRecord)
+            .where(UserRecord.id.in_(user_ids))
+            .execution_options(populate_existing=True)
+        )
+        return {row.id: User(row.id, row.display_name, row.email) for row in rows}
+
     async def authenticate(
         self, digest: str, now: datetime, *, lock: bool = False
     ) -> tuple[Principal, str] | None:

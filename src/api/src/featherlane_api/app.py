@@ -11,8 +11,10 @@ from featherlane_api.http.errors import ERROR_RESPONSES, install_error_handlers
 from featherlane_api.http.meta import router as meta_router
 from featherlane_api.http.middleware import HttpBoundary
 from featherlane_api.infrastructure.database import Database
+from featherlane_api.modules.access.enrollment import AccessEnrollment
 from featherlane_api.modules.access.http import install_access_errors
 from featherlane_api.modules.access.http import router as access_router
+from featherlane_api.modules.access.people_http import router as people_router
 from featherlane_api.modules.access.persistence import AccessStore
 from featherlane_api.modules.identity.http import install_identity_errors
 from featherlane_api.modules.identity.http import router as identity_router
@@ -56,6 +58,7 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
         responses=ERROR_RESPONSES,
     )
     app.state.google_oidc = GoogleOidc(settings)
+    app.state.on_verified_login = lambda session: AccessEnrollment(session).apply
     app.state.settings = settings
     app.state.schema_digest = digest
     app.add_middleware(HttpBoundary, settings=settings)
@@ -65,4 +68,5 @@ def create_app(settings: ApiSettings | None = None) -> FastAPI:
     app.include_router(meta_router)
     app.include_router(identity_router)
     app.include_router(access_router)
+    app.include_router(people_router)
     return app

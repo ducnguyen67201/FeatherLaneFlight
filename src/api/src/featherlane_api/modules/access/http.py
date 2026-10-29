@@ -15,7 +15,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from featherlane_api.http.dependencies import get_session
 from featherlane_api.http.errors import ERROR_RESPONSES, ApiError, error_response
 from featherlane_api.modules.access.application import AccessService
-from featherlane_api.modules.access.domain import AccessNotFound, CreationConflict
+from featherlane_api.modules.access.domain import (
+    AccessNotFound,
+    CreationConflict,
+    MembershipConflict,
+    OwnerRequired,
+)
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.dependencies import (
     get_identity_service,
@@ -130,6 +135,28 @@ async def create_project(
 
 
 def install_access_errors(app: FastAPI) -> None:
+    @app.exception_handler(OwnerRequired)
+    async def owner_required(request: Request, exc: OwnerRequired):
+        return error_response(
+            request,
+            ApiError(
+                403,
+                ErrorCode.FORBIDDEN,
+                "Only the organization owner can perform this action.",
+            ),
+        )
+
+    @app.exception_handler(MembershipConflict)
+    async def membership_conflict(request: Request, exc: MembershipConflict):
+        return error_response(
+            request,
+            ApiError(
+                409,
+                ErrorCode.MEMBERSHIP_CONFLICT,
+                "This change conflicts with the owner or automatic-joining exclusions.",
+            ),
+        )
+
     @app.exception_handler(AccessNotFound)
     async def not_found(request: Request, exc: AccessNotFound):
         return error_response(
