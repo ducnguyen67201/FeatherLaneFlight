@@ -107,3 +107,8 @@ export {
 // This alias follows the generated discriminated response, including synthetic profiles.
 export type RegisteredIntegrationProfileView =
   import("./generated/types.gen").IntegrationProfileEnvelope["data"];
+export { listSuiteRevisions, getSuiteRevision } from "./suites";
+export {
+  listSuiteRevisionsOptions,
+  getSuiteRevisionOptions,
+} from "./suiteQueries";

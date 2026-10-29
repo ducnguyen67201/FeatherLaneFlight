@@ -1,0 +1,1 @@
+"""Immutable published suite catalog."""
