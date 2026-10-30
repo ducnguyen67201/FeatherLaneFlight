@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
   zSuiteDraftContent,
-  zSuiteCriteriaSuggestions,
+  zJudgeSuiteCriteriaSuggestions,
 } from "@featherlane/contracts/validators";
 import type {
   CheckDefinition,
   SuiteDraftContent,
+  DraftJudgeRubric,
 } from "@featherlane/contracts";
 import {
   InvalidSuiteSuggestion,
@@ -31,6 +32,7 @@ export type DraftEditPrecondition = {
 };
 type Batch = DraftEditPrecondition & {
   checks: CheckDefinition[];
+  rubric: DraftJudgeRubric;
   expectedContent: string;
   unsupportedRequirements: string[];
   model: string;
@@ -38,6 +40,7 @@ type Batch = DraftEditPrecondition & {
 
 export function useSuiteSuggestions({
   content,
+  rubric,
   savedVersion,
   editVersion,
   disabled,
@@ -45,6 +48,7 @@ export function useSuiteSuggestions({
   onChange,
 }: {
   content: SuiteDraftContent;
+  rubric: DraftJudgeRubric;
   savedVersion: number;
   editVersion: number;
   disabled: boolean;
@@ -52,6 +56,7 @@ export function useSuiteSuggestions({
   onChange: (
     content: SuiteDraftContent,
     expected: DraftEditPrecondition,
+    rubric?: DraftJudgeRubric,
   ) => boolean;
 }) {
   const [description, setDescription] = useState("");
@@ -60,8 +65,14 @@ export function useSuiteSuggestions({
   const [message, setMessage] = useState("");
   const [failed, setFailed] = useState(false);
   const pending = useRef<AbortController | null>(null);
-  const latest = useRef({ content, savedVersion, editVersion, disabled });
-  latest.current = { content, savedVersion, editVersion, disabled };
+  const latest = useRef({
+    content,
+    rubric,
+    savedVersion,
+    editVersion,
+    disabled,
+  });
+  latest.current = { content, rubric, savedVersion, editVersion, disabled };
   const stale =
     batch !== null &&
     (batch.expectedContent !== JSON.stringify(content) ||
@@ -99,7 +110,7 @@ export function useSuiteSuggestions({
         controller.signal,
       );
       if (controller.signal.aborted) return;
-      const parsed = zSuiteCriteriaSuggestions.safeParse(response);
+      const parsed = zJudgeSuiteCriteriaSuggestions.safeParse(response);
       if (
         !parsed.success ||
         parsed.data.draftVersion !== capture.savedVersion ||
@@ -111,6 +122,7 @@ export function useSuiteSuggestions({
         );
       setBatch({
         checks: validateSuiteSuggestions(parsed.data.checks, capture.content),
+        rubric: parsed.data.rubric,
         unsupportedRequirements: parsed.data.unsupportedRequirements,
         model: parsed.data.model,
         expectedContent: JSON.stringify(capture.content),
@@ -158,10 +170,20 @@ export function useSuiteSuggestions({
           "Resolve invalid draft fields before accepting this suggestion.",
         );
       if (
-        !onChange(next, {
-          savedVersion: batch.savedVersion,
-          editVersion: batch.editVersion,
-        })
+        !onChange(
+          next,
+          {
+            savedVersion: batch.savedVersion,
+            editVersion: batch.editVersion,
+          },
+          {
+            version: 1,
+            criteria: [
+              ...live.rubric.criteria.filter((c) => c.checkId !== check.id),
+              ...batch.rubric.criteria.filter((c) => c.checkId === check.id),
+            ],
+          },
+        )
       ) {
         setMessage(
           "Draft changed or is busy. Your edits are preserved; review again before accepting.",
@@ -193,6 +215,7 @@ export function useSuiteSuggestions({
     description,
     busy,
     checks: batch?.checks ?? null,
+    rubric: batch?.rubric,
     unsupportedRequirements: batch?.unsupportedRequirements ?? [],
     model: batch?.model,
     message,

@@ -2,6 +2,8 @@
 
 from featherlane_contracts import ErrorCode
 from featherlane_contracts.suite_criteria import (
+    JudgeSuiteCriteriaSuggestions,
+    JudgeSuiteCriteriaSuggestionsEnvelope,
     SuggestSuiteCriteriaRequest,
     SuiteCriteriaSuggestions,
     SuiteCriteriaSuggestionsEnvelope,
@@ -45,7 +47,9 @@ class SuiteCriteriaService:
             content = SuiteDraftContent.model_validate(row.content)
         # External I/O owns no database transaction, draft lock or publication record.
         result = await self.provider.suggest(
-            body.mission_description, principal.session_id
+            body.mission_description,
+            principal.session_id,
+            judge=self.drafts.rubric_mode,
         )
         if self.provider.config is None:
             raise ApiError(
@@ -75,8 +79,18 @@ class SuiteCriteriaService:
                         "OpenAI returned unsupported criterion definitions. "
                         "Continue manually.",
                     )
-            return SuiteCriteriaSuggestionsEnvelope(
-                data=SuiteCriteriaSuggestions(
+            envelope = (
+                JudgeSuiteCriteriaSuggestionsEnvelope
+                if self.drafts.rubric_mode
+                else SuiteCriteriaSuggestionsEnvelope
+            )
+            model = (
+                JudgeSuiteCriteriaSuggestions
+                if self.drafts.rubric_mode
+                else SuiteCriteriaSuggestions
+            )
+            return envelope(
+                data=model(
                     **result.model_dump(mode="json"),
                     draftVersion=row.draft_version,
                     provider="openai",

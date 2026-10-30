@@ -7,6 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from featherlane_contracts import CONTRACT_VERSION
+from sqlalchemy import select
 
 from featherlane_api.config import ApiSettings, load_settings
 from featherlane_api.http.errors import ERROR_RESPONSES, install_error_handlers
@@ -18,6 +19,7 @@ from featherlane_api.modules.access.http import install_access_errors
 from featherlane_api.modules.access.http import router as access_router
 from featherlane_api.modules.access.people_http import router as people_router
 from featherlane_api.modules.access.persistence import AccessStore
+from featherlane_api.modules.evaluation.http import router as judgments_router
 from featherlane_api.modules.events.http import router as events_router
 from featherlane_api.modules.events.persistence import EventStore
 from featherlane_api.modules.evidence.http import router as evidence_router
@@ -26,6 +28,8 @@ from featherlane_api.modules.evidence.storage import (
     ArtifactInvalid,
     LocalPrivateArtifactStorage,
 )
+from featherlane_api.modules.finalization.http import router as finalization_router
+from featherlane_api.modules.finalization.persistence import FinalizationRecord
 from featherlane_api.modules.identity.http import install_identity_errors
 from featherlane_api.modules.identity.http import router as identity_router
 from featherlane_api.modules.identity.oidc import GoogleOidc
@@ -46,8 +50,13 @@ from featherlane_api.modules.suites.criteria_provider import CriteriaSuggestionP
 from featherlane_api.modules.suites.draft_http import router as draft_router
 from featherlane_api.modules.suites.draft_store import SuiteDraftStore
 from featherlane_api.modules.suites.http import router as suites_router
+from featherlane_api.modules.suites.judge_criteria_http import (
+    router as judge_criteria_router,
+)
+from featherlane_api.modules.suites.judge_http import router as judge_draft_router
 from featherlane_api.modules.suites.persistence import SuiteStore
 from featherlane_api.openapi.schema import create_schema_app, schema_digest
+from featherlane_api.workflows.runtime import create_client
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +71,7 @@ def create_app(
     async def lifespan(app: FastAPI):
         database = Database(settings)
         app.state.database = database
+        app.state.workflow_client = create_client(settings)
         try:
             try:
                 await database.check_ready()
@@ -76,6 +86,8 @@ def create_app(
                     await EventStore(session).check_ready()
                     await LeaseStore(session).check_ready()
                     await EvidenceStore(session).check_ready()
+                    await session.execute(select(FinalizationRecord).limit(0))
+                await app.state.workflow_client.check_connection_async()
             except Exception:
                 logger.error("Database startup check failed")
                 raise RuntimeError(
@@ -90,6 +102,7 @@ def create_app(
                 ) from None
             yield
         finally:
+            await asyncio.to_thread(app.state.workflow_client.destroy)
             await database.close()
 
     app = FastAPI(
@@ -131,9 +144,13 @@ def create_app(
     app.include_router(registration_router)
     app.include_router(suites_router)
     app.include_router(draft_router)
+    app.include_router(judge_draft_router)
     app.include_router(criteria_router)
+    app.include_router(judge_criteria_router)
     app.include_router(runs_router)
     app.include_router(events_router)
     app.include_router(leases_router)
+    app.include_router(finalization_router)
+    app.include_router(judgments_router)
     app.include_router(evidence_router)
     return app

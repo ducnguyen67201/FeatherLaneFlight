@@ -1,0 +1,13 @@
+# Explicitly enable and configure locally before live judging. No model call at startup.
+[llm_judge]
+enabled = false
+provider = "openai"
+model = "gpt-6.1-sol"
+reasoning_effort = "low"
+service_tier = "default"
+timeout_seconds = 30
+max_output_tokens = 2048
+max_concurrent_requests = 2
+max_judged_trials = 10
+max_packet_bytes = 65536
+api_key_file = "../.local/secrets/openai-api-key"

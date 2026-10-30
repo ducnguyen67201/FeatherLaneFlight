@@ -4,7 +4,7 @@ import { Alert, Button, Typography } from "@mui/material";
 import {
   ApiError,
   contractManifest,
-  getSuiteDraftOptions,
+  getJudgeSuiteDraftOptions,
 } from "@featherlane/contracts";
 import type { DraftEditorConnection } from "./useSuiteDraftEditor";
 import { SuiteDraftEditor } from "./SuiteDraftEditor";
@@ -31,7 +31,7 @@ export function SuiteDraftRoute({
       .cancelQueries({ queryKey: scope })
       .then(() => queryClient.removeQueries({ queryKey: scope }));
   }
-  const options = getSuiteDraftOptions(
+  const options = getJudgeSuiteDraftOptions(
     {
       client: connection.client,
       headers: { "x-flf-contract-version": contractManifest.contractVersion },

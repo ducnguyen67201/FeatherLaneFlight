@@ -8,6 +8,7 @@ import httpx2
 from featherlane_contracts import ErrorCode
 from featherlane_contracts.suite_criteria import (
     SuggestedCriteriaDraft,
+    SuggestedJudgeCriteriaDraft,
     SuiteCriteriaSuggestionStatus,
 )
 
@@ -34,7 +35,7 @@ Return JSON matching the supplied canonical schema. No prose outside JSON.
 """
 
 
-def output_schema() -> dict:
+def output_schema(*, judge: bool = False) -> dict:
     """Adapt only union syntax for OpenAI's subset; canonical validation follows."""
 
     def supported(value):
@@ -48,7 +49,11 @@ def output_schema() -> dict:
             return [supported(item) for item in value]
         return value
 
-    return supported(SuggestedCriteriaDraft.model_json_schema())
+    return supported(
+        (
+            SuggestedJudgeCriteriaDraft if judge else SuggestedCriteriaDraft
+        ).model_json_schema()
+    )
 
 
 class CriteriaSuggestionProvider:
@@ -74,7 +79,7 @@ class CriteriaSuggestionProvider:
         )
 
     async def suggest(
-        self, description: str, session_id: str
+        self, description: str, session_id: str, *, judge: bool = False
     ) -> SuggestedCriteriaDraft:
         config = self.config
         key = (
@@ -103,7 +108,17 @@ class CriteriaSuggestionProvider:
             async with asyncio.timeout(config.timeout_seconds):
                 payload = {
                     "model": config.model,
-                    "instructions": INSTRUCTIONS,
+                    "instructions": INSTRUCTIONS
+                    + (
+                        "\nDraft LLM judge rubrics, not executable logical checks. "
+                        "For each suggested check include a rubric criterion with "
+                        "matching checkId/version, explicit passWhen and failWhen. "
+                        "Requirement and inconclusiveWhen are evidence-grounded "
+                        "judge instructions. Missing evidence is INCONCLUSIVE. "
+                        "Rubric version is 1. Human review/publication are required."
+                        if judge
+                        else ""
+                    ),
                     "input": [{"role": "user", "content": description}],
                     "reasoning": {"effort": config.reasoning_effort},
                     "service_tier": config.service_tier,
@@ -115,7 +130,7 @@ class CriteriaSuggestionProvider:
                             "type": "json_schema",
                             "name": "suite_criteria_draft",
                             "strict": True,
-                            "schema": output_schema(),
+                            "schema": output_schema(judge=judge),
                         }
                     },
                 }
@@ -166,7 +181,9 @@ class CriteriaSuggestionProvider:
                         texts.append(part["text"])
                 if len(texts) != 1:
                     raise ValueError("Expected one structured output")
-                return SuggestedCriteriaDraft.model_validate_json(texts[0])
+                return (
+                    SuggestedJudgeCriteriaDraft if judge else SuggestedCriteriaDraft
+                ).model_validate_json(texts[0])
         except (httpx2.HTTPError, TimeoutError, ValueError):
             raise ApiError(
                 503,

@@ -5,6 +5,7 @@ from typing import Annotated, Literal
 from pydantic import Field, field_validator, model_validator
 
 from featherlane_contracts import SuccessEnvelope, WireModel
+from featherlane_contracts.judging import DraftJudgeRubric
 from featherlane_contracts.run_detail import CheckDefinition, Description
 from featherlane_contracts.suite_drafts import SuiteDraftVersionRequest
 from featherlane_contracts.suites import RevisionNumber
@@ -52,5 +53,34 @@ class SuiteCriteriaSuggestionsEnvelope(SuccessEnvelope[SuiteCriteriaSuggestions]
 
 class SuiteCriteriaSuggestionStatusEnvelope(
     SuccessEnvelope[SuiteCriteriaSuggestionStatus]
+):
+    pass
+
+
+class SuggestedJudgeCriteriaDraft(SuggestedCriteriaDraft):
+    rubric: "DraftJudgeRubric"
+
+    @model_validator(mode="after")
+    def rubric_coverage(self) -> "SuggestedJudgeCriteriaDraft":
+        if {(c.check_id, c.check_version) for c in self.rubric.criteria} != {
+            (c.id, c.version) for c in self.checks
+        }:
+            raise ValueError("Suggested rubric must match suggested checks")
+        if any(
+            not (c.pass_when or "").strip() or not (c.fail_when or "").strip()
+            for c in self.rubric.criteria
+        ):
+            raise ValueError("Suggested PASS and FAIL conditions are required")
+        return self
+
+
+class JudgeSuiteCriteriaSuggestions(SuggestedJudgeCriteriaDraft):
+    draft_version: RevisionNumber
+    provider: Literal["openai"]
+    model: Annotated[str, Field(min_length=1, max_length=128)]
+
+
+class JudgeSuiteCriteriaSuggestionsEnvelope(
+    SuccessEnvelope[JudgeSuiteCriteriaSuggestions]
 ):
     pass

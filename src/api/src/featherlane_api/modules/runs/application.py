@@ -1,5 +1,6 @@
 """Current membership is checked inside every caller-visible queue transaction."""
 
+import json
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
@@ -10,6 +11,7 @@ from featherlane_contracts import (
     RunEnvelope,
     RunListEnvelope,
 )
+from featherlane_contracts.finalization import FinalizationTerminal
 from featherlane_contracts.registration import (
     BuildView,
     LocalProfileView,
@@ -28,6 +30,8 @@ from featherlane_api.modules.events.persistence import EventStore
 from featherlane_api.modules.evidence.application import artifact_summary
 from featherlane_api.modules.evidence.persistence import EvidenceStore
 from featherlane_api.modules.evidence.storage import LocalPrivateArtifactStorage
+from featherlane_api.modules.finalization.persistence import FinalizationRecord
+from featherlane_api.modules.finalization.presentation import apply_results
 from featherlane_api.modules.identity.application import IdentityService
 from featherlane_api.modules.identity.domain import Principal
 from featherlane_api.modules.leases.expiry import expire_attempt
@@ -244,6 +248,17 @@ class RunService:
             )
             now = datetime.now(UTC)
             detail = run_detail(row, now, attempts, usage)
+            if attempts:
+                finalization = await self.session.get(
+                    FinalizationRecord, attempts[-1].id
+                )
+                if finalization is not None and finalization.terminal is not None:
+                    apply_results(
+                        detail,
+                        FinalizationTerminal.model_validate_json(
+                            json.dumps(finalization.terminal)
+                        ),
+                    )
             detail.artifact_summary = artifact_summary(
                 await EvidenceStore(self.session).for_run(run_id),
                 now,

@@ -4,6 +4,12 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from featherlane_contracts import CursorMeta, ErrorCode, FieldError
+from featherlane_contracts.judging import (
+    EditJudgeSuiteDraftRequest,
+    JudgeSuiteDraftEnvelope,
+    JudgeSuiteDraftView,
+)
+from featherlane_contracts.registration import metadata_digest
 from featherlane_contracts.suite_drafts import (
     CreateSuiteDraftRequest,
     EditSuiteDraftRequest,
@@ -45,6 +51,11 @@ from featherlane_api.modules.suites.publication import (
     validate_publication,
 )
 from featherlane_api.modules.suites.qualification import sha256
+from featherlane_api.modules.suites.rubric_store import (
+    DraftRubricRecord,
+    PublishedRubricRecord,
+)
+from featherlane_api.modules.suites.rubrics import draft_rubric, publish_rubric
 
 
 def prepare_definition(
@@ -137,7 +148,14 @@ def summary(row: SuiteDraftRecord) -> SuiteDraftSummary:
 
 
 class SuiteDraftService:
-    def __init__(self, session: AsyncSession, identity: IdentityService):
+    def __init__(
+        self,
+        session: AsyncSession,
+        identity: IdentityService,
+        *,
+        rubric_mode: bool = False,
+    ):
+        self.rubric_mode = rubric_mode
         self.session = session
         self.identity = identity
         self.store = SuiteDraftStore(session)
@@ -160,7 +178,7 @@ class SuiteDraftService:
             SuiteDraftPublicationRecord,
             (row.project_id, row.suite_id, row.draft_version),
         )
-        return SuiteDraftEnvelope(
+        result = SuiteDraftEnvelope(
             data=SuiteDraftView.model_validate(
                 {
                     **summary(row).model_dump(),
@@ -173,6 +191,19 @@ class SuiteDraftService:
                 }
             )
         )
+        if self.rubric_mode:
+            saved = await self.session.get(
+                DraftRubricRecord, (row.project_id, row.suite_id)
+            )
+            return JudgeSuiteDraftEnvelope(
+                data=JudgeSuiteDraftView.model_validate(
+                    {
+                        **result.data.model_dump(mode="json"),
+                        "rubric": draft_rubric(row, saved).model_dump(mode="json"),
+                    }
+                )
+            )
+        return result
 
     def audit(self, row: SuiteDraftRecord, actor_id: str, action: str) -> None:
         self.session.add(
@@ -255,6 +286,21 @@ class SuiteDraftService:
                 self.session.add(row)
                 self.audit(row, principal.user_id, "DRAFT_CREATED")
                 await self.session.flush()
+                if body.source_revision_id is not None:
+                    source_rubric = await self.session.get(
+                        PublishedRubricRecord, body.source_revision_id
+                    )
+                    if source_rubric is not None:
+                        self.session.add(
+                            DraftRubricRecord(
+                                project_id=project_id,
+                                suite_id=suite_id,
+                                rubric={
+                                    "version": 1,
+                                    "criteria": source_rubric.rubric["criteria"],
+                                },
+                            )
+                        )
             # Opening an existing suite draft never overwrites another member's work.
             self.session.add(
                 SuiteDraftCreationRecord(
@@ -314,11 +360,36 @@ class SuiteDraftService:
                     "This draft has reached its edit limit.",
                 )
             row.content = body.content.model_dump(mode="json")
+            companion = await self.session.get(
+                DraftRubricRecord, (project_id, suite_id)
+            )
+            if isinstance(body, EditJudgeSuiteDraftRequest):
+                if companion is None:
+                    self.session.add(
+                        DraftRubricRecord(
+                            project_id=project_id,
+                            suite_id=suite_id,
+                            rubric=body.rubric.model_dump(mode="json"),
+                        )
+                    )
+                else:
+                    companion.rubric = body.rubric.model_dump(mode="json")
+            elif companion is not None:
+                # Legacy writers cannot keep unreviewed judge instructions.
+                await self.session.delete(companion)
             row.draft_version += 1
             row.updated_at = datetime.now(UTC)
             self.audit(row, principal.user_id, "DRAFT_UPDATED")
             await self.session.flush()
             return await self.view(row)
+
+    async def rubric_for(
+        self, row: SuiteDraftRecord, definition: PublishedSuiteDefinition
+    ):
+        saved = await self.session.get(
+            DraftRubricRecord, (row.project_id, row.suite_id)
+        )
+        return publish_rubric(definition, draft_rubric(row, saved))
 
     async def validate(
         self,
@@ -349,6 +420,15 @@ class SuiteDraftService:
                     if error.status not in {409, 422}:
                         raise
                     issues = [publication_issue(error)]
+            if self.rubric_mode and definition is not None and not issues:
+                try:
+                    await self.rubric_for(row, definition)
+                except ApiError as error:
+                    issues = error.details or [
+                        FieldError(
+                            field="checks", code="incomplete", message=error.message
+                        )
+                    ]
             return SuiteDraftValidationEnvelope(
                 data=SuiteDraftValidation(
                     draftVersion=row.draft_version,
@@ -391,6 +471,17 @@ class SuiteDraftService:
                         ErrorCode.IDEMPOTENCY_CONFLICT,
                         "Publication inputs differ from the committed result.",
                     )
+                if (
+                    self.rubric_mode
+                    and await self.session.get(PublishedRubricRecord, recovered.id)
+                    is None
+                ):
+                    raise ApiError(
+                        409,
+                        ErrorCode.SUITE_DRAFT_CONFLICT,
+                        "This publication used the legacy evaluator. "
+                        "Create a new draft revision for judging.",
+                    )
                 return SuiteRevisionEnvelope(data=recovered)
             require_version(row, expected_version)
             definition, issues = prepare_definition(
@@ -414,6 +505,9 @@ class SuiteDraftService:
                     ErrorCode.SUITE_DRAFT_CONFLICT,
                     "Publication inputs changed. Reload and review the draft again.",
                 )
+            rubric = (
+                await self.rubric_for(row, definition) if self.rubric_mode else None
+            )
             try:
                 published = await publish_definition(
                     self.session,
@@ -445,6 +539,14 @@ class SuiteDraftService:
                     suite_revision_id=published.id,
                 )
             )
+            if rubric is not None:
+                self.session.add(
+                    PublishedRubricRecord(
+                        revision_id=published.id,
+                        rubric=rubric.model_dump(mode="json"),
+                        digest=metadata_digest(rubric),
+                    )
+                )
             row.last_published_revision_id = published.id
             await self.session.flush()
             return SuiteRevisionEnvelope(data=published)

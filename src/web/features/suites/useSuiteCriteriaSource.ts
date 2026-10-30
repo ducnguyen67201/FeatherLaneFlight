@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ApiError,
   contractManifest,
-  getSuiteCriteriaSuggestionStatusOptions,
-  suggestSuiteCriteria,
+  getJudgeCriteriaSuggestionStatusOptions,
+  suggestJudgeSuiteCriteria,
 } from "@featherlane/contracts";
 import type { DraftEditorConnection } from "./useSuiteDraftEditor";
 import type { SuiteSuggestionSource } from "./useSuiteSuggestions";
@@ -19,7 +19,7 @@ export function useSuiteCriteriaSource(
   const latest = useRef({ connection, onConflict });
   latest.current = { connection, onConflict };
   const status = useQuery(
-    getSuiteCriteriaSuggestionStatusOptions(
+    getJudgeCriteriaSuggestionStatusOptions(
       {
         client,
         path: { projectId, suiteId },
@@ -43,11 +43,11 @@ export function useSuiteCriteriaSource(
       label: model ? `OpenAI · ${model}` : "OpenAI · not configured",
       checking: status.isPending,
       disclosure:
-        "Only your entered mission description and the fixed supported-check schema are sent to OpenAI. Suggestions require your review.",
+        "Only your entered mission description and the supported rubric schema are sent to OpenAI. Suggestions require your review.",
       request: available
         ? async (description, savedVersion, signal) => {
             try {
-              const result = await suggestSuiteCriteria({
+              const result = await suggestJudgeSuiteCriteria({
                 client,
                 path: { projectId, suiteId },
                 headers: {

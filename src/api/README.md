@@ -570,3 +570,12 @@ identities/attempts; it does not add a login, admission or normal-execution bypa
 The approved live-detail UI validates events before invalidating scoped Query resources.
 Cancellation intent returns 202 while stop confirmation is pending; queued or terminal
 cancellation returns 200. Cleanup and evaluation truth remain server-owned.
+
+## P17 server evaluation workflow
+
+The authorized local implementation uses DBOS 3.4.0 under
+`src/featherlane_api/workflows/`, with finalization, evidence validation and LLM judging
+in their domain modules. Historical v1 jobs retain deterministic evaluation. See the maintained [server evaluation architecture](../../docs/architecture/server-evaluation.md)
+for approval scope, startup commands, retry/deadline policy, verification and limits.
+The approved rubric follow-up builds on merged P17.5. Live judging is disabled in
+`config/llm-judge.toml`; no simulation executor is added.

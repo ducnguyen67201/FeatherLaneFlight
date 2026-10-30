@@ -75,3 +75,11 @@ October 29 P14 usage extension, its implementation status and deferred cost scop
 spool, authorized ingestion/read paths, signed cursors, SSE and browser snapshot
 recovery. It records the October 29, 2026 design approval and local implementation
 status. It does not extend runtime qualification or deploy additional services.
+
+## Server evaluation child architecture
+
+[Server evaluation workflow](server-evaluation.md) records the October 29, 2026
+approval of P17's DBOS/PostgreSQL evaluation workflow, existing-worker processing,
+bounded retry policy and confirmed-cleanup handoff. It links the approved diagram,
+editable source and locally verified backend implementation status. Results UI
+approval remains separate; this does not qualify or deploy simulation execution.

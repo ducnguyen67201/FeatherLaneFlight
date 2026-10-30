@@ -3,8 +3,12 @@ import { Box, ButtonBase, Tooltip, Typography } from "@mui/material";
 import { tokens } from "../../design/theme";
 import { traceSeconds, traceTickMs, type TraceRow } from "./runTraceModel";
 
+export type FailureRange = { fromMs: number; toMs: number; trialId: string };
+
 export function RunTraceChart({
   rows,
+  marker,
+  failureRange,
   maxMs,
   selectedId,
   rowHeight,
@@ -15,6 +19,8 @@ export function RunTraceChart({
   onSelect,
 }: {
   rows: TraceRow[];
+  marker?: { elapsedMs: number; label: string };
+  failureRange?: FailureRange;
   maxMs: number;
   selectedId: string | undefined;
   rowHeight: number;
@@ -36,7 +42,7 @@ export function RunTraceChart({
   const position = (ms: number) => (ms / tick) * spacing;
   const tickCount = Math.floor(width / spacing);
   useEffect(() => {
-    if (!following) return;
+    if (!following || marker || failureRange) return;
     const frame = window.requestAnimationFrame(() => {
       if (viewport.current)
         viewport.current.scrollLeft = Math.max(
@@ -50,11 +56,35 @@ export function RunTraceChart({
     return () => window.cancelAnimationFrame(frame);
   }, [
     following,
+    marker,
+    failureRange,
     maxMs,
     tick,
     spacing,
     geometry.labelWidth,
     geometry.tickSpacing,
+  ]);
+  useEffect(() => {
+    const focusMs = failureRange
+      ? (failureRange.fromMs + failureRange.toMs) / 2
+      : marker?.elapsedMs;
+    if (focusMs === undefined) return;
+    const frame = window.requestAnimationFrame(() => {
+      if (viewport.current)
+        viewport.current.scrollLeft = Math.max(
+          0,
+          (focusMs / tick) * spacing -
+            (viewport.current.clientWidth - geometry.labelWidth) / 2,
+        );
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [
+    marker?.elapsedMs,
+    failureRange?.fromMs,
+    failureRange?.toMs,
+    tick,
+    spacing,
+    geometry.labelWidth,
   ]);
   const labelStyle = {
     position: "sticky",
@@ -103,7 +133,47 @@ export function RunTraceChart({
         },
       }}
     >
-      <Box sx={{ width: geometry.labelWidth + width }}>
+      <Box
+        sx={{
+          width: geometry.labelWidth + width,
+          position: "relative",
+          minHeight: geometry.viewportHeight,
+        }}
+      >
+        {failureRange && (
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: geometry.labelWidth + position(failureRange.fromMs),
+              width: position(failureRange.toMs - failureRange.fromMs),
+              bgcolor: "status.failure.background",
+              borderLeft: `${tokens.borderWidthPx.focus}px dotted`,
+              borderRight: `${tokens.borderWidthPx.focus}px dotted`,
+              borderColor: "status.failure.foreground",
+              opacity: 0.8,
+              zIndex: 3,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+        {marker && !failureRange && (
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: geometry.labelWidth + position(marker.elapsedMs),
+              borderLeft: `${tokens.borderWidthPx.focus}px dotted`,
+              borderColor: "primary.main",
+              zIndex: 3,
+              pointerEvents: "none",
+            }}
+          />
+        )}
         <Box
           sx={{
             display: "grid",
@@ -129,6 +199,64 @@ export function RunTraceChart({
             ACTIVITY / TRIAL
           </Typography>
           <Box sx={{ position: "relative" }}>
+            {failureRange && (
+              <>
+                <Typography
+                  component="span"
+                  variant="caption"
+                  aria-label={`Failure window from +${(failureRange.fromMs / 1000).toFixed(3)} to +${(failureRange.toMs / 1000).toFixed(3)} seconds on the attempt monotonic clock`}
+                  sx={{
+                    position: "absolute",
+                    left: position(failureRange.fromMs),
+                    top: 0,
+                    transform: "translateX(-100%)",
+                    color: "status.failure.foreground",
+                    bgcolor: "status.failure.background",
+                    px: 1,
+                    zIndex: 6,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  From +{(failureRange.fromMs / 1000).toFixed(3)} s
+                </Typography>
+                <Typography
+                  component="span"
+                  variant="caption"
+                  sx={{
+                    position: "absolute",
+                    left: position(failureRange.toMs),
+                    top: 0,
+                    color: "status.failure.foreground",
+                    bgcolor: "status.failure.background",
+                    px: 1,
+                    zIndex: 6,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  To +{(failureRange.toMs / 1000).toFixed(3)} s
+                </Typography>
+              </>
+            )}
+            {marker && !failureRange && (
+              <Typography
+                component="span"
+                variant="caption"
+                aria-label={`${marker.label} at +${(marker.elapsedMs / 1000).toFixed(3)} seconds on the attempt monotonic clock`}
+                sx={{
+                  position: "absolute",
+                  left: position(marker.elapsedMs),
+                  top: 0,
+                  transform: "translateX(-50%)",
+                  bgcolor: "primary.main",
+                  color: "primary.contrastText",
+                  px: 1,
+                  zIndex: 6,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                +{(marker.elapsedMs / 1000).toFixed(3)} s
+              </Typography>
+            )}
             {Array.from({ length: tickCount + 1 }, (_, index) => (
               <Typography
                 key={index}
@@ -219,6 +347,31 @@ export function RunTraceChart({
                     backgroundSize: `${spacing}px 100%`,
                   }}
                 >
+                  {failureRange &&
+                    row.trial?.id === failureRange.trialId &&
+                    row.startMs !== null &&
+                    row.observedThroughMs !== null &&
+                    Math.min(failureRange.toMs, row.observedThroughMs) >
+                      Math.max(failureRange.fromMs, row.startMs) && (
+                      <Box
+                        aria-hidden
+                        sx={{
+                          position: "absolute",
+                          left: position(
+                            Math.max(failureRange.fromMs, row.startMs),
+                          ),
+                          width: position(
+                            Math.min(failureRange.toMs, row.observedThroughMs) -
+                              Math.max(failureRange.fromMs, row.startMs),
+                          ),
+                          top: (rowHeight - geometry.barHeight) / 2,
+                          height: geometry.barHeight,
+                          bgcolor: "status.failure.foreground",
+                          zIndex: 3,
+                          pointerEvents: "none",
+                        }}
+                      />
+                    )}
                   {duration !== null && row.startMs !== null ? (
                     <>
                       <Box

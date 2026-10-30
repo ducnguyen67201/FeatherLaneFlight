@@ -284,6 +284,8 @@ class LeaseService:
         now: datetime,
     ) -> Exception | None:
         self.expire(runner, run, attempt, now)
+        if attempt.finalization_accepted_at is not None:
+            return StaleAttempt()
         if attempt.finished_at is not None:
             return (
                 LeaseExpired()
@@ -433,6 +435,7 @@ class LeaseService:
                         select(AttemptRecord.runner_id)
                         .where(
                             AttemptRecord.finished_at.is_(None),
+                            AttemptRecord.finalization_accepted_at.is_(None),
                             (AttemptRecord.lease_expires_at <= func.clock_timestamp())
                             | (
                                 AttemptRecord.created_at

@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LLM judge evaluation \u2014 proposed revision",
+    "locale": "en",
+    "output": ".archify/architecture-llm-judge-20261029-185434/llm-judge-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "runner",
+      "type": "external",
+      "label": "Runner submission",
+      "sublabel": "RETAIN \u00b7 observations and references",
+      "pos": [40, 60],
+      "size": [220, 84]
+    },
+    {
+      "id": "accept",
+      "type": "security",
+      "label": "Accept sealed inputs",
+      "sublabel": "RETAIN \u00b7 auth, fence and cleanup",
+      "pos": [420, 60],
+      "size": [220, 84]
+    },
+    {
+      "id": "state",
+      "type": "database",
+      "label": "PostgreSQL + DBOS",
+      "sublabel": "RETAIN \u00b7 frozen inputs / durable queue",
+      "pos": [820, 60],
+      "size": [230, 84]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Validate evidence",
+      "sublabel": "RETAIN \u00b7 full hash, scope and coverage",
+      "pos": [820, 330],
+      "size": [230, 84]
+    },
+    {
+      "id": "packet",
+      "type": "backend",
+      "label": "Build judge packet",
+      "sublabel": "PROPOSED \u00b7 mission + trace + rubric",
+      "pos": [420, 330],
+      "size": [220, 84]
+    },
+    {
+      "id": "judge",
+      "type": "external",
+      "label": "LLM criterion judge",
+      "sublabel": "PROPOSED \u00b7 provider not connected",
+      "pos": [40, 610],
+      "size": [220, 84]
+    },
+    {
+      "id": "guard",
+      "type": "security",
+      "label": "Validate judgments",
+      "sublabel": "PROPOSED \u00b7 schema + cited evidence",
+      "pos": [420, 610],
+      "size": [220, 84]
+    },
+    {
+      "id": "commit",
+      "type": "backend",
+      "label": "Commit saved verdicts",
+      "sublabel": "RETAIN \u00b7 cancel / deadline / replay",
+      "pos": [820, 610],
+      "size": [230, 84]
+    },
+    {
+      "id": "results",
+      "type": "frontend",
+      "label": "Results / criterion dots",
+      "sublabel": "PROPOSED \u00b7 verdict, finding, references",
+      "pos": [820, 870],
+      "size": [230, 84]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Trusted worker \u2014 evidence preparation and response validation",
+      "wraps": ["worker", "packet", "guard", "commit"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "submit",
+      "from": "runner",
+      "to": "accept",
+      "label": "same operation ID",
+      "variant": "security"
+    },
+    {
+      "id": "enqueue",
+      "from": "accept",
+      "to": "state",
+      "label": "atomic acceptance",
+      "variant": "security"
+    },
+    {
+      "id": "schedule",
+      "from": "state",
+      "to": "worker",
+      "label": "DBOS scheduling"
+    },
+    {
+      "id": "prepare",
+      "from": "worker",
+      "to": "packet",
+      "label": "validated evidence"
+    },
+    {
+      "id": "ask",
+      "from": "packet",
+      "to": "judge",
+      "label": "bounded judge input",
+      "variant": "security"
+    },
+    {
+      "id": "answer",
+      "from": "judge",
+      "to": "guard",
+      "label": "per-criterion verdicts"
+    },
+    {
+      "id": "persist",
+      "from": "guard",
+      "to": "commit",
+      "label": "validated response"
+    },
+    {
+      "id": "receipt",
+      "from": "commit",
+      "to": "state",
+      "label": "immutable result",
+      "fromSide": "right",
+      "toSide": "right",
+      "via": [
+        [1150, 652],
+        [1150, 102]
+      ],
+      "variant": "security"
+    },
+    {
+      "id": "read",
+      "from": "commit",
+      "to": "results",
+      "label": "authorized saved result"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "The LLM judges; the server protects the boundary",
+      "items": [
+        "The judge decides PASS, FAIL or INCONCLUSIVE for each frozen criterion and supplies a concise finding with real evidence references.",
+        "Server code keeps authentication, cleanup, full evidence integrity, schema/reference checks, cancellation, deadline and immutable receipt rules. It does not replace the judge verdict with the old threshold evaluator."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "P17.5 criteria become a published rubric",
+      "items": [
+        "Each criterion needs requirement, passWhen, failWhen, inconclusiveWhen and required evidence, plus explicit scope, units and clock. AI suggestions remain human-reviewed before publication.",
+        "New canonical rubric/evaluator versions preserve historical synthetic digests, prior evaluator1 decisions and receipt replay. Initial check kinds remain unchanged."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Failures and retries stay distinct",
+      "items": [
+        "Missing or invalid required evidence cannot produce PASS. Refusal or model/provider outage is not a failed behavior criterion.",
+        "Bounded transient provider retries reuse the same packet, prompt and model settings. Never retry a FAIL to obtain a nicer answer; never rerun the simulation. A provider timeout can cause another billed request unless provider idempotency is established."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Proposal status and explicit limits",
+      "items": [
+        "Conceptual design revision for the locally implemented, uncommitted P17 baseline; this is not a code-at-HEAD or deployed-system inventory. RETAIN means keep that approved baseline responsibility.",
+        "Prompt draft: docs/architecture/proposals/llm-judge-system-prompt.md. Provider/model and outbound evidence policy remain unconfigured. No model calls, credentials or paid checks performed.",
+        "Proposed visible stages: Validate evidence \u2192 Prepare packet \u2192 LLM judge \u2192 Validate response \u2192 Commit. Raw binary ULog and unknown PX4 boot/clock facts are not magically understood by a text judge."
+      ]
+    }
+  ]
+}

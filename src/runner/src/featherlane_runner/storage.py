@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from featherlane_contracts import Digest, Identifier
+from featherlane_contracts.finalization import FinalizationAcceptance
 from featherlane_contracts.leases import AttemptHeartbeat, LeaseGrant
 from featherlane_contracts.runners import RunnerHeartbeat, SecretToken
 from pydantic import BaseModel, ConfigDict, Field
@@ -27,6 +28,10 @@ class AttemptJournalEntry(BaseModel):
     manifest_digest: Digest | None = None
     pending_heartbeat: AttemptHeartbeat | None = None
     terminal: bool = False
+    finalization_operation_id: Identifier | None = None
+    finalization_input_digest: Digest | None = None
+    finalization_acceptance: FinalizationAcceptance | None = None
+    finalization_finished: bool = False
 
 
 class RunnerState(BaseModel):

@@ -5,6 +5,7 @@ import {
   getRunArtifactsOptions,
   getRunDetailOptions,
   getRunEventsOptions,
+  getRunJudgmentsOptions,
 } from "@featherlane/contracts";
 import { useRunLiveUpdates } from "./useRunLiveUpdates";
 import { runDetailDemo } from "../../mocks/browser";
@@ -62,8 +63,22 @@ export function useRunDetail(
       },
       scope,
     ),
-    enabled: !accessLost && !!detail.data && tab === 1,
+    enabled: !accessLost && !!detail.data && (tab === 0 || tab === 1),
     refetchOnWindowFocus: false,
+  });
+  const judgments = useQuery({
+    ...getRunJudgmentsOptions(
+      { client: current.client, path: { runId }, headers },
+      scope,
+    ),
+    enabled: !!transport && !accessLost && !!detail.data,
+    refetchOnWindowFocus: false,
+    refetchInterval: (query) =>
+      !accessLost &&
+      !permanentReadFailure(query.state.error) &&
+      query.state.data?.data.state === "PENDING"
+        ? 10000
+        : false,
   });
   const artifacts = useQuery({
     ...getRunArtifactsOptions(
@@ -87,7 +102,12 @@ export function useRunDetail(
     denyAccess,
   );
   useEffect(() => {
-    const error = [detail.error, events.error, artifacts.error].find(
+    const error = [
+      detail.error,
+      events.error,
+      artifacts.error,
+      judgments.error,
+    ].find(
       (item) =>
         item instanceof ApiError && [401, 403, 404].includes(item.status),
     );
@@ -98,7 +118,14 @@ export function useRunDetail(
       (error.status === 401 || error.status === 403 || error.status === 404)
     )
       denyAccess(error.status);
-  }, [detail.error, events.error, artifacts.error, transport, accessLost]);
+  }, [
+    detail.error,
+    events.error,
+    artifacts.error,
+    judgments.error,
+    transport,
+    accessLost,
+  ]);
   const observed = detail.data?.data;
   useEffect(() => {
     if (!transport || accessLost || !observed) return;
@@ -106,6 +133,10 @@ export function useRunDetail(
     for (const prefix of [
       runsQueryPrefix(transport),
       optionsQueryPrefix(transport),
+      getRunJudgmentsOptions(
+        { client: transport.client, path: { runId }, headers },
+        detailPrefix(runId, transport),
+      ).queryKey,
     ])
       void client.invalidateQueries(
         {
@@ -117,7 +148,9 @@ export function useRunDetail(
   }, [
     client,
     transport?.client,
+    transport?.organizationId,
     transport?.projectId,
+    runId,
     observed?.executionState,
     observed?.evaluationOutcome,
     observed?.cancellationRequestedAt,
@@ -179,6 +212,7 @@ export function useRunDetail(
     detail,
     events,
     artifacts,
+    judgments,
     mode,
     changing,
     chooseMode,

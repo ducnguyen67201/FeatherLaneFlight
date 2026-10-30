@@ -6,8 +6,10 @@ from alembic import context
 from featherlane_api.config import load_database_settings
 from featherlane_api.infrastructure.database import Base
 from featherlane_api.modules.access import persistence as access_models  # noqa: F401
+from featherlane_api.modules.evaluation import judge_store as judge_models  # noqa: F401
 from featherlane_api.modules.events import persistence as event_models  # noqa: F401
 from featherlane_api.modules.evidence import persistence as evidence_models  # noqa: F401
+from featherlane_api.modules.finalization import persistence as finalization_models  # noqa: F401
 from featherlane_api.modules.identity import persistence  # noqa: F401
 from featherlane_api.modules.leases import persistence as lease_models  # noqa: F401
 from featherlane_api.modules.registration import persistence as registration_models  # noqa: F401
@@ -15,6 +17,7 @@ from featherlane_api.modules.runners import persistence as runner_models  # noqa
 from featherlane_api.modules.runs import persistence as run_models  # noqa: F401
 from featherlane_api.modules.suites import draft_store as draft_models  # noqa: F401
 from featherlane_api.modules.suites import persistence as suite_models  # noqa: F401
+from featherlane_api.modules.suites import rubric_store as rubric_models  # noqa: F401
 from sqlalchemy import Connection, pool
 from sqlalchemy.ext.asyncio import create_async_engine
 

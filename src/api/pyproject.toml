@@ -12,6 +12,7 @@ dependencies = [
     "uvicorn==0.54.0",
     "authlib==1.9.1",
     "httpx2==2.13.0",
+    "dbos==3.4.0",
 ]
 
 [tool.uv.sources]
@@ -19,6 +20,7 @@ featherlane-contracts = { workspace = true }
 
 [project.scripts]
 flf-api = "featherlane_api.cli:main"
+flf-worker = "featherlane_api.workflows.worker:main"
 
 [build-system]
 requires = ["hatchling==1.30.0"]
