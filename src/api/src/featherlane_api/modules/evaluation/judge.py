@@ -143,7 +143,6 @@ def validate_response(packet: dict, response: JudgeResponse) -> None:
         observation = next(
             (o for o in packet["observations"] if o["checkId"] == result.check_id), None
         )
-        supported = False
         for ref in result.references:
             if (
                 not set(ref.event_ids) <= events.keys()
@@ -167,17 +166,25 @@ def validate_response(packet: dict, response: JudgeResponse) -> None:
                 ref.from_ms <= e["monotonicElapsedMs"] <= ref.to_ms for e in cited
             ):
                 raise JudgeUnavailable("No cited event supports interval")
-            if observation and (
-                any(
-                    e["type"] == "OBSERVATION_RECORDED"
-                    and e["payload"]["observationId"] == observation["id"]
-                    for e in cited
+            supports_criterion = (
+                observation is not None
+                and ref.from_ms <= observation["monotonicElapsedMs"] <= ref.to_ms
+                and (
+                    any(
+                        e["type"] == "OBSERVATION_RECORDED"
+                        and e["payload"]["observationId"] == observation["id"]
+                        and ref.from_ms <= e["monotonicElapsedMs"] <= ref.to_ms
+                        for e in cited
+                    )
+                    or set(ref.artifact_ids).intersection(observation["artifactIds"])
                 )
-                or set(ref.artifact_ids).intersection(observation["artifactIds"])
-            ):
-                supported = True
-        if result.outcome != CheckOutcome.INCONCLUSIVE and not supported:
-            raise JudgeUnavailable("Missing criterion evidence citation")
+            )
+            # Each verdict citation needs temporal support; another valid
+            # reference cannot legitimize an unsupported highlighted window.
+            if result.outcome != CheckOutcome.INCONCLUSIVE and not supports_criterion:
+                raise JudgeUnavailable(
+                    "Missing criterion evidence in citation interval"
+                )
 
 
 class JudgeEvaluator:
