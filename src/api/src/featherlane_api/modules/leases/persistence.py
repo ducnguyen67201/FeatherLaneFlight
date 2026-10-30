@@ -65,6 +65,9 @@ class AttemptRecord(Base):
     manifest_accepted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True)
     )
+    finalization_accepted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     terminal_reason: Mapped[dict | None] = mapped_column(

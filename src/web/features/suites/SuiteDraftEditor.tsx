@@ -18,7 +18,10 @@ import {
   Typography,
 } from "@mui/material";
 import ArrowBack from "@mui/icons-material/ArrowBack";
-import type { SuiteDraftView, SuiteRevisionView } from "@featherlane/contracts";
+import type {
+  JudgeSuiteDraftView,
+  SuiteRevisionView,
+} from "@featherlane/contracts";
 import { PageLayout } from "../../layouts/PageLayout";
 import { tokens } from "../../design/theme";
 import { SuiteScenarioEditor } from "./SuiteScenarioEditor";
@@ -41,14 +44,14 @@ export function SuiteDraftEditor({
   onPublished,
   onReload,
 }: {
-  draft: SuiteDraftView;
+  draft: JudgeSuiteDraftView;
   connection: DraftEditorConnection;
   scope: readonly unknown[];
   organizationId: string;
   backHref: string;
-  onSaved: (draft: SuiteDraftView) => void;
+  onSaved: (draft: JudgeSuiteDraftView) => void;
   onPublished: (revision: SuiteRevisionView) => void;
-  onReload: () => Promise<SuiteDraftView | undefined>;
+  onReload: () => Promise<JudgeSuiteDraftView | undefined>;
 }) {
   const editor = useSuiteDraftEditor(connection, draft, onSaved, onPublished);
   const suggestions = useSuiteCriteriaSource(
@@ -82,7 +85,8 @@ export function SuiteDraftEditor({
   const disabled =
     editor.busy ||
     editor.review !== null ||
-    editor.uncertainPublication !== null;
+    editor.uncertainPublication !== null ||
+    editor.alreadyPublished;
   const content = editor.content;
   const error = (field: string) =>
     editor.issues.find((i) => i.field === field)?.message;
@@ -332,6 +336,19 @@ export function SuiteDraftEditor({
                 Publish
               </Typography>
               <Stack spacing={4}>
+                {editor.alreadyPublished && (
+                  <Alert
+                    severity="info"
+                    action={
+                      <Button onClick={editor.startNextDraft}>
+                        Create next draft
+                      </Button>
+                    }
+                  >
+                    Published revision. Create the next draft to edit its
+                    rubric.
+                  </Alert>
+                )}
                 <Typography variant="body2">
                   {editor.alreadyPublished ? "Next revision" : "Revision"}{" "}
                   <strong>
@@ -362,7 +379,7 @@ export function SuiteDraftEditor({
                     ? "Working…"
                     : editor.alreadyPublished
                       ? "Published"
-                      : "Publish"}
+                      : "Review and publish"}
                 </Button>
               </Stack>
             </Paper>
@@ -388,9 +405,8 @@ export function SuiteDraftEditor({
                   Contract{" "}
                   {content.versionRequirements?.contractVersion ?? "not set"} ·
                   protocol{" "}
-                  {content.versionRequirements?.protocolVersion ?? "not set"} ·
-                  evaluator{" "}
-                  {content.versionRequirements?.evaluatorVersion ?? "not set"}
+                  {content.versionRequirements?.protocolVersion ?? "not set"}
+                  {" · New publications: LLM judge v1"}
                 </Typography>
               </Stack>
             </Paper>
@@ -408,6 +424,8 @@ export function SuiteDraftEditor({
           }}
         >
           <SuiteChecksEditor
+            rubric={editor.rubric}
+            onRubricChange={editor.changeRubric}
             content={content}
             issues={editor.issues}
             disabled={disabled}
@@ -415,6 +433,7 @@ export function SuiteDraftEditor({
             focusRequest={criterionFocus}
           />
           <SuiteSuggestionReview
+            rubric={editor.rubric}
             content={content}
             savedVersion={editor.baselineVersion}
             editVersion={editor.editVersion}

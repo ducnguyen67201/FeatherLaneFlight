@@ -23,6 +23,12 @@ from featherlane_contracts.events import (
     EventBatchEnvelope,
     RunnerEventBatch,
 )
+from featherlane_contracts.finalization import (
+    RUNNER_FINALIZATION_PATH,
+    FinalizationAcceptanceEnvelope,
+    FinalizationRequest,
+    FinalizationStatusEnvelope,
+)
 from featherlane_contracts.leases import (
     RUNNER_ATTEMPT_HEARTBEAT_PATH,
     RUNNER_ATTEMPT_MANIFEST_PATH,
@@ -86,7 +92,7 @@ def read_json_response(
         return None
     if response.headers.get("content-type", "").split(";", 1)[0] != "application/json":
         raise RunnerTransportError(response.status_code)
-    if response.status_code not in (200, 201):
+    if response.status_code not in (200, 201, 202):
         try:
             error = ErrorEnvelope.model_validate_json(bytes(raw))
         except ValidationError:
@@ -121,6 +127,7 @@ class RunnerTransport:
         body: dict | None = None,
         *,
         allow_empty: bool = False,
+        max_response_bytes: int = 1_048_576,
     ) -> bytes | None:
         try:
             with self.client.stream(
@@ -129,7 +136,9 @@ class RunnerTransport:
                 headers={"Authorization": f"Bearer {credential}"} if credential else {},
                 json=body,
             ) as response:
-                return read_json_response(response, allow_empty=allow_empty)
+                return read_json_response(
+                    response, allow_empty=allow_empty, max_bytes=max_response_bytes
+                )
         except httpx2.HTTPError:
             raise RunnerTransportError() from None
 
@@ -225,6 +234,34 @@ class RunnerTransport:
         return self._request(
             "POST", RUNNER_ENROLLMENTS_PATH, body=body.model_dump(mode="json")
         )
+
+    def finalize_attempt(
+        self, credential: str, attempt_id: str, body: FinalizationRequest
+    ) -> FinalizationAcceptanceEnvelope:
+        attempt_id = TypeAdapter(Identifier).validate_python(attempt_id)
+        raw = self._send(
+            "POST",
+            RUNNER_FINALIZATION_PATH.format(attemptId=attempt_id),
+            credential,
+            body.model_dump(mode="json"),
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return FinalizationAcceptanceEnvelope.model_validate_json(raw)
+
+    def finalization_status(
+        self, credential: str, attempt_id: str
+    ) -> FinalizationStatusEnvelope:
+        attempt_id = TypeAdapter(Identifier).validate_python(attempt_id)
+        raw = self._send(
+            "GET",
+            RUNNER_FINALIZATION_PATH.format(attemptId=attempt_id),
+            credential,
+            max_response_bytes=4_194_304,
+        )
+        if raw is None:
+            raise RunnerTransportError()
+        return FinalizationStatusEnvelope.model_validate_json(raw)
 
     def me(self, credential: str) -> RunnerIdentityEnvelope:
         return self._request("GET", RUNNER_IDENTITY_PATH, credential)

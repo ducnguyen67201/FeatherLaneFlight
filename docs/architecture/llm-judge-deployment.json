@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "LLM judge deployment boundary \u2014 proposed outbound connection",
+    "locale": "en",
+    "output": ".archify/architecture-llm-judge-20261029-185434/llm-judge-deployment.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "API process",
+      "sublabel": "RETAIN \u00b7 authenticated acceptance",
+      "pos": [40, 60],
+      "size": [220, 84]
+    },
+    {
+      "id": "pg",
+      "type": "database",
+      "label": "Existing PostgreSQL",
+      "sublabel": "RETAIN \u00b7 domain + DBOS schemas",
+      "pos": [420, 60],
+      "size": [220, 84]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Existing worker process",
+      "sublabel": "PROPOSED \u00b7 judge adapter added",
+      "pos": [820, 60],
+      "size": [230, 84]
+    },
+    {
+      "id": "private",
+      "type": "database",
+      "label": "Private evidence storage",
+      "sublabel": "RETAIN \u00b7 bounded authorized reader",
+      "pos": [420, 350],
+      "size": [220, 84]
+    },
+    {
+      "id": "provider",
+      "type": "external",
+      "label": "Selected model endpoint",
+      "sublabel": "PROPOSED \u00b7 local or hosted; unset",
+      "pos": [820, 350],
+      "size": [230, 84]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Current local control-plane boundary \u2014 no new orchestrator",
+      "wraps": ["api", "pg", "worker"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "accept",
+      "from": "api",
+      "to": "pg",
+      "label": "atomic enqueue",
+      "variant": "security"
+    },
+    {
+      "id": "drain",
+      "from": "pg",
+      "to": "worker",
+      "label": "durable work"
+    },
+    {
+      "id": "evidence",
+      "from": "private",
+      "to": "worker",
+      "label": "scoped verified bytes",
+      "variant": "security"
+    },
+    {
+      "id": "call",
+      "from": "worker",
+      "to": "provider",
+      "label": "allowed judge packet",
+      "variant": "security"
+    },
+    {
+      "id": "reply",
+      "from": "provider",
+      "to": "worker",
+      "label": "structured judgment"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "A new model-service connection, not a hosting migration",
+      "items": [
+        "API, PostgreSQL, private evidence and the Python worker retain their current local roles. No Temporal server, broker or Conductor connection is added.",
+        "Provider choice is pending. A hosted endpoint introduces an outbound data/credential boundary; a local endpoint uses a separately selected local runtime. Neither is provisioned or enabled."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "What can leave the worker",
+      "items": [
+        "Only the scoped frozen rubric, mission requirements and approved bounded normalized evidence packet. No runner/API credentials, local filesystem paths, unrelated artifacts or unrestricted raw logs.",
+        "Configure timeout, token/cost limits, retention and secret injection before activation. Do not assume provider idempotency, zero retention or deterministic verdicts. Persist the actual accepted response."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Scope and evidence status",
+      "items": [
+        "This is a conceptual proposed deployment boundary for the uncommitted P17 design. It is not a claim of a hosted deployment or existing model integration.",
+        "P17.5 provider/config conventions can be reused after the applicable merge gate, with a separate judge configuration. LLM judging and criteria generation remain different prompts and responsibilities."
+      ]
+    }
+  ]
+}

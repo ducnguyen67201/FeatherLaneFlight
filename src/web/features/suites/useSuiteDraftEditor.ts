@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import {
   ApiError,
   contractManifest,
-  editSuiteDraft,
-  validateSuiteDraft,
-  publishSuiteDraft,
+  editJudgeSuiteDraft,
+  validateJudgeSuiteDraft,
+  publishJudgeSuiteDraft,
   type createValidatedClient,
   type FieldError,
+  type DraftJudgeRubric,
   type SuiteDraftContent,
-  type SuiteDraftView,
+  type JudgeSuiteDraftView,
   type SuiteRevisionView,
   type SuiteDraftValidation,
 } from "@featherlane/contracts";
@@ -23,15 +24,17 @@ export type DraftEditorConnection = {
 };
 export function useSuiteDraftEditor(
   connection: DraftEditorConnection,
-  draft: SuiteDraftView,
-  onSaved: (draft: SuiteDraftView) => void,
+  draft: JudgeSuiteDraftView,
+  onSaved: (draft: JudgeSuiteDraftView) => void,
   onPublished: (revision: SuiteRevisionView) => void,
 ) {
   const [content, setContent] = useState(draft.content);
+  const [nextDraft, setNextDraft] = useState(false);
+  const [rubric, setRubric] = useState(draft.rubric);
   const editVersion = useRef(0);
   const baseline = useRef({
     version: draft.draftVersion,
-    content: JSON.stringify(draft.content),
+    content: JSON.stringify([draft.content, draft.rubric]),
   });
   const [publishedVersion, setPublishedVersion] = useState<number | null>(
     draft.publishedRevisionId ? draft.draftVersion : null,
@@ -52,20 +55,23 @@ export function useSuiteDraftEditor(
       active.current = false;
     };
   }, []);
-  const dirty = JSON.stringify(content) !== baseline.current.content;
+  const dirty =
+    nextDraft || JSON.stringify([content, rubric]) !== baseline.current.content;
   const headers = {
     "x-flf-contract-version": contractManifest.contractVersion,
     "x-csrf-token": connection.csrfToken,
   };
   const path = { projectId: connection.projectId, suiteId: draft.suiteId };
-  function reset(saved: SuiteDraftView) {
+  function reset(saved: JudgeSuiteDraftView) {
     editVersion.current += 1;
     baseline.current = {
       version: saved.draftVersion,
-      content: JSON.stringify(saved.content),
+      content: JSON.stringify([saved.content, saved.rubric]),
     };
     setPublishedVersion(saved.publishedRevisionId ? saved.draftVersion : null);
+    setNextDraft(false);
     setContent(saved.content);
+    setRubric(saved.rubric);
     setIssues([]);
     setConflict(false);
     setNotice("");
@@ -73,6 +79,7 @@ export function useSuiteDraftEditor(
   function change(
     next: SuiteDraftContent,
     expected?: DraftEditPrecondition,
+    nextRubric: DraftJudgeRubric = rubric,
   ): boolean {
     if (pending.current || uncertainPublication !== null || review !== null)
       return false;
@@ -84,6 +91,7 @@ export function useSuiteDraftEditor(
       return false;
     editVersion.current += 1;
     setContent(next);
+    setRubric(nextRubric);
     setNotice("");
     return true;
   }
@@ -155,7 +163,7 @@ export function useSuiteDraftEditor(
       if (active.current) setBusy(false);
     }
   }
-  async function saveContent(): Promise<SuiteDraftView | null> {
+  async function saveContent(): Promise<JudgeSuiteDraftView | null> {
     const parsed = zSuiteDraftContent.safeParse(content);
     if (!parsed.success) {
       showIssues(
@@ -167,11 +175,11 @@ export function useSuiteDraftEditor(
       );
       return null;
     }
-    const saved = await editSuiteDraft({
+    const saved = await editJudgeSuiteDraft({
       client: connection.client,
       headers,
       path,
-      body: { expectedDraftVersion: baseline.current.version, content },
+      body: { expectedDraftVersion: baseline.current.version, content, rubric },
     });
     if (!active.current) return null;
     reset(saved.data);
@@ -182,7 +190,7 @@ export function useSuiteDraftEditor(
     await run(async () => {
       const saved = dirty ? await saveContent() : draft;
       if (!saved || !active.current) return;
-      const result = await validateSuiteDraft({
+      const result = await validateJudgeSuiteDraft({
         client: connection.client,
         headers,
         path,
@@ -207,7 +215,7 @@ export function useSuiteDraftEditor(
       setReview(null);
       setUncertainPublication(reviewed);
       try {
-        const result = await publishSuiteDraft({
+        const result = await publishJudgeSuiteDraft({
           client: connection.client,
           headers,
           path,
@@ -230,6 +238,12 @@ export function useSuiteDraftEditor(
   }
   return {
     content,
+    rubric,
+    changeRubric: (next: DraftJudgeRubric) => change(content, undefined, next),
+    startNextDraft: () => {
+      setPublishedVersion(null);
+      setNextDraft(true);
+    },
     change,
     dirty,
     busy,
@@ -255,7 +269,7 @@ export function useSuiteDraftEditor(
     retryPublication: () => {
       if (uncertainPublication !== null) void publish(uncertainPublication);
     },
-    reload: (load: () => Promise<SuiteDraftView | undefined>) =>
+    reload: (load: () => Promise<JudgeSuiteDraftView | undefined>) =>
       run(async () => {
         const latest = await load();
         if (latest && active.current) reset(latest);

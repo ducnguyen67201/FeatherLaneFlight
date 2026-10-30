@@ -18,8 +18,10 @@ from pydantic import TypeAdapter
 from featherlane_api.http.errors import ERROR_RESPONSES
 from featherlane_api.modules.access.http import router as access_router
 from featherlane_api.modules.access.people_http import router as people_router
+from featherlane_api.modules.evaluation.http import router as judgments_router
 from featherlane_api.modules.events.http import router as events_router
 from featherlane_api.modules.evidence.http import router as evidence_router
+from featherlane_api.modules.finalization.http import router as finalization_router
 from featherlane_api.modules.identity.http import router as identity_router
 from featherlane_api.modules.leases.http import router as leases_router
 from featherlane_api.modules.registration.http import router as registration_router
@@ -28,6 +30,10 @@ from featherlane_api.modules.runs.http import router as runs_router
 from featherlane_api.modules.suites.criteria_http import router as criteria_router
 from featherlane_api.modules.suites.draft_http import router as draft_router
 from featherlane_api.modules.suites.http import router as suites_router
+from featherlane_api.modules.suites.judge_criteria_http import (
+    router as judge_criteria_router,
+)
+from featherlane_api.modules.suites.judge_http import router as judge_draft_router
 
 
 def schema_json(schema: dict) -> str:
@@ -63,11 +69,15 @@ def create_schema_app() -> FastAPI:
     app.include_router(registration_router)
     app.include_router(suites_router)
     app.include_router(draft_router)
+    app.include_router(judge_draft_router)
     app.include_router(criteria_router)
+    app.include_router(judge_criteria_router)
     app.include_router(runs_router)
     app.include_router(events_router)
     app.include_router(evidence_router)
     app.include_router(leases_router)
+    app.include_router(finalization_router)
+    app.include_router(judgments_router)
     schema = app.openapi()
     for model in (*STATUS_MODELS, OrganizationView, ProjectView):
         schema["components"]["schemas"][model.__name__] = TypeAdapter(

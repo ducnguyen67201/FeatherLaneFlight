@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DBOS evaluation workflow \u2014 proposed engine selection",
+    "locale": "en",
+    "output": ".archify/architecture-dbos-evaluation-20261029-175310/dbos-evaluation-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "16dcc4cea1da1cbcdd3424f228f902165bb043de",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "runner",
+      "type": "external",
+      "label": "Runner final submission",
+      "sublabel": "Existing transport; retry same ID",
+      "pos": [40, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "intake",
+      "type": "security",
+      "label": "P17 acceptance API",
+      "sublabel": "Own auth, seal and domain rules",
+      "pos": [420, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/leases/expiry.py",
+          "line": 10,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "DBOS PostgreSQL state",
+      "sublabel": "PROPOSED \u00b7 queue + checkpoints",
+      "pos": [820, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 52
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "claim",
+      "type": "backend",
+      "label": "DBOS workflow runtime",
+      "sublabel": "PROPOSED \u00b7 Python worker library",
+      "pos": [820, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/leases/worker.py",
+          "line": 13,
+          "end_line": 33
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": "evaluate",
+      "type": "backend",
+      "label": "P17 evaluation steps",
+      "sublabel": "Own validation + pure criteria",
+      "pos": [420, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 431
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "commit",
+      "type": "security",
+      "label": "P17 result commit",
+      "sublabel": "Own locks, cancel + idempotency",
+      "pos": [40, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/runs/application.py",
+          "line": 247,
+          "end_line": 287
+        }
+      ]
+    },
+    {
+      "id": "records",
+      "type": "database",
+      "label": "FeatherLane PostgreSQL",
+      "sublabel": "Same DB \u00b7 run/results/receipts",
+      "pos": [40, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Results / criteria dots",
+      "sublabel": "FINALIZING \u2192 saved outcome",
+      "pos": [420, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 431
+        }
+      ]
+    },
+    {
+      "id": "artifacts",
+      "type": "database",
+      "label": "P16 private evidence",
+      "sublabel": "Reviewed dependency \u00b7 unmerged",
+      "pos": [820, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 858
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Existing Python control-plane worker \u2014 proposed DBOS library, initial single executor",
+      "wraps": ["claim", "evaluate", "commit"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "submit",
+      "from": "runner",
+      "to": "intake",
+      "label": "same operation ID",
+      "variant": "security"
+    },
+    {
+      "id": "accept",
+      "from": "intake",
+      "to": "jobs",
+      "label": "one DB transaction",
+      "variant": "security"
+    },
+    {
+      "id": "claim-job",
+      "from": "jobs",
+      "to": "claim",
+      "label": "DBOS schedules work"
+    },
+    {
+      "id": "retry-job",
+      "from": "claim",
+      "to": "jobs",
+      "label": "configured retries",
+      "variant": "dashed"
+    },
+    {
+      "id": "process",
+      "from": "claim",
+      "to": "evaluate",
+      "label": "checkpointed steps"
+    },
+    {
+      "id": "validated-result",
+      "from": "evaluate",
+      "to": "commit",
+      "label": "criterion outcomes"
+    },
+    {
+      "id": "artifact-read",
+      "from": "artifacts",
+      "to": "evaluate",
+      "label": "scoped bytes"
+    },
+    {
+      "id": "save",
+      "from": "commit",
+      "to": "records",
+      "label": "atomic commit",
+      "variant": "security"
+    },
+    {
+      "id": "inspect",
+      "from": "records",
+      "to": "browser",
+      "label": "authorized snapshot"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Why DBOS is the candidate for this project",
+      "items": [
+        "Durable Python workflows and queues checkpoint into PostgreSQL. The open-source library needs no separate orchestration server.",
+        "Reuse the existing database and Python worker. This targets low initial operational overhead; no cost/performance benchmark has been run.",
+        "The generic queued workflow was approved. Selecting DBOS is this new proposal; no library, migration, paid service or deployment has been installed."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Framework owns scheduling; product owns correctness",
+      "items": [
+        "DBOS owns durable queue/checkpoint state and configured step retries/backoff. Single-executor interrupted workflows recover on restart.",
+        "P17 owns authentication, current project/attempt checks, confirmed cleanup handoff, evidence integrity, criteria rules, cancellation and terminal receipts.",
+        "PASS/FAIL are result data, not retry signals. Only explicit transient exceptions retry within bounded policies; repeated delivery still requires idempotent product writes."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Atomic acceptance and safe recovery",
+      "items": [
+        "DBOS Client enqueue_in_transaction can use the caller-owned SQLAlchemy transaction when both schemas are in the same logical database; the async caller uses run_sync.",
+        "Seal frozen inputs, save the acceptance receipt and enqueue the DBOS workflow together, then return 202. No custom outbox/queue poller is proposed.",
+        "Workflow payloads/checkpoints carry bounded identifiers/digests, not credentials or raw telemetry. Final commit rechecks current cancellation/terminal/evidence guards; cached steps never grant fresh authorization."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Reliability limits and the preserved lifecycle gate",
+      "items": [
+        "Initial scope: one control-plane workflow executor plus durable PostgreSQL and process restart management. No automatic multi-worker high-availability claim.",
+        "DBOS distributed crash recovery needs coordination, for example Conductor or explicit recovery operations. That rollout choice remains a separate reviewed decision.",
+        "Runner cleanup and sealing close execution write rights; server processing uses its own deadline. Keep expiry maintenance responsive and preserve terminal results.",
+        "Temporal remains an alternative with its own service; Redis alone is a datastore, typically paired with a task framework such as Celery. This proposal adds neither."
+      ]
+    }
+  ]
+}

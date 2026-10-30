@@ -18,7 +18,11 @@ import {
 } from "@mui/material";
 import AutoAwesomeOutlined from "@mui/icons-material/AutoAwesomeOutlined";
 import { zCheckDefinition } from "@featherlane/contracts/validators";
-import type { SuiteDraftContent, FieldError } from "@featherlane/contracts";
+import type {
+  SuiteDraftContent,
+  FieldError,
+  DraftJudgeRubric,
+} from "@featherlane/contracts";
 import { SuiteCheckFields, type DraftCriterion } from "./SuiteCheckFields";
 import {
   useSuiteSuggestions,
@@ -28,6 +32,7 @@ import {
 
 export function SuiteSuggestionReview(props: {
   content: SuiteDraftContent;
+  rubric: DraftJudgeRubric;
   savedVersion: number;
   editVersion: number;
   disabled: boolean;
@@ -35,6 +40,7 @@ export function SuiteSuggestionReview(props: {
   onChange: (
     content: SuiteDraftContent,
     expected: DraftEditPrecondition,
+    rubric?: DraftJudgeRubric,
   ) => boolean;
 }) {
   const { content, disabled, source } = props;
@@ -193,6 +199,22 @@ export function SuiteSuggestionReview(props: {
                   </Typography>
                 )}
                 <Typography variant="body2">{check.expected}</Typography>
+                <Typography variant="body2">
+                  PASS when:{" "}
+                  {
+                    suggestions.rubric?.criteria.find(
+                      (c) => c.checkId === check.id,
+                    )?.passWhen
+                  }
+                </Typography>
+                <Typography variant="body2">
+                  FAIL when:{" "}
+                  {
+                    suggestions.rubric?.criteria.find(
+                      (c) => c.checkId === check.id,
+                    )?.failWhen
+                  }
+                </Typography>
                 <Typography variant="body2" color="text.secondary">
                   Missing evidence: {check.inconclusiveWhen}
                 </Typography>

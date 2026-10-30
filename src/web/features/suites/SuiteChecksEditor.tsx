@@ -11,17 +11,26 @@ import {
 } from "@mui/material";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import Add from "@mui/icons-material/Add";
-import type { SuiteDraftContent, FieldError } from "@featherlane/contracts";
+import type {
+  SuiteDraftContent,
+  FieldError,
+  DraftJudgeRubric,
+} from "@featherlane/contracts";
+import { RubricConditionsFields } from "./RubricConditionsFields";
 import { SuiteCheckFields } from "./SuiteCheckFields";
 
 export function SuiteChecksEditor({
   content,
+  rubric,
+  onRubricChange,
   issues,
   disabled,
   onChange,
   focusRequest,
 }: {
   content: SuiteDraftContent;
+  rubric: DraftJudgeRubric;
+  onRubricChange: (rubric: DraftJudgeRubric) => void;
   issues: readonly FieldError[];
   disabled: boolean;
   onChange: (content: SuiteDraftContent) => void;
@@ -29,6 +38,7 @@ export function SuiteChecksEditor({
 }) {
   const [expanded, setExpanded] = useState<string | false>("duration");
   const focusedSequence = useRef(0);
+  const [touched, setTouched] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!focusRequest || focusedSequence.current === focusRequest.sequence)
       return;
@@ -107,6 +117,55 @@ export function SuiteChecksEditor({
                   ),
                 })
               }
+            />
+            <RubricConditionsFields
+              prefix={`checks.${index}`}
+              onBlur={(field) =>
+                setTouched(
+                  (current) => new Set([...current, `${check.id}.${field}`]),
+                )
+              }
+              errors={Object.fromEntries(
+                (["passWhen", "failWhen"] as const).map((field) => [
+                  field,
+                  issues.find(
+                    (issue) => issue.field === `checks.${index}.${field}`,
+                  )?.message ??
+                    (touched.has(`${check.id}.${field}`) &&
+                    !rubric.criteria
+                      .find((c) => c.checkId === check.id)
+                      ?.[field]?.trim()
+                      ? "Complete this condition before publication."
+                      : undefined),
+                ]),
+              )}
+              passWhen={
+                rubric.criteria.find((c) => c.checkId === check.id)?.passWhen ??
+                ""
+              }
+              failWhen={
+                rubric.criteria.find((c) => c.checkId === check.id)?.failWhen ??
+                ""
+              }
+              disabled={disabled}
+              onChange={(field, value) => {
+                if (!check.id || !check.version) return;
+                const next = {
+                  checkId: check.id,
+                  checkVersion: check.version,
+                  passWhen: null,
+                  failWhen: null,
+                  ...rubric.criteria.find((c) => c.checkId === check.id),
+                  [field]: value,
+                };
+                onRubricChange({
+                  version: 1,
+                  criteria: [
+                    ...rubric.criteria.filter((c) => c.checkId !== check.id),
+                    next,
+                  ],
+                });
+              }}
             />
           </AccordionDetails>
         </Accordion>

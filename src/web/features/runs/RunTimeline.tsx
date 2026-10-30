@@ -13,7 +13,7 @@ import {
 import { ApiError } from "@featherlane/contracts";
 import { tokens } from "../../design/theme";
 import { RunEventLog } from "./RunEventLog";
-import { RunTraceChart } from "./RunTraceChart";
+import { RunTraceChart, type FailureRange } from "./RunTraceChart";
 import {
   traceSnapshot,
   traceSeconds,
@@ -21,7 +21,11 @@ import {
   type TraceSnapshot,
 } from "./runTraceModel";
 
-type Props = ComponentProps<typeof RunEventLog>;
+import type { RunEventRecord } from "@featherlane/contracts";
+type Props = ComponentProps<typeof RunEventLog> & {
+  focusEvent?: RunEventRecord;
+  failureRange?: FailureRange;
+};
 export function RunTimeline(props: Props) {
   const denied =
     props.error instanceof ApiError &&
@@ -90,7 +94,7 @@ function TraceView(
   const [rowHeight, setRowHeight] = useState<number>(
     tokens.layoutPx.trace.rowHeight,
   );
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(props.failureRange ? 2.5 : 1);
   const [initialTick] = useState(() => traceTickMs(current.maxMs / 8));
   const displayed = paused ?? current;
   const selected =
@@ -204,6 +208,19 @@ function TraceView(
         )}
         {displayed.records.length ? (
           <RunTraceChart
+            failureRange={props.failureRange}
+            marker={
+              props.focusEvent &&
+              displayed.records.some(
+                (record) =>
+                  record.event.eventId === props.focusEvent?.event.eventId,
+              )
+                ? {
+                    elapsedMs: props.focusEvent.event.monotonicElapsedMs,
+                    label: `Event #${props.focusEvent.event.sequence}`,
+                  }
+                : undefined
+            }
             rows={displayed.rows}
             maxMs={displayed.maxMs}
             selectedId={selected?.id}

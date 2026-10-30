@@ -3,7 +3,13 @@
 from uuid import uuid4
 
 from featherlane_contracts.cleanup import RunnerRecoveryReceipt
+from featherlane_contracts.finalization import (
+    FinalizationAcceptance,
+    FinalizationRequest,
+    FinalizationStatus,
+)
 from featherlane_contracts.leases import AttemptHeartbeat, ClaimRequest, LeaseGrant
+from featherlane_contracts.registration import metadata_digest
 
 from featherlane_runner.process_record import ExecutionStore
 from featherlane_runner.storage import (
@@ -42,7 +48,9 @@ class ProtocolJournal:
         if execution is not None and not execution.cleanup_confirmed:
             raise LocalStateError("Local orphan cleanup must precede a claim")
         attempt = self.state.attempt
-        if attempt is not None and attempt.terminal:
+        if attempt is not None and (
+            attempt.terminal or attempt.finalization_operation_id
+        ):
             # P14 owns explicit cleanup/recovery. Never auto-claim after loss.
             raise LocalStateError()
         if self.state.pending_claim_id is None:
@@ -138,9 +146,73 @@ class ProtocolJournal:
 
     def _active(self) -> AttemptJournalEntry:
         attempt = self.state.attempt
-        if attempt is None or attempt.terminal:
+        if attempt is None or attempt.terminal or attempt.finalization_operation_id:
             raise LocalStateError()
         return attempt
+
+    def prepare_finalization(self, body: FinalizationRequest) -> None:
+        """Persist intent before sending identical closed evidence."""
+        attempt = self.state.attempt
+        execution = ExecutionStore(self.store.directory).read_record()
+        if (
+            attempt is None
+            or execution is None
+            or execution.attempt_id != attempt.lease.attempt_id
+            or not execution.cleanup_confirmed
+            or not execution.process_exited
+            or not execution.group_exited
+            or execution.exit_code != body.cleanup.exit_code
+            or body.lease_id != attempt.lease.lease_id
+            or body.fencing_number != attempt.lease.fencing_number
+            or body.observed_manifest_digest != attempt.manifest_digest
+        ):
+            raise LocalStateError(
+                "Finalization requires matching closed local execution"
+            )
+        digest = metadata_digest(body)
+        if attempt.finalization_operation_id is not None:
+            if (
+                attempt.finalization_operation_id,
+                attempt.finalization_input_digest,
+            ) != (body.operation_id, digest):
+                raise LocalStateError("Finalization intent is immutable")
+        elif attempt.terminal:
+            raise LocalStateError()
+        attempt.finalization_operation_id = body.operation_id
+        attempt.finalization_input_digest = digest
+        attempt.pending_heartbeat = None
+        self.store.save(self.state)
+
+    def record_finalization_acceptance(self, receipt: FinalizationAcceptance) -> None:
+        attempt = self.state.attempt
+        if attempt is None or (
+            receipt.attempt_id,
+            receipt.operation_id,
+            receipt.input_digest,
+        ) != (
+            attempt.lease.attempt_id,
+            attempt.finalization_operation_id,
+            attempt.finalization_input_digest,
+        ):
+            raise LocalStateError(
+                "Finalization receipt does not match persisted intent"
+            )
+        if (
+            attempt.finalization_acceptance is not None
+            and attempt.finalization_acceptance != receipt
+        ):
+            raise LocalStateError("Finalization acceptance changed")
+        attempt.finalization_acceptance = receipt
+        attempt.terminal = True
+        self.store.save(self.state)
+
+    def record_finalization_status(self, status: FinalizationStatus) -> None:
+        self.record_finalization_acceptance(status.acceptance)
+        if (status.state == "FINISHED") != (status.terminal is not None):
+            raise LocalStateError("Invalid terminal finalization status")
+        if status.terminal is not None:
+            self.state.attempt.finalization_finished = True
+            self.store.save(self.state)
 
     def _require_owner(self, lease: LeaseGrant) -> None:
         if (

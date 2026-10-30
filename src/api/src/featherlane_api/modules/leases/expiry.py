@@ -16,7 +16,7 @@ def expire_attempt(
     attempt: AttemptRecord,
     now: datetime,
 ) -> bool:
-    if attempt.finished_at is not None:
+    if attempt.finished_at is not None or attempt.finalization_accepted_at is not None:
         return False
     expiry = effective_lease_expiry(attempt.created_at, attempt.lease_expires_at)
     cancellation_wins = (

@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Queued evaluation \u2014 proposed P17 workflow revision",
+    "locale": "en",
+    "output": ".archify/architecture-queued-evaluation-20261029-174045/queued-evaluation-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/ducnguyen67201/FeatherLaneFlight.git",
+      "revision": "16dcc4cea1da1cbcdd3424f228f902165bb043de",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "runner",
+      "type": "external",
+      "label": "Runner final submission",
+      "sublabel": "Existing transport; retry same ID",
+      "pos": [40, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "intake",
+      "type": "security",
+      "label": "P17 acceptance API",
+      "sublabel": "PROPOSED \u00b7 authorize + seal",
+      "pos": [420, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/leases/expiry.py",
+          "line": 10,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "jobs",
+      "type": "database",
+      "label": "PostgreSQL eval jobs",
+      "sublabel": "PROPOSED \u00b7 durable work + ACK",
+      "pos": [820, 60],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 52
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "claim",
+      "type": "backend",
+      "label": "Worker job claim",
+      "sublabel": "PROPOSED role in existing worker",
+      "pos": [820, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "src/api/src/featherlane_api/modules/leases/worker.py",
+          "line": 13,
+          "end_line": 33
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": "evaluate",
+      "type": "backend",
+      "label": "Validate and evaluate",
+      "sublabel": "PROPOSED \u00b7 frozen input/rules",
+      "pos": [420, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 431
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "commit",
+      "type": "security",
+      "label": "Fenced result commit",
+      "sublabel": "PROPOSED \u00b7 one terminal result",
+      "pos": [40, 330],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        },
+        {
+          "path": "src/api/src/featherlane_api/modules/runs/application.py",
+          "line": 247,
+          "end_line": 287
+        }
+      ]
+    },
+    {
+      "id": "records",
+      "type": "database",
+      "label": "Same PostgreSQL",
+      "sublabel": "Results + terminal receipt + audit",
+      "pos": [40, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    },
+    {
+      "id": "browser",
+      "type": "frontend",
+      "label": "Results / criteria dots",
+      "sublabel": "FINALIZING \u2192 saved outcome",
+      "pos": [420, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 431
+        }
+      ]
+    },
+    {
+      "id": "artifacts",
+      "type": "database",
+      "label": "P16 private evidence",
+      "sublabel": "Reviewed dependency \u00b7 unmerged",
+      "pos": [820, 610],
+      "size": [210, 82],
+      "sources": [
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 858
+        },
+        {
+          "path": "docs/EngineeringSpec.md",
+          "line": 725
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Existing worker process \u2014 proposed P17 processing responsibilities",
+      "wraps": ["claim", "evaluate", "commit"],
+      "pad": 24
+    }
+  ],
+  "connections": [
+    {
+      "id": "submit",
+      "from": "runner",
+      "to": "intake",
+      "label": "same operation ID",
+      "variant": "security"
+    },
+    {
+      "id": "accept",
+      "from": "intake",
+      "to": "jobs",
+      "label": "seal + enqueue + 202",
+      "variant": "security"
+    },
+    {
+      "id": "claim-job",
+      "from": "jobs",
+      "to": "claim",
+      "label": "claim due work"
+    },
+    {
+      "id": "retry-job",
+      "from": "claim",
+      "to": "jobs",
+      "label": "retry with backoff",
+      "variant": "dashed"
+    },
+    {
+      "id": "process",
+      "from": "claim",
+      "to": "evaluate",
+      "label": "bounded job claim"
+    },
+    {
+      "id": "validated-result",
+      "from": "evaluate",
+      "to": "commit",
+      "label": "criterion outcomes"
+    },
+    {
+      "id": "artifact-read",
+      "from": "artifacts",
+      "to": "evaluate",
+      "label": "scoped bytes"
+    },
+    {
+      "id": "save",
+      "from": "commit",
+      "to": "records",
+      "label": "atomic commit",
+      "variant": "security"
+    },
+    {
+      "id": "inspect",
+      "from": "records",
+      "to": "browser",
+      "label": "authorized snapshot"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "Acceptance is not completion",
+      "items": [
+        "While the runner lease is valid: verify current auth/fence, frozen trial set, manifest, acknowledged sequence and actual owned exit/cleanup. Cancellation committed first cannot become PASS.",
+        "Atomically seal exact inputs, store one job and recoverable acceptance receipt, close new runner writes and return 202. Run remains FINALIZING / NOT_EVALUATED.",
+        "Job identity binds attempt, operation/payload digest, input references and evaluator version. Identical authenticated retries recover status; changed payload conflicts and revoked credentials reject."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Durable processing and bounded retries",
+      "items": [
+        "Extend the existing control-plane worker with bounded evaluation claims. Each claim has a processing lease/generation and a deadline; a crash leaves durable work for recovery.",
+        "Only explicitly transient failures retry, with capped attempts, backoff and an overall time budget. Failure or exhaustion remains inspectable.",
+        "A failed assertion is a completed evaluation. Missing, corrupt or invalid evidence remains inconclusive or a defined error; never rerun the scenario or retry until PASS."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Required lifecycle change before implementation",
+      "items": [
+        "Today FINALIZING still uses runner lease expiry. Queueing requires an explicit accepted-and-cleaned-up handoff, after which the server job deadline governs processing. Do not keep execution alive by renewing a lease.",
+        "Persist the seal/handoff in the existing attempt lifecycle; add job delivery state without duplicating run/attempt or evidence stores. Preserve original terminal rows.",
+        "Cancellation during processing and result commit use the same authoritative locks. An expired worker generation cannot commit, and duplicate delivery cannot create a second terminal result."
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Same infrastructure; proposal awaiting review",
+      "items": [
+        "Job and result boxes represent the same PostgreSQL database. API and worker share application modules; this proposes no broker, new service or hosting change.",
+        "Long evidence reads/checks run outside long database transactions. Recheck job generation and run/cancel state in a short final commit. Expiry maintenance continues independently with separate bounded sessions.",
+        "P17 reads P16 verified metadata/descriptors, rehashes bounded content and validates semantic bindings. The runner remains NON_EXECUTING / DISABLED / DECLARED.",
+        "This revises the earlier synchronous design. Canonical 202/status/terminal receipt contracts, lifecycle migration and cancellation behavior need design review; nothing is implemented or deployed."
+      ]
+    }
+  ]
+}

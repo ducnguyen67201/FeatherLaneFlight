@@ -38,11 +38,14 @@ import type { RunTransport } from "./queries";
 import { useRunDetail } from "./useRunDetail";
 import { useRunCancellation } from "./useRunCancellation";
 import { RunDetailStatus } from "./RunDetailStatus";
-import { TrialChecksPanel } from "./TrialChecksPanel";
+import { RunCriteriaResults } from "./RunCriteriaResults";
+import {
+  RunJudgmentTimeline,
+  type JudgmentTimelineSelection,
+} from "./RunJudgmentTimeline";
 import { RunManifestPanel } from "./RunManifestPanel";
 import { RunEvidencePanel } from "./RunEvidencePanel";
 import { RunLiveStatus } from "./RunLiveStatus";
-import { RunTimeline } from "./RunTimeline";
 import { useEvidenceDownloads } from "./useEvidenceDownloads";
 
 export function RunDetailPage({
@@ -69,12 +72,17 @@ export function RunDetailPage({
       : 0,
   );
   const [trialId, setTrialId] = useState<string | null>(null);
+  const [citation, setCitation] = useState<JudgmentTimelineSelection | null>(
+    null,
+  );
+  useEffect(() => setCitation(null), [runId]);
   const [confirm, setConfirm] = useState(false);
   const pageRef = useRef<HTMLDivElement>(null);
   const {
     detail,
     events,
     artifacts,
+    judgments,
     mode,
     changing,
     chooseMode,
@@ -307,7 +315,7 @@ export function RunDetailPage({
                   aria-label="Run detail sections"
                   sx={{ borderBottom: 1, borderColor: "divider", mb: 5 }}
                 >
-                  {["Checks", "Timeline", "Manifest", "Evidence"].map(
+                  {["Results", "Timeline", "Manifest", "Evidence"].map(
                     (label, index) => (
                       <Tab
                         key={label}
@@ -320,49 +328,77 @@ export function RunDetailPage({
                 </Tabs>
                 <Box
                   role="tabpanel"
-                  id={`run-panel-${tab}`}
-                  aria-labelledby={`run-tab-${tab}`}
+                  id="run-panel-0"
+                  aria-labelledby="run-tab-0"
+                  hidden={tab !== 0}
                 >
-                  {tab === 0 ? (
-                    <TrialChecksPanel
-                      trials={snapshot.trials}
-                      selectedTrial={selectedTrial}
-                      checks={snapshot.checks}
-                      onSelectTrial={setTrialId}
-                    />
-                  ) : tab === 1 ? (
-                    <RunTimeline
-                      live={!!transport}
-                      page={events.data}
-                      detail={snapshot}
-                      trial={selectedTrial}
-                      attemptId={selectedAttemptId}
-                      pending={events.isPending}
-                      error={events.error}
-                      refreshing={events.isFetching && !events.isPending}
-                      onRetry={() => void refresh()}
-                    />
-                  ) : tab === 2 ? (
-                    <RunManifestPanel
-                      requested={snapshot.requestedManifest}
-                      attempts={snapshot.attempts}
-                    />
-                  ) : (
-                    <RunEvidencePanel
-                      key={`${runId}:${selectedAttemptId}:${selectedTrial?.id}`}
-                      artifacts={artifacts.data?.data ?? []}
-                      trialId={selectedTrial?.id}
-                      attemptId={selectedAttemptId}
-                      pending={artifacts.isPending}
-                      error={artifacts.error}
-                      refreshing={artifacts.isFetching && !artifacts.isPending}
-                      onRetry={() => void refresh()}
-                      onDownload={
-                        transport ? evidenceDownloads.download : undefined
+                  <RunCriteriaResults
+                    trials={snapshot.trials}
+                    selectedTrial={selectedTrial}
+                    checks={snapshot.checks}
+                    page={events.data}
+                    judgments={judgments.data?.data}
+                    error={judgments.error}
+                    onSelectTrial={(id) => {
+                      setTrialId(id);
+                      setCitation(null);
+                    }}
+                    onViewTimeline={(checkId, reference) => {
+                      if (selectedTrial) {
+                        setCitation({
+                          trialId: selectedTrial.id,
+                          checkId,
+                          reference,
+                        });
+                        setTab(1);
                       }
-                    />
-                  )}
+                    }}
+                  />
                 </Box>
+                {tab !== 0 && (
+                  <Box
+                    role="tabpanel"
+                    id={`run-panel-${tab}`}
+                    aria-labelledby={`run-tab-${tab}`}
+                  >
+                    {tab === 1 ? (
+                      <RunJudgmentTimeline
+                        selection={citation}
+                        onBack={() => setTab(0)}
+                        live={!!transport}
+                        page={events.data}
+                        detail={snapshot}
+                        trial={selectedTrial}
+                        attemptId={selectedAttemptId}
+                        pending={events.isPending}
+                        error={events.error}
+                        refreshing={events.isFetching && !events.isPending}
+                        onRetry={() => void refresh()}
+                      />
+                    ) : tab === 2 ? (
+                      <RunManifestPanel
+                        requested={snapshot.requestedManifest}
+                        attempts={snapshot.attempts}
+                      />
+                    ) : (
+                      <RunEvidencePanel
+                        key={`${runId}:${selectedAttemptId}:${selectedTrial?.id}`}
+                        artifacts={artifacts.data?.data ?? []}
+                        trialId={selectedTrial?.id}
+                        attemptId={selectedAttemptId}
+                        pending={artifacts.isPending}
+                        error={artifacts.error}
+                        refreshing={
+                          artifacts.isFetching && !artifacts.isPending
+                        }
+                        onRetry={() => void refresh()}
+                        onDownload={
+                          transport ? evidenceDownloads.download : undefined
+                        }
+                      />
+                    )}
+                  </Box>
+                )}
               </Box>
               <Typography variant="caption" color="text.secondary">
                 {transport

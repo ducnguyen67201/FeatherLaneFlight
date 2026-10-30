@@ -21,13 +21,8 @@ export function SuiteCheckFields({
   return (
     <Stack spacing={4}>
       <Typography variant="body2" color="text.secondary">
-        {check.kind === "METRIC_THRESHOLD"
-          ? "Rule: elapsed duration ≤ maximum, in seconds."
-          : check.kind === "MISSION_COMPLETION"
-            ? "Rule: mission completion observation must be true."
-            : "Rule: landed and disarmed observations must both be true."}{" "}
-        Wording describes the rule; it does not create measurements or change
-        the evaluator.
+        Describe what the LLM judge must establish from this trial's evidence.
+        Missing or ambiguous evidence remains inconclusive.
       </Typography>
       <TextField
         fullWidth
@@ -69,7 +64,7 @@ export function SuiteCheckFields({
       <TextField
         fullWidth
         id={`${prefix}.expected`}
-        label="Expected outcome description"
+        label="Requirement"
         multiline
         minRows={2}
         value={check.expected ?? ""}
@@ -79,12 +74,11 @@ export function SuiteCheckFields({
           error("expected") ??
           (check.kind === "METRIC_THRESHOLD"
             ? "Updates with the maximum duration above."
-            : "Describe the fixed rule above. This text is not executable.")
+            : "Describe the behavior and evidence the judge should assess.")
         }
         slotProps={{
           htmlInput: {
             maxLength: 512,
-            readOnly: check.kind === "METRIC_THRESHOLD",
           },
         }}
         onChange={(e) => onChange({ ...check, expected: e.target.value })}
@@ -92,7 +86,7 @@ export function SuiteCheckFields({
       <TextField
         fullWidth
         id={`${prefix}.inconclusiveWhen`}
-        label="Missing evidence description"
+        label="INCONCLUSIVE when"
         multiline
         minRows={2}
         value={check.inconclusiveWhen ?? ""}
